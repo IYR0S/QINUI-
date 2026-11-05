@@ -1267,7 +1267,7 @@ public class QinsLauncherActivity extends Activity {
         content.setPadding(dp(10), dp(4), dp(10), dp(4));
         final ThemePreview preview = new ThemePreview(this);
         preview.update(colors);
-        content.addView(preview, new LinearLayout.LayoutParams(-1, dp(150)));
+        content.addView(preview, new LinearLayout.LayoutParams(-1, dp(126)));
         TextView hint = new TextView(this);
         hint.setText("Choose a part below. The preview changes immediately; Save applies it.");
         hint.setTextSize(10);
@@ -1281,8 +1281,9 @@ public class QinsLauncherActivity extends Activity {
             option.setTextColor(colors[3]);
             option.setGravity(Gravity.CENTER_VERTICAL);
             option.setPadding(dp(10), 0, dp(10), 0);
-            GradientDrawable swatch = makeShape(colors[2], 0x55808080, 8, false);
-            option.setBackgroundDrawable(swatch);
+            option.setFocusable(true);
+            option.setFocusableInTouchMode(false);
+            styleSurface(option, colors[2], base.border, base.focus, 8f);
             LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(-1, dp(38));
             op.topMargin = dp(4);
             content.addView(option, op);
@@ -1302,9 +1303,13 @@ public class QinsLauncherActivity extends Activity {
                 }
             });
         }
+        ScrollView editorScroll = new ScrollView(this);
+        editorScroll.setFillViewport(false);
+        editorScroll.setVerticalScrollBarEnabled(true);
+        editorScroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Theme preview  ·  " + appearance().title)
-                .setView(content)
+                .setView(editorScroll)
                 .setPositiveButton("Save", new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, int which) {
                         ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "accent", colors[0]);
