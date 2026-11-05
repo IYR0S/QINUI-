@@ -85,6 +85,8 @@ public class QinsLauncherActivity extends Activity {
     private String pendingSoftKeySide;
     private String learningSoftKeySide;
     private android.app.AlertDialog softKeyLearningDialog;
+    private int swallowLearningKeyCode = -1;
+    private int swallowLearningScanCode = 0;
     private View folderOverlay;
     private String drawerSearchQuery = "";
     private TextView drawerSearchStatus;
@@ -2852,37 +2854,58 @@ public class QinsLauncherActivity extends Activity {
         }
     }
 
-    private boolean isSoftKey(int keyCode) {
-        return keyCode == KeyEvent.KEYCODE_SOFT_LEFT || keyCode == KeyEvent.KEYCODE_SOFT_RIGHT;
+    private int defaultSoftKeyCode(String side) {
+        return "left".equals(side) ? KeyEvent.KEYCODE_SOFT_LEFT : KeyEvent.KEYCODE_SOFT_RIGHT;
     }
 
-    private String softKeyPreference(int keyCode) {
-        return keyCode == KeyEvent.KEYCODE_SOFT_LEFT ? "left" : "right";
-    }
-
-    private String softKeyAction(int keyCode) {
-        String side = softKeyPreference(keyCode);
+    private String softKeyAction(String side) {
         return getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE)
                 .getString(side, "left".equals(side) ? "phone" : "apps");
     }
 
+    private String softKeySideForEvent(KeyEvent event) {
+        SharedPreferences prefs = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
+        String[] sides = new String[] {"left", "right"};
+        for (String side : sides) {
+            int keyCode = prefs.getInt("keycode_" + side, defaultSoftKeyCode(side));
+            int scanCode = prefs.getInt("scancode_" + side, 0);
+            if (scanCode > 0 ? event.getScanCode() == scanCode : event.getKeyCode() == keyCode) {
+                return side;
+            }
+        }
+        return null;
+    }
+
     private void showSoftkeySettings() {
-        final String[] sides = new String[] {
-                getString(R.string.launcher_softkey_left),
-                getString(R.string.launcher_softkey_right)
+        final String[] choices = new String[] {
+                getString(R.string.launcher_softkey_left) + "  ·  " + softKeyAction("left"),
+                getString(R.string.launcher_softkey_learn) + "  ·  " + getString(R.string.launcher_softkey_left),
+                getString(R.string.launcher_softkey_right) + "  ·  " + softKeyAction("right"),
+                getString(R.string.launcher_softkey_learn) + "  ·  " + getString(R.string.launcher_softkey_right),
+                getString(R.string.launcher_softkey_reset)
         };
         new android.app.AlertDialog.Builder(this)
                 .setTitle(R.string.launcher_softkey_settings)
                 .setMessage(R.string.launcher_softkey_config_hint)
-                .setItems(sides, new android.content.DialogInterface.OnClickListener() {
+                .setItems(choices, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        showSoftkeyActionPicker(which == 0
-                                ? KeyEvent.KEYCODE_SOFT_LEFT : KeyEvent.KEYCODE_SOFT_RIGHT);
+                        if (which == 0) showSoftkeyActionPicker("left");
+                        else if (which == 1) learnPhysicalSoftkey("left");
+                        else if (which == 2) showSoftkeyActionPicker("right");
+                        else if (which == 3) learnPhysicalSoftkey("right");
+                        else {
+                            getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
+                                    .remove("keycode_left").remove("keycode_right")
+                                    .remove("scancode_left").remove("scancode_right").commit();
+                            android.widget.Toast.makeText(QinsLauncherActivity.this,
+                                    R.string.launcher_softkey_reset_done,
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
-    private void showSoftkeyActionPicker(final int keyCode) {
+    private void showSoftkeyActionPicker(final String side) {
         final String[] ids = new String[] {
                 "phone", "apps", "quick", "theme", "wallpaper", "settings", "studio", "home"
         };
@@ -2896,19 +2919,41 @@ public class QinsLauncherActivity extends Activity {
                 getString(R.string.launcher_softkey_studio),
                 getString(R.string.launcher_softkey_home)
         };
-        String current = softKeyAction(keyCode);
+        String current = softKeyAction(side);
         int selected = 0;
         for (int i = 0; i < ids.length; i++) if (ids[i].equals(current)) selected = i;
         new android.app.AlertDialog.Builder(this)
-                .setTitle(keyCode == KeyEvent.KEYCODE_SOFT_LEFT
+                .setTitle("left".equals(side)
                         ? R.string.launcher_softkey_left : R.string.launcher_softkey_right)
                 .setSingleChoiceItems(labels, selected, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
-                                .putString(softKeyPreference(keyCode), ids[which]).commit();
+                                .putString(side, ids[which]).commit();
                         dialog.dismiss();
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void learnPhysicalSoftkey(final String side) {
+        learningSoftKeySide = side;
+        softKeyLearningDialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("left".equals(side)
+                        ? R.string.launcher_softkey_left : R.string.launcher_softkey_right)
+                .setMessage(R.string.launcher_softkey_learning)
+                .setNegativeButton(android.R.string.cancel,
+                        new android.content.DialogInterface.OnClickListener() {
+                            @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                                learningSoftKeySide = null;
+                                softKeyLearningDialog = null;
+                            }
+                        }).create();
+        softKeyLearningDialog.setOnCancelListener(new android.content.DialogInterface.OnCancelListener() {
+            @Override public void onCancel(android.content.DialogInterface dialog) {
+                learningSoftKeySide = null;
+                softKeyLearningDialog = null;
+            }
+        });
+        softKeyLearningDialog.show();
     }
 
     private void performSoftkeyAction(String action) {
@@ -2961,16 +3006,10 @@ public class QinsLauncherActivity extends Activity {
             if (info != null) { pinApp(info, false); return true; }
         }
         if (tag.startsWith("quick:")) return openQuickSetting(tag.substring(6));
-        if ("header:phone".equals(tag)) { showSoftkeySettings(); return true; }
         return false;
     }
 
     @Override public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-        if (isSoftKey(keyCode) && pendingSoftKeyCode == keyCode) {
-            softKeyLongPressPerformed = true;
-            showSoftkeyActionPicker(keyCode);
-            return true;
-        }
         if (isSelectKey(keyCode) && performLongPressAction(
                 pendingSelectView != null ? pendingSelectView : getCurrentFocus())) {
             longPressPerformed = true;
@@ -2979,15 +3018,56 @@ public class QinsLauncherActivity extends Activity {
         return super.onKeyLongPress(keyCode, event);
     }
 
-    @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (isSoftKey(keyCode)) {
-            if (event.getRepeatCount() == 0) {
-                pendingSoftKeyCode = keyCode;
-                softKeyLongPressPerformed = false;
-                event.startTracking();
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if (swallowLearningKeyCode == event.getKeyCode() &&
+                (swallowLearningScanCode == 0 || swallowLearningScanCode == event.getScanCode()) &&
+                event.getAction() == KeyEvent.ACTION_UP) {
+            swallowLearningKeyCode = -1;
+            swallowLearningScanCode = 0;
+            return true;
+        }
+
+        if (learningSoftKeySide != null) {
+            if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+                return super.dispatchKeyEvent(event);
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                String side = learningSoftKeySide;
+                int code = event.getKeyCode();
+                int scan = event.getScanCode();
+                getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
+                        .putInt("keycode_" + side, code)
+                        .putInt("scancode_" + side, scan).commit();
+                learningSoftKeySide = null;
+                swallowLearningKeyCode = code;
+                swallowLearningScanCode = scan;
+                if (softKeyLearningDialog != null) softKeyLearningDialog.dismiss();
+                softKeyLearningDialog = null;
+                android.widget.Toast.makeText(this,
+                        getString(R.string.launcher_softkey_detected) + "  " + code + " / " + scan,
+                        android.widget.Toast.LENGTH_LONG).show();
+                return true;
             }
             return true;
         }
+
+        String side = softKeySideForEvent(event);
+        if (side != null) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                if (event.getRepeatCount() == 0) pendingSoftKeySide = side;
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                if (side.equals(pendingSoftKeySide)) performSoftkeyAction(softKeyAction(side));
+                pendingSoftKeySide = null;
+                return true;
+            }
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (drawerVisible && !quickPanelVisible) {
             int digit = digitFromKeyCode(keyCode);
             if (digit >= 0) {
@@ -3020,7 +3100,6 @@ public class QinsLauncherActivity extends Activity {
                      ((String) focused.getTag()).startsWith("drawer:") ||
                      ((String) focused.getTag()).startsWith("page-dot:") ||
                      ((String) focused.getTag()).startsWith("quick:") ||
-                     "header:phone".equals(focused.getTag()) ||
                      "home:drawer-trigger".equals(focused.getTag()) ||
                      "pages".equals(focused.getTag()))) {
                 if (event.getRepeatCount() == 0) {
@@ -3137,12 +3216,6 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (isSoftKey(keyCode) && pendingSoftKeyCode == keyCode) {
-            pendingSoftKeyCode = 0;
-            if (!softKeyLongPressPerformed) performSoftkeyAction(softKeyAction(keyCode));
-            softKeyLongPressPerformed = false;
-            return true;
-        }
         if (isSelectKey(keyCode) && pendingSelectView != null) {
             View target = pendingSelectView;
             pendingSelectView = null;
