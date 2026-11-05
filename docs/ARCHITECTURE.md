@@ -1,7 +1,7 @@
 # Architecture
 
 ## Application layers
-- **App shell:** single launcher activity, dashboard and navigation.
+- **App shell:** QINS HOME is the single launcher activity; Home and Quick Panel are internal pages. Studio is opened with the physical MENU key.
 - **Shared UI core:** reusable API-19-compatible views and layout helpers.
 - **Design tokens:** colors, spacing and typography stored centrally.
 - **Theme engine:** reads and applies app-owned visual preferences; no system theme patching.
@@ -16,4 +16,4 @@ Each studio module should have its own package and UI entry point. Modules call 
 Request no permissions at first launch. Ask only when a user activates a feature that needs one, explain why, verify the capability, and provide a no-permission fallback. No root, shell commands, hidden APIs, system-file writes, or accessibility-service abuse.
 
 ## Current scaffold
-`MainActivity` is a minimal dashboard displaying the module concepts and their current capability/status labels. It is intentionally not presented as a finished launcher or system panel.
+`QinsLauncherActivity` provides four-app home pages, a minimal clock/date/battery glance area, a bottom Quick Panel handle, direct quick controls, and Galaxy / Pixel / Nothing appearance presets. `MainActivity` remains a separate Studio workspace opened from the physical MENU key.
