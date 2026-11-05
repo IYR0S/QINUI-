@@ -64,4 +64,24 @@
     <string name="launcher_grid_layout">בחירת מבנה רשת היישומים</string>
     <string name="launcher_choose_theme">בחירת ערכת נושא</string>
     <string name="launcher_settings_unavailable">לא ניתן לפתוח את ההגדרות המבוקשות.</string>
+    <string name="launcher_phone">טלפון</string>
+    <string name="launcher_softkey_settings">קיצורי מקשי Softkey</string>
+    <string name="launcher_softkey_left">מקש שמאלי</string>
+    <string name="launcher_softkey_right">מקש ימני</string>
+    <string name="launcher_softkey_phone">פתיחת החייגן</string>
+    <string name="launcher_softkey_apps">כל היישומים</string>
+    <string name="launcher_softkey_quick">הגדרות מהירות</string>
+    <string name="launcher_softkey_theme">בחירת ערכת נושא</string>
+    <string name="launcher_softkey_wallpaper">רקע</string>
+    <string name="launcher_softkey_settings_action">הגדרות מערכת</string>
+    <string name="launcher_softkey_studio">סטודיו QINS</string>
+    <string name="launcher_softkey_home">חזרה למסך הבית</string>
+    <string name="launcher_search_hint">חיפוש T9 · הקש על מקשי הספרות</string>
+    <string name="launcher_search_clear">נקה</string>
+    <string name="launcher_no_results">לא נמצאו יישומים תואמים</string>
+    <string name="launcher_create_folder">יצירת תיקייה</string>
+    <string name="launcher_folder">תיקייה</string>
+    <string name="launcher_choose_folder_app">בחר יישום מוצמד נוסף</string>
+    <string name="launcher_folder_empty">אין יישומים בתיקייה</string>
+    <string name="launcher_softkey_config_hint">לחיצה ארוכה על מקש Softkey פיזי תשנה את קיצור הדרך שלו. אפשר גם לבחור צד כאן.</string>
 </resources>
