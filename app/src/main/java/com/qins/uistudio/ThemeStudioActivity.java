@@ -104,7 +104,7 @@ public class ThemeStudioActivity extends StudioActivity {
                 boolean saved = ThemeManager.apply(ThemeStudioActivity.this, selected.id);
                 status.setText(saved ? R.string.theme_saved : R.string.theme_save_failed);
                 renderPreview();
-                applySharedThemeRefresh();
+                refreshSharedTheme();
             }
         });
 
@@ -145,11 +145,6 @@ public class ThemeStudioActivity extends StudioActivity {
         });
     }
 
-    private void applySharedThemeRefresh() {
-        // Refresh the app-owned controls immediately after saving the new palette.
-        View root = findViewById(android.R.id.content);
-        if (root != null) root.invalidate();
-    }
 
     private void renderPreview() {
         page.setBackgroundColor(selected.background);
