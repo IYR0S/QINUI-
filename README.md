@@ -6,7 +6,7 @@ A modular Android UI customization platform for the Xiaomi QINS1+ (Android 4.4.4
 
 - Android application scaffold with API 19 minimum and Java 8 source compatibility.
 - **Physical-key-first UI:** D-pad / arrow navigation, OK / Enter activation, Back navigation, visible focus state and an in-app menu. No touch screen is required.
-- **QINS Home launcher (first functional milestone):** a real Android HOME activity that can be selected as the device's default home screen. It discovers launchable apps, displays their icons and names in a keyboard-navigable grid, and opens selected apps. It reads the saved 2–4 column preference from Home Studio.
+- **QINS Home launcher (first functional milestone):** a real Android HOME activity that can be selected as the device's default home screen. It discovers launchable apps, displays their icons and names in a keyboard-navigable grid, and opens selected apps. It reads the saved 2–4 column and 2–3 row preferences from Home Studio, and shows apps across keyboard-controlled pages.
 - **Home Studio:** choose a 2–4 column by 2–3 row home-grid layout, preview it and save the preference locally. The saved column count is used by QINS Home.
 - **Shared app theme layer:** Ocean, Midnight and Forest palettes are stored persistently and applied to current Studio screens and shared controls.
 - English and Hebrew resource strings; RTL support is enabled.
