@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">QINS UI Studio</string>
+    <string name="dashboard_subtitle">Modular interface customization • Android 4.4+</string>
+    <string name="studio_heading">Studio</string>
+    <string name="studio_description">A safe, no-root workspace for personalizing the device.</string>
+    <string name="home_studio">Home Studio</string><string name="home_studio_desc">Launcher concepts and shortcuts</string>
+    <string name="quick_panel">Quick Panel Studio</string><string name="quick_panel_desc">A companion panel; cannot replace protected System UI</string>
+    <string name="edge_panel">Edge Panel</string><string name="edge_panel_desc">Optional edge launcher overlay; permission and firmware checks required</string>
+    <string name="theme_studio">Theme Studio</string><string name="theme_studio_desc">Shared colors, typography and preview tokens</string>
+    <string name="lock_studio">Lock Studio</string><string name="lock_studio_desc">Lock-screen companion concepts; secure keyguard replacement is out of scope</string>
+    <string name="status_foundation">Foundation only</string><string name="status_limited">Capability-limited</string><string name="status_planned">Planned</string>
+    <string name="project_status">Project status</string><string name="project_status_desc">This is an early scaffold. No feature is represented as complete until implemented and tested on the QINS1+.</string>
 </resources>
