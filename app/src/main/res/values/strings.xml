@@ -1,5 +1,9 @@
 <resources>
     <string name="qins_home">QINS Home</string>
+    <string name="open_studio_short">Studio</string>
+    <string name="qins_home_hint">To make this your device home: press the physical Home key and choose QINS Home, then Always.</string>
+    <string name="previous_page">Previous</string>
+    <string name="next_page">Next</string>
     <string name="app_name">QINS UI Studio</string>
     <string name="dashboard_subtitle">Modular interface customization • Android 4.4+</string>
     <string name="open_app_menu">Open app menu (MENU key)</string>
