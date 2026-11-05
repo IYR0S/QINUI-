@@ -80,7 +80,9 @@ public class QinsLauncherActivity extends Activity {
         getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         loadApps();
         buildShell();
-        showHome(false);
+        quickPanelVisible = getIntent().getBooleanExtra("open_quick_panel", false);
+        if (quickPanelVisible) showQuickPanel(false);
+        else showHome(false);
     }
 
     @Override protected void onResume() {
