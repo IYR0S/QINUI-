@@ -9,6 +9,8 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.ColorMatrix;
@@ -22,6 +24,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -35,6 +38,9 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,6 +55,7 @@ import java.util.Locale;
  */
 public class QinsLauncherActivity extends Activity {
     private static final int APPS_PER_PAGE = 4;
+    private static final int REQUEST_PICK_WALLPAPER = 7301;
     private static final String LAUNCHER_PREFS = "qins_launcher";
     private static final String PINS_KEY = "home_pins";
 
@@ -74,6 +81,8 @@ public class QinsLauncherActivity extends Activity {
     private LinearLayout appRow;
     private LinearLayout editBar;
     private TextView appsNavButton;
+    private TextView wallpaperButton;
+    private Bitmap wallpaperBitmap;
     private TextView clockView;
     private TextView dateView;
     private TextView batteryView;
@@ -204,6 +213,21 @@ public class QinsLauncherActivity extends Activity {
                 else showDrawer(false);
             }
         });
+        wallpaperButton = new TextView(this);
+        wallpaperButton.setText("▧");
+        wallpaperButton.setTextSize(19);
+        wallpaperButton.setGravity(Gravity.CENTER);
+        wallpaperButton.setTextColor(a.text);
+        wallpaperButton.setContentDescription(getString(R.string.launcher_wallpaper));
+        wallpaperButton.setFocusable(true);
+        wallpaperButton.setFocusableInTouchMode(false);
+        styleSurface(wallpaperButton, a.surface, a.border, a.focus, a.cornerDp);
+        wallpaperButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showWallpaperOptions(); }
+        });
+        LinearLayout.LayoutParams wallpaperParams = new LinearLayout.LayoutParams(dp(36), dp(36));
+        wallpaperParams.rightMargin = dp(5);
+        topBar.addView(wallpaperButton, wallpaperParams);
         topBar.addView(appsNavButton, new LinearLayout.LayoutParams(-2, dp(36)));
         root.addView(topBar, new LinearLayout.LayoutParams(-1, dp(44)));
 
@@ -226,7 +250,143 @@ public class QinsLauncherActivity extends Activity {
                 ? getString(R.string.launcher_home) : getString(R.string.launcher_apps));
         appsNavButton.setTextColor(a.text);
         styleSurface(appsNavButton, a.surface, a.border, a.focus, a.cornerDp);
+        if (wallpaperButton != null) {
+            wallpaperButton.setTextColor(a.text);
+            styleSurface(wallpaperButton, a.surface, a.border, a.focus, a.cornerDp);
+        }
         root.setBackground(new QinsWallpaperDrawable(a));
+    }
+
+    private File wallpaperFile() {
+        return new File(getFilesDir(), "qins_home_wallpaper.jpg");
+    }
+
+    private Bitmap loadWallpaperBitmap() {
+        if (wallpaperBitmap != null && !wallpaperBitmap.isRecycled()) return wallpaperBitmap;
+        File file = wallpaperFile();
+        if (!file.isFile()) return null;
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.getAbsolutePath(), bounds);
+        int targetWidth = Math.max(1, getResources().getDisplayMetrics().widthPixels * 2);
+        int targetHeight = Math.max(1, getResources().getDisplayMetrics().heightPixels * 2);
+        int sample = 1;
+        while (bounds.outWidth / (sample * 2) >= targetWidth &&
+                bounds.outHeight / (sample * 2) >= targetHeight) sample *= 2;
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = sample;
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        wallpaperBitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+        return wallpaperBitmap;
+    }
+
+    private void showWallpaperOptions() {
+        final String[] choices = new String[] {
+                getString(R.string.launcher_wallpaper_gallery),
+                getString(R.string.launcher_wallpaper_reset)
+        };
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_wallpaper)
+                .setItems(choices, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (which == 0) pickWallpaperFromGallery();
+                        else resetWallpaper();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void pickWallpaperFromGallery() {
+        try {
+            Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
+            pick.setType("image/*");
+            pick.addCategory(Intent.CATEGORY_OPENABLE);
+            startActivityForResult(Intent.createChooser(pick,
+                    getString(R.string.launcher_wallpaper_gallery)), REQUEST_PICK_WALLPAPER);
+        } catch (RuntimeException error) {
+            android.widget.Toast.makeText(this, R.string.launcher_wallpaper_unavailable,
+                    android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private Bitmap decodeSelectedWallpaper(Uri uri) throws java.io.IOException {
+        InputStream stream = null;
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        try {
+            stream = getContentResolver().openInputStream(uri);
+            if (stream == null) return null;
+            BitmapFactory.decodeStream(stream, null, bounds);
+        } finally {
+            if (stream != null) try { stream.close(); } catch (java.io.IOException ignored) { }
+        }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+
+        int targetWidth = Math.max(1, getResources().getDisplayMetrics().widthPixels * 2);
+        int targetHeight = Math.max(1, getResources().getDisplayMetrics().heightPixels * 2);
+        int sample = 1;
+        while (bounds.outWidth / (sample * 2) >= targetWidth &&
+                bounds.outHeight / (sample * 2) >= targetHeight) sample *= 2;
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = sample;
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        try {
+            stream = getContentResolver().openInputStream(uri);
+            return stream == null ? null : BitmapFactory.decodeStream(stream, null, options);
+        } finally {
+            if (stream != null) try { stream.close(); } catch (java.io.IOException ignored) { }
+        }
+    }
+
+    private void saveWallpaper(Bitmap bitmap) throws java.io.IOException {
+        File target = wallpaperFile();
+        FileOutputStream output = new FileOutputStream(target);
+        try {
+            if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 88, output)) {
+                throw new java.io.IOException("Could not encode wallpaper");
+            }
+            output.flush();
+        } finally {
+            output.close();
+        }
+        wallpaperBitmap = null;
+    }
+
+    private void resetWallpaper() {
+        File file = wallpaperFile();
+        if (file.exists()) file.delete();
+        wallpaperBitmap = null;
+        refreshLauncherSurface();
+    }
+
+    private void refreshLauncherSurface() {
+        if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
+        else if (quickPanelVisible) showCompactQuickPanel(false);
+        else if (drawerVisible) showDrawer(pinSelectionMode);
+        else showHome(false);
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_PICK_WALLPAPER || resultCode != RESULT_OK ||
+                data == null || data.getData() == null) return;
+        Bitmap selected = null;
+        try {
+            selected = decodeSelectedWallpaper(data.getData());
+            if (selected == null) throw new java.io.IOException("Unsupported image");
+            saveWallpaper(selected);
+            selected.recycle();
+            selected = null;
+            refreshLauncherSurface();
+            android.widget.Toast.makeText(this, R.string.launcher_wallpaper_saved,
+                    android.widget.Toast.LENGTH_SHORT).show();
+        } catch (Exception error) {
+            android.widget.Toast.makeText(this, R.string.launcher_wallpaper_failed,
+                    android.widget.Toast.LENGTH_LONG).show();
+        } finally {
+            if (selected != null && !selected.isRecycled()) selected.recycle();
+        }
     }
 
     private void styleSurface(final View view, final int fill, final int border,
@@ -302,6 +462,28 @@ public class QinsLauncherActivity extends Activity {
             android.graphics.Rect bounds = getBounds();
             float w = bounds.width();
             float h = bounds.height();
+            Bitmap photo = loadWallpaperBitmap();
+            if (photo != null && !photo.isRecycled()) {
+                float scale = Math.max(w / (float) photo.getWidth(), h / (float) photo.getHeight());
+                float sourceWidth = w / scale;
+                float sourceHeight = h / scale;
+                int left = Math.max(0, (int) ((photo.getWidth() - sourceWidth) / 2f));
+                int top = Math.max(0, (int) ((photo.getHeight() - sourceHeight) / 2f));
+                android.graphics.Rect source = new android.graphics.Rect(left, top,
+                        Math.min(photo.getWidth(), left + Math.round(sourceWidth)),
+                        Math.min(photo.getHeight(), top + Math.round(sourceHeight)));
+                paint.setAlpha(255);
+                paint.setColorFilter(null);
+                paint.setShader(null);
+                paint.setStyle(Paint.Style.FILL);
+                paint.setFilterBitmap(true);
+                canvas.drawBitmap(photo, source, bounds, paint);
+                paint.setShader(new LinearGradient(0, bounds.top, 0, bounds.bottom,
+                        0x22000000, 0x55000000, Shader.TileMode.CLAMP));
+                canvas.drawRect(bounds, paint);
+                paint.setShader(null);
+                return;
+            }
             paint.setAlpha(255);
             paint.setColorFilter(null);
             paint.setShader(new LinearGradient(0, 0, w, h,
@@ -1859,18 +2041,28 @@ public class QinsLauncherActivity extends Activity {
             openStudio();
             return true;
         }
-        // One press on the physical DOWN navigation key opens the full panel
-        // anchored at the top. The compact intermediate panel is intentionally skipped.
-        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN &&
-                !quickPanelVisible && !drawerVisible && !editMode) {
-            showQuickPanel(true);
-            return true;
+        // First DOWN opens the compact controls; a second, distinct press expands them.
+        // Repeated key events from holding the button must not skip the compact stage.
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && event.getRepeatCount() == 0 &&
+                !drawerVisible && !editMode) {
+            if (!quickPanelVisible) {
+                showCompactQuickPanel(true);
+                return true;
+            }
+            if (!quickPanelExpanded) {
+                showQuickPanel(true);
+                return true;
+            }
         }
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (editMode) {
                 editMode = false;
                 selectedHomeIndex = -1;
                 showHome(false);
+                return true;
+            }
+            if (quickPanelVisible && quickPanelExpanded) {
+                showCompactQuickPanel(true);
                 return true;
             }
             if (drawerVisible || quickPanelVisible) {
@@ -1948,6 +2140,8 @@ public class QinsLauncherActivity extends Activity {
             editMode = false;
             selectedHomeIndex = -1;
             showHome(false);
+        } else if (quickPanelVisible && quickPanelExpanded) {
+            showCompactQuickPanel(true);
         } else if (drawerVisible || quickPanelVisible) {
             showHome(false);
         }
