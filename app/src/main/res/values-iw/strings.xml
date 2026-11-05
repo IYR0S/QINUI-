@@ -1,6 +1,12 @@
 <resources>
     <string name="app_name">QINS UI Studio</string>
     <string name="dashboard_subtitle">התאמה אישית מודולרית • Android 4.4 ומעלה</string>
+    <string name="open_app_menu">פתיחת תפריט האפליקציה (מקש MENU)</string>
+    <string name="app_menu_title">תפריט QINS UI Studio</string>
+    <string name="app_menu_hint">נווט באמצעות החצים ואשר עם OK או Enter. לחץ Back לחזרה.</string>
+    <string name="menu_dashboard">מסך ראשי</string>
+    <string name="menu_themes">סטודיו ערכות נושא</string>
+    <string name="menu_close">סגירת התפריט</string>
     <string name="studio_heading">סטודיו</string><string name="studio_description">סביבת התאמה אישית בטוחה, ללא Root.</string>
     <string name="home_studio">סטודיו מסך הבית</string><string name="home_studio_desc">רעיונות למפעיל יישומים ולקיצורי דרך</string>
     <string name="quick_panel">סטודיו לוח מהיר</string><string name="quick_panel_desc">לוח נלווה; אינו מחליף את ממשק המערכת המוגן</string>
@@ -9,9 +15,9 @@
     <string name="lock_studio">סטודיו מסך נעילה</string><string name="lock_studio_desc">אפשרויות נלוות; החלפת מנגנון הנעילה המאובטח אינה נתמכת</string>
     <string name="status_foundation">תשתית ראשונית בלבד</string><string name="status_limited">מוגבל ביכולות</string><string name="status_planned">בתכנון</string><string name="status_active">מודול פעיל</string>
     <string name="project_status">מצב הפרויקט</string><string name="project_status_desc">Theme Studio הוא המודול הפעיל הראשון. שאר המודולים עדיין בפיתוח ודורשים בדיקה במכשיר.</string>
-    <string name="theme_intro">בחר ערכת צבעים, צפה בתצוגה מקדימה והחל אותה על ממשק האפליקציה.</string>
+    <string name="theme_intro">בחר ערכת צבעים, צפה בתצוגה מקדימה והחל אותה על כל מסכי QINS UI Studio והתפריטים הפנימיים.</string>
     <string name="theme_choose">ערכות זמינות</string><string name="theme_ocean">אוקיינוס</string><string name="theme_midnight">חצות</string><string name="theme_forest">יער</string>
     <string name="theme_preview">תצוגה מקדימה</string><string name="preview_card_title">QINS UI Studio</string><string name="preview_card_body">ערכת הצבעים שבחרת משותפת לכל מסכי האפליקציה.</string>
-    <string name="theme_apply">החל ערכת צבעים</string><string name="theme_saved">ערכת הצבעים נשמרה והוחלה.</string><string name="theme_save_failed">לא ניתן לשמור את ערכת הצבעים.</string>
-    <string name="theme_scope_note">בגרסה זו משתנה המראה של QINS UI Studio בלבד. לא מתבצע שינוי בממשק מערכת Android או באפליקציות אחרות.</string>
+    <string name="theme_apply">החל ערכת צבעים</string><string name="theme_saved">ערכת הצבעים נשמרה והוחלה בכל האפליקציה.</string><string name="theme_save_failed">לא ניתן לשמור את ערכת הצבעים.</string>
+    <string name="theme_scope_note">ערכת הצבעים משנה את מסכי QINS UI Studio והתפריטים שלה בלבד. תפריטי Android ואפליקציות אחרות אינם משתנים.</string>
 </resources>
