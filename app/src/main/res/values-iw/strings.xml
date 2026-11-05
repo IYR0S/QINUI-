@@ -7,7 +7,7 @@
     <string name="app_menu_hint">נווט באמצעות החצים ואשר עם OK או Enter. לחץ Back לחזרה.</string>
     <string name="menu_dashboard">מסך ראשי</string><string name="menu_themes">סטודיו ערכות נושא</string><string name="menu_home">סטודיו מסך הבית</string><string name="menu_close">סגירת התפריט</string>
     <string name="studio_heading">סטודיו</string><string name="studio_description">סביבת התאמה אישית בטוחה, ללא Root.</string>
-    <string name="home_studio">סטודיו מסך הבית</string><string name="home_studio_desc">הגדרת תצוגת מסך בית לניווט במקשים</string>
+    <string name="home_studio">סטודיו מסך הבית</string><string name="home_studio_desc">הגדרת פריסת האפליקציות במסך הבית של QINS</string>
     <string name="home_studio_intro">הגדר סידור רשת פשוט למסך הבית באמצעות המקשים הפיזיים. הפריסה נשמרת כהעדפה מקומית. התצוגה עדיין אינה מחליפה את מפעיל היישומים של QINS.</string>
     <string name="home_columns_heading">עמודות</string><string name="home_rows_heading">שורות</string><string name="home_preview_heading">תצוגה מקדימה</string>
     <string name="home_save_layout">שמור פריסת מסך בית</string><string name="home_saved">פריסת מסך הבית נשמרה במכשיר.</string><string name="home_save_failed">לא ניתן לשמור את פריסת מסך הבית.</string>
