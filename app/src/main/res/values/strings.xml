@@ -58,4 +58,10 @@
     <string name="launcher_wallpaper_saved">Wallpaper saved.</string>
     <string name="launcher_wallpaper_failed">Could not set this image as wallpaper.</string>
     <string name="launcher_wallpaper_unavailable">No image picker is available.</string>
+    <string name="launcher_open_all_apps">Open all apps</string>
+    <string name="launcher_all_apps">All apps</string>
+    <string name="launcher_edit_grid">Grid</string>
+    <string name="launcher_grid_layout">Choose app grid layout</string>
+    <string name="launcher_choose_theme">Choose theme</string>
+    <string name="launcher_settings_unavailable">Could not open these settings.</string>
 </resources>
