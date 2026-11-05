@@ -71,7 +71,8 @@ public class QinsLauncherActivity extends Activity {
         readLayout();
         buildShell();
         loadApps();
-        showHome();
+        if (getIntent().getBooleanExtra("open_quick_panel", false)) showQuickPanel();
+        else showHome();
     }
 
     @Override protected void onResume() {
