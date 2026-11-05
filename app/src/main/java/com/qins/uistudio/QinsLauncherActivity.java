@@ -68,7 +68,9 @@ public class QinsLauncherActivity extends Activity {
     private boolean longPressPerformed = false;
 
     private LinearLayout root;
+    private FrameLayout pageContainer;
     private LinearLayout pageContent;
+    private View compactPanelView;
     private LinearLayout appRow;
     private LinearLayout editBar;
     private TextView appsNavButton;
@@ -206,9 +208,11 @@ public class QinsLauncherActivity extends Activity {
         topBar.addView(appsNavButton, new LinearLayout.LayoutParams(-2, dp(36)));
         root.addView(topBar, new LinearLayout.LayoutParams(-1, dp(44)));
 
+        pageContainer = new FrameLayout(this);
         pageContent = new LinearLayout(this);
         pageContent.setOrientation(LinearLayout.VERTICAL);
-        root.addView(pageContent, new LinearLayout.LayoutParams(-1, 0, 1));
+        pageContainer.addView(pageContent, new FrameLayout.LayoutParams(-1, -1));
+        root.addView(pageContainer, new LinearLayout.LayoutParams(-1, 0, 1));
 
         LinearLayout footer = new LinearLayout(this);
         footer.setGravity(Gravity.CENTER);
@@ -500,7 +504,15 @@ public class QinsLauncherActivity extends Activity {
         } catch (RuntimeException ignored) { return ""; }
     }
 
+    private void removeCompactPanelOverlay() {
+        if (pageContainer != null && compactPanelView != null) {
+            pageContainer.removeView(compactPanelView);
+        }
+        compactPanelView = null;
+    }
+
     private void showHome(boolean focusHandle) {
+        removeCompactPanelOverlay();
         quickPanelVisible = false;
         quickPanelExpanded = false;
         drawerVisible = false;
@@ -637,9 +649,15 @@ public class QinsLauncherActivity extends Activity {
             });
         }
         compact.addView(row, new LinearLayout.LayoutParams(-1, dp(52)));
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(80));
-        params.topMargin = dp(4);
-        pageContent.addView(compact, 0, params);
+        compactPanelView = compact;
+        FrameLayout.LayoutParams overlayParams = new FrameLayout.LayoutParams(
+                -1, dp(80), Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        pageContainer.addView(compact, overlayParams);
+        compact.startAnimation(new android.view.animation.TranslateAnimation(
+                0, 0, -dp(80), 0) {{
+            setDuration(180);
+            setFillAfter(false);
+        }});
         updateNavigationButton();
         updateQuickStates();
         if (focusFirst && row.getChildCount() > 0) row.getChildAt(0).requestFocus();
@@ -1011,6 +1029,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showDrawer(boolean chooseToPin) {
+        removeCompactPanelOverlay();
         drawerVisible = true;
         quickPanelVisible = false;
         pinSelectionMode = chooseToPin;
@@ -1369,6 +1388,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showQuickPanel(boolean focusFirst) {
+        removeCompactPanelOverlay();
         wifiState = null; bluetoothState = null; soundState = null;
         wifiTile = null; bluetoothTile = null; soundTile = null;
         quickPanelVisible = true;
