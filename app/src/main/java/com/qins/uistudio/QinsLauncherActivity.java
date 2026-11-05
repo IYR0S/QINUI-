@@ -87,7 +87,6 @@ public class QinsLauncherActivity extends Activity {
     private View bluetoothTile;
     private View soundTile;
     private LinearLayout pageDots;
-    private View bottomHandle;
 
     private final List<ResolveInfo> installedApps = new ArrayList<ResolveInfo>();
     private final List<ResolveInfo> pinnedApps = new ArrayList<ResolveInfo>();
@@ -214,24 +213,8 @@ public class QinsLauncherActivity extends Activity {
         pageContainer.addView(pageContent, new FrameLayout.LayoutParams(-1, -1));
         root.addView(pageContainer, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        LinearLayout footer = new LinearLayout(this);
-        footer.setGravity(Gravity.CENTER);
-        footer.setPadding(0, dp(3), 0, dp(2));
-        QinsGlyphView handle = new QinsGlyphView(this, "down", a.text);
-        bottomHandle = handle;
-        handle.setContentDescription("Open quick settings");
-        handle.setFocusable(true);
-        handle.setFocusableInTouchMode(false);
-        styleSurface(handle, a.surface, a.border, a.focus, a.cornerDp);
-        handle.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                if (!quickPanelVisible) showCompactQuickPanel(true);
-                else if (!quickPanelExpanded) showQuickPanel(true);
-                else showHome(false);
-            }
-        });
-        footer.addView(handle, new LinearLayout.LayoutParams(dp(44), dp(footerHeight - 3)));
-        root.addView(footer, new LinearLayout.LayoutParams(-1, dp(footerHeight)));
+        // Quick Settings is opened with the physical D-pad DOWN key.
+        // No oversized bottom handle: keep the home page clean and full-height.
         setContentView(root);
         updateNavigationButton();
     }
@@ -243,10 +226,6 @@ public class QinsLauncherActivity extends Activity {
                 ? getString(R.string.launcher_home) : getString(R.string.launcher_apps));
         appsNavButton.setTextColor(a.text);
         styleSurface(appsNavButton, a.surface, a.border, a.focus, a.cornerDp);
-        QinsGlyphView handle = (QinsGlyphView) bottomHandle;
-        handle.setGlyph(quickPanelVisible ? "up" : "down");
-        handle.setTint(a.text);
-        styleSurface(handle, 0x00000000, 0x00000000, a.focus, a.cornerDp);
         root.setBackground(new QinsWallpaperDrawable(a));
     }
 
@@ -594,8 +573,7 @@ public class QinsLauncherActivity extends Activity {
         updateClockAndBattery();
         updateNavigationButton();
 
-        if (focusHandle) bottomHandle.requestFocus();
-        else if (editMode && selectedHomeIndex >= 0) focusHomeIndex(selectedHomeIndex);
+        if (editMode && selectedHomeIndex >= 0) focusHomeIndex(selectedHomeIndex);
         else if (appRow.getChildCount() > 0) appRow.getChildAt(0).requestFocus();
         else appsNavButton.requestFocus();
     }
@@ -932,6 +910,11 @@ public class QinsLauncherActivity extends Activity {
                 return;
             }
         }
+    }
+
+    private boolean isRtlLayout() {
+        return android.os.Build.VERSION.SDK_INT >= 17 &&
+                getResources().getConfiguration().getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
     }
 
     private void changePage(int delta, int focusSlot) {
@@ -1791,6 +1774,13 @@ public class QinsLauncherActivity extends Activity {
             openStudio();
             return true;
         }
+        // One press on the physical DOWN navigation key opens the full panel
+        // anchored at the top. The compact intermediate panel is intentionally skipped.
+        if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN &&
+                !quickPanelVisible && !drawerVisible && !editMode) {
+            showQuickPanel(true);
+            return true;
+        }
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             if (editMode) {
                 editMode = false;
@@ -1807,8 +1797,10 @@ public class QinsLauncherActivity extends Activity {
                 keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)) {
             View focused = getCurrentFocus();
             Object tag = focused == null ? null : focused.getTag();
+            boolean rtl = isRtlLayout();
             if (tag instanceof String && ((String) tag).startsWith("page-dot:")) {
-                int target = page + (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1);
+                int delta = keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? (rtl ? 1 : -1) : (rtl ? -1 : 1);
+                int target = page + delta;
                 if (target >= 0 && target < pageCount()) {
                     page = target;
                     editMode = false;
@@ -1821,18 +1813,33 @@ public class QinsLauncherActivity extends Activity {
                 try {
                     int index = Integer.parseInt(((String) tag).substring(5));
                     if (editMode) {
-                        moveSelectedApp(keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1);
+                        int logicalDelta = keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? (rtl ? 1 : -1) :
+                                (rtl ? -1 : 1);
+                        moveSelectedApp(logicalDelta);
                         return true;
                     }
-                    int slot = index % APPS_PER_PAGE;
-                    if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && slot == 0 && page > 0) {
-                        changePage(-1, APPS_PER_PAGE - 1);
-                        return true;
-                    }
-                    if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && slot == APPS_PER_PAGE - 1 &&
-                            page + 1 < pageCount()) {
-                        changePage(1, 0);
-                        return true;
+                    if (appRow != null && appRow.getChildCount() > 0) {
+                        int leftmost = 0;
+                        int rightmost = 0;
+                        for (int i = 1; i < appRow.getChildCount(); i++) {
+                            if (appRow.getChildAt(i).getLeft() < appRow.getChildAt(leftmost).getLeft()) leftmost = i;
+                            if (appRow.getChildAt(i).getRight() > appRow.getChildAt(rightmost).getRight()) rightmost = i;
+                        }
+                        int slot = index % APPS_PER_PAGE;
+                        if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && slot == leftmost) {
+                            int delta = rtl ? 1 : -1;
+                            if (page + delta >= 0 && page + delta < pageCount()) {
+                                changePage(delta, rtl ? 0 : APPS_PER_PAGE - 1);
+                            }
+                            return true;
+                        }
+                        if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && slot == rightmost) {
+                            int delta = rtl ? -1 : 1;
+                            if (page + delta >= 0 && page + delta < pageCount()) {
+                                changePage(delta, rtl ? APPS_PER_PAGE - 1 : 0);
+                            }
+                            return true;
+                        }
                     }
                 } catch (NumberFormatException ignored) { }
             }
