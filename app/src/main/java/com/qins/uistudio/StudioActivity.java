@@ -17,9 +17,9 @@ public abstract class StudioActivity extends Activity {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    @Override public void onResume() {
+    @Override protected void onResume() {
         super.onResume();
-        applySharedTheme();
+        refreshSharedTheme();
     }
 
     @Override public void setContentView(View view) {
