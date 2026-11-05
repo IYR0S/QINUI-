@@ -4,7 +4,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.KeyEvent;
 import android.view.View;
 
-/** API-19-compatible keyboard focus and activation helpers for physical controls. */
+/** API-19 physical-key focus and activation helpers. No touch input is required. */
 public final class KeyboardSupport {
     private KeyboardSupport() {}
 
@@ -29,13 +29,23 @@ public final class KeyboardSupport {
                                      final int focusColor, final int borderColor,
                                      final int radiusPx) {
         makeFocusable(view);
-        view.setBackground(createBackground(fillColor, borderColor, radiusPx, false));
+        styleFocusable(view, fillColor, borderColor, focusColor, radiusPx);
+    }
+
+    /** Shared button/card appearance used by the app-wide theme layer. */
+    public static void styleFocusable(final View view, final int fillColor,
+                                      final int focusColor, final int textColor,
+                                      final int radiusPx) {
+        makeFocusable(view);
+        if (view instanceof android.widget.TextView) {
+            ((android.widget.TextView) view).setTextColor(textColor);
+        }
+        view.setBackground(createBackground(fillColor, fillColor, radiusPx, false));
         view.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View v, boolean hasFocus) {
                 v.setBackground(createBackground(
                     hasFocus ? focusColor : fillColor,
-                    hasFocus ? borderColor : fillColor,
-                    radiusPx, hasFocus));
+                    focusColor, radiusPx, hasFocus));
             }
         });
     }
