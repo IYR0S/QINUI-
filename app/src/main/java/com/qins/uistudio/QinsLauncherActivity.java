@@ -1099,8 +1099,8 @@ public class QinsLauncherActivity extends Activity {
         clockView.setFocusable(true);
         clockView.setFocusableInTouchMode(false);
         clockView.setTextDirection(View.TEXT_DIRECTION_LTR);
-        clockView.setPadding(dp(7), dp(4), dp(7), dp(4));
         styleSurface(clockView, 0x00000000, 0x00000000, a.focus, a.cornerDp);
+        clockView.setPadding(dp(7), dp(4), dp(7), dp(4));
         clockView.setContentDescription("Clock style. Press to customize.");
         clockView.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showClockStylePicker(); }
@@ -2973,19 +2973,47 @@ public class QinsLauncherActivity extends Activity {
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
+    private boolean captureLearningSoftKey(int keyCode, KeyEvent event) {
+        if (learningSoftKeySide == null) return false;
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            String side = learningSoftKeySide;
+            int code = keyCode;
+            int scan = event.getScanCode();
+            getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
+                    .putInt("keycode_" + side, code)
+                    .putInt("scancode_" + side, scan).commit();
+            learningSoftKeySide = null;
+            swallowLearningKeyCode = code;
+            swallowLearningScanCode = scan;
+            if (softKeyLearningDialog != null) softKeyLearningDialog.dismiss();
+            softKeyLearningDialog = null;
+            android.widget.Toast.makeText(this,
+                    getString(R.string.launcher_softkey_detected) + "  " + code + " / " + scan,
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
+        return true;
+    }
+
     private void learnPhysicalSoftkey(final String side) {
         learningSoftKeySide = side;
         softKeyLearningDialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("left".equals(side)
                         ? R.string.launcher_softkey_left : R.string.launcher_softkey_right)
                 .setMessage(R.string.launcher_softkey_learning)
-                .setNegativeButton(android.R.string.cancel,
-                        new android.content.DialogInterface.OnClickListener() {
-                            @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                                learningSoftKeySide = null;
-                                softKeyLearningDialog = null;
-                            }
-                        }).create();
+                .setNegativeButton(android.R.string.cancel, null).create();
+        softKeyLearningDialog.setOnKeyListener(new android.content.DialogInterface.OnKeyListener() {
+            @Override public boolean onKey(android.content.DialogInterface dialog, int keyCode, KeyEvent event) {
+                return captureLearningSoftKey(keyCode, event);
+            }
+        });
+        softKeyLearningDialog.setButton(android.app.AlertDialog.BUTTON_NEGATIVE,
+                getString(android.R.string.cancel),
+                new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        learningSoftKeySide = null;
+                        softKeyLearningDialog = null;
+                    }
+                });
         softKeyLearningDialog.setOnCancelListener(new android.content.DialogInterface.OnCancelListener() {
             @Override public void onCancel(android.content.DialogInterface dialog) {
                 learningSoftKeySide = null;
@@ -3072,24 +3100,7 @@ public class QinsLauncherActivity extends Activity {
         }
 
         if (learningSoftKeySide != null) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                String side = learningSoftKeySide;
-                int code = event.getKeyCode();
-                int scan = event.getScanCode();
-                getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
-                        .putInt("keycode_" + side, code)
-                        .putInt("scancode_" + side, scan).commit();
-                learningSoftKeySide = null;
-                swallowLearningKeyCode = code;
-                swallowLearningScanCode = scan;
-                if (softKeyLearningDialog != null) softKeyLearningDialog.dismiss();
-                softKeyLearningDialog = null;
-                android.widget.Toast.makeText(this,
-                        getString(R.string.launcher_softkey_detected) + "  " + code + " / " + scan,
-                        android.widget.Toast.LENGTH_LONG).show();
-                return true;
-            }
-            return true;
+            return captureLearningSoftKey(event.getKeyCode(), event);
         }
 
         String side = softKeySideForEvent(event);
