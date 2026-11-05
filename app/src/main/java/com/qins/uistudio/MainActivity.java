@@ -20,10 +20,13 @@ public class MainActivity extends Activity {
 
     @Override
     public void onCreate(Bundle state) {
+        Log.i(TAG, "MainActivity onCreate: entered");
+        setTheme(R.style.AppTheme);
         super.onCreate(state);
         try {
-            setTheme(R.style.AppTheme);
+            Log.i(TAG, "MainActivity onCreate: building dashboard");
             showDashboard();
+            Log.i(TAG, "MainActivity onCreate: dashboard displayed");
         } catch (Throwable error) {
             Log.e(TAG, "Dashboard creation failed", error);
             showFailure(error);
