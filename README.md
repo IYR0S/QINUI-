@@ -1,30 +1,23 @@
 # QINS UI Studio
 
-A modular Android UI customization platform for the Xiaomi QINS1+ (Android 4.4.4 / API 19), developed with a no-root, no-ROM, reversible-first approach.
+A modular Android UI customization platform for the Xiaomi QINS1+ (Android 4.4.4 / API 19), built with a no-root-first, reversible approach.
 
-## Project status
+## Current implementation
 
-**Bootstrap / research phase.** This repository is being initialized before implementation. No Android APK is available yet.
+- Android application scaffold with API 19 minimum and Java 8 source compatibility.
+- Dashboard with honest maturity labels for each planned module.
+- **Theme Studio v0.1:** three palettes (Ocean, Midnight, Forest), live in-screen preview, persistent selection using SharedPreferences, and app-wide palette application across the dashboard and Theme Studio.
+- English and Hebrew (RTL locale resource) strings.
+- GitHub Actions debug APK build.
 
-## Goals
+## Important scope boundary
 
-- Java + XML Android application targeting API 19 compatibility.
-- Central dashboard and modular engines for Home, Quick Panel, Edge Panel, Themes, and Lock Studio.
-- Shared design system, settings, localization (Hebrew RTL and English LTR), and module management.
-- Offline-first operation and lightweight performance.
-- No root access or modification of system files in the initial releases.
+Theme Studio currently themes QINS UI Studio itself. It does not modify Android System UI, third-party apps, launcher, notification shade, or secure lock screen. Those require separate capability and compatibility work. The project is designed to work without Root; Root is not required and is not currently used.
 
-## Safety and platform constraints
+## Build
 
-Android 4.4.4 does not expose all modern System UI customization APIs. Features such as a true replacement of SystemUI or a fully custom secure lock screen cannot be assumed to work as ordinary third-party apps. Each feature must be classified by required permissions and verified on the actual device.
+The CI workflow builds a debug APK using Gradle 8.2 and JDK 17. Download the artifact named `QINS-UI-Studio-debug` from the successful workflow run.
 
-## Planned first milestone
+## Device validation
 
-1. Audit the repository and build environment.
-2. Research API 19-compatible open-source components and licenses.
-3. Document architecture and platform limitations.
-4. Create the Android project skeleton.
-5. Implement the dashboard, theme engine, settings, and module manager.
-6. Build and validate a debug APK.
-
-See `docs/ROADMAP.md` and `docs/COMPATIBILITY.md` as they are added.
+A successful CI build proves compilation and APK packaging only. Installation, rendering, RTL behavior, persistence, and performance still need validation on the actual QINS1+ running Android 4.4.4.
