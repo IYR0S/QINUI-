@@ -1028,6 +1028,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showHome(boolean focusHandle) {
+        closeHomeFolder();
         removeCompactPanelOverlay();
         quickPanelVisible = false;
         quickPanelExpanded = false;
@@ -1396,13 +1397,31 @@ public class QinsLauncherActivity extends Activity {
                 iconBackground.setShape(GradientDrawable.RECTANGLE);
                 iconBackground.setCornerRadius(dp(14));
             }
-            iconBackground.setColor(a.tile);
+            iconBackground.setColor(isFolder(info) ? 0x55000000 : a.tile);
             iconBackground.setStroke(dp(1), a.monochrome ? a.border : a.surfaceAlt);
             iconFrame.setBackgroundDrawable(iconBackground);
             if (isFolder(info)) {
-                QinsGlyphView folderGlyph = new QinsGlyphView(this, "folder", a.accent);
-                iconFrame.addView(folderGlyph, new FrameLayout.LayoutParams(
-                        dp(iconSize), dp(iconSize), Gravity.CENTER));
+                LinearLayout miniIcons = new LinearLayout(this);
+                miniIcons.setGravity(Gravity.CENTER);
+                miniIcons.setOrientation(LinearLayout.HORIZONTAL);
+                List<ResolveInfo> folderApps = getFolderApps(info);
+                int previewCount = Math.min(3, folderApps.size());
+                int miniSize = previewCount >= 3 ? 12 : 15;
+                for (int mini = 0; mini < previewCount; mini++) {
+                    ImageView smallIcon = new ImageView(this);
+                    smallIcon.setImageDrawable(folderApps.get(mini).loadIcon(getPackageManager()));
+                    smallIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    if (a.monochrome) {
+                        ColorMatrix matrix = new ColorMatrix();
+                        matrix.setSaturation(0f);
+                        smallIcon.setColorFilter(new ColorMatrixColorFilter(matrix));
+                    }
+                    LinearLayout.LayoutParams miniParams = new LinearLayout.LayoutParams(dp(miniSize), dp(miniSize));
+                    miniParams.setMargins(dp(1), 0, dp(1), 0);
+                    miniIcons.addView(smallIcon, miniParams);
+                }
+                iconFrame.addView(miniIcons, new FrameLayout.LayoutParams(
+                        -1, dp(22), Gravity.CENTER));
             } else {
                 ImageView icon = new ImageView(this);
                 icon.setImageDrawable(info.loadIcon(getPackageManager()));
@@ -1694,19 +1713,70 @@ public class QinsLauncherActivity extends Activity {
         focusHomeIndex(selectedHomeIndex);
     }
 
+    private void closeHomeFolder() {
+        if (pageContainer != null && folderOverlay != null) {
+            pageContainer.removeView(folderOverlay);
+        }
+        folderOverlay = null;
+    }
+
     private void openHomeFolder(final ResolveInfo folder) {
+        closeHomeFolder();
         final List<ResolveInfo> apps = getFolderApps(folder);
         if (apps.isEmpty()) return;
-        LinearLayout grid = new LinearLayout(this);
-        grid.setOrientation(LinearLayout.VERTICAL);
-        grid.setPadding(dp(8), dp(8), dp(8), dp(8));
-        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle(getFolderName(folder))
-                .setView(grid)
-                .setNegativeButton(android.R.string.cancel, null)
-                .create();
+        final ThemeManager.Appearance a = appearance();
+
+        FrameLayout scrim = new FrameLayout(this);
+        scrim.setBackgroundColor(0x66000000);
+        scrim.setClickable(true);
+        scrim.setFocusable(true);
+        scrim.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { closeHomeFolder(); }
+        });
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.CENTER_HORIZONTAL);
+        panel.setPadding(dp(12), dp(10), dp(12), dp(10));
+        GradientDrawable panelBackground = new GradientDrawable();
+        panelBackground.setColor(0x99151A21);
+        panelBackground.setCornerRadius(dp(23));
+        panelBackground.setStroke(dp(1), 0x66FFFFFF);
+        panel.setBackgroundDrawable(panelBackground);
+        panel.setClickable(true);
+        panel.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { /* consume taps inside the folder surface */ }
+        });
+
+        LinearLayout titleRow = new LinearLayout(this);
+        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView title = new TextView(this);
+        title.setText(getFolderName(folder));
+        title.setTextColor(0xFFF6F6F6);
+        title.setTextSize(13);
+        title.setGravity(Gravity.CENTER);
+        titleRow.addView(title, new LinearLayout.LayoutParams(0, dp(32), 1));
+        TextView close = new TextView(this);
+        close.setText("×");
+        close.setTextColor(0xCCFFFFFF);
+        close.setTextSize(19);
+        close.setGravity(Gravity.CENTER);
+        close.setFocusable(true);
+        close.setFocusableInTouchMode(false);
+        styleSurface(close, 0x00000000, 0x00000000, a.accent, 16);
+        close.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { closeHomeFolder(); }
+        });
+        titleRow.addView(close, new LinearLayout.LayoutParams(dp(30), dp(30)));
+        panel.addView(titleRow, new LinearLayout.LayoutParams(-1, dp(34)));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setVerticalScrollBarEnabled(false);
         int columns = 3;
         int rows = (apps.size() + columns - 1) / columns;
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setPadding(0, dp(4), 0, dp(2));
         View first = null;
         for (int rowIndex = 0; rowIndex < rows; rowIndex++) {
             LinearLayout row = new LinearLayout(this);
@@ -1714,7 +1784,7 @@ public class QinsLauncherActivity extends Activity {
             for (int col = 0; col < columns; col++) {
                 final int index = rowIndex * columns + col;
                 if (index >= apps.size()) {
-                    row.addView(new View(this), new LinearLayout.LayoutParams(0, dp(68), 1));
+                    row.addView(new View(this), new LinearLayout.LayoutParams(0, dp(66), 1));
                     continue;
                 }
                 final ResolveInfo child = apps.get(index);
@@ -1723,34 +1793,44 @@ public class QinsLauncherActivity extends Activity {
                 item.setGravity(Gravity.CENTER);
                 item.setFocusable(true);
                 item.setFocusableInTouchMode(false);
+                item.setClickable(true);
                 ImageView icon = new ImageView(this);
                 icon.setImageDrawable(child.loadIcon(getPackageManager()));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                item.addView(icon, new LinearLayout.LayoutParams(dp(34), dp(34)));
+                item.addView(icon, new LinearLayout.LayoutParams(dp(32), dp(32)));
                 TextView label = new TextView(this);
                 label.setText(child.loadLabel(getPackageManager()));
-                label.setTextColor(appearance().text);
+                label.setTextColor(0xFFF6F6F6);
                 label.setTextSize(9);
                 label.setGravity(Gravity.CENTER);
                 label.setSingleLine(true);
                 label.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 item.addView(label, new LinearLayout.LayoutParams(-1, dp(22)));
-                styleSurface(item, appearance().surface, appearance().border,
-                        appearance().focus, appearance().cornerDp);
+                styleSurface(item, 0x00000000, 0x00000000, a.accent, 12);
                 item.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) {
-                        dialog.dismiss();
+                        closeHomeFolder();
                         launchApp(child);
                     }
                 });
-                LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(0, dp(68), 1);
-                itemParams.setMargins(dp(2), dp(2), dp(2), dp(2));
+                LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(0, dp(66), 1);
+                itemParams.setMargins(dp(1), dp(1), dp(1), dp(1));
                 row.addView(item, itemParams);
                 if (first == null) first = item;
             }
-            grid.addView(row, new LinearLayout.LayoutParams(-1, dp(72)));
+            grid.addView(row, new LinearLayout.LayoutParams(-1, dp(68)));
         }
-        dialog.show();
+        scroll.addView(grid, new ScrollView.LayoutParams(-1, -2));
+        int gridHeight = Math.min(dp(238), dp(Math.max(1, rows) * 68 + 8));
+        panel.addView(scroll, new LinearLayout.LayoutParams(-1, gridHeight));
+
+        int panelWidth = Math.min(dp(280), Math.max(dp(174),
+                getResources().getDisplayMetrics().widthPixels - dp(28)));
+        FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(
+                panelWidth, -2, Gravity.CENTER);
+        scrim.addView(panel, panelParams);
+        pageContainer.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
+        folderOverlay = scrim;
         if (first != null) first.requestFocus();
     }
 
@@ -2977,6 +3057,10 @@ public class QinsLauncherActivity extends Activity {
             }
         }
         if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (folderOverlay != null) {
+                closeHomeFolder();
+                return true;
+            }
             if (drawerVisible && drawerSearchQuery.length() > 0) {
                 drawerSearchQuery = drawerSearchQuery.substring(0, drawerSearchQuery.length() - 1);
                 drawerPage = 0;
@@ -3070,7 +3154,9 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
-        if (editMode) {
+        if (folderOverlay != null) {
+            closeHomeFolder();
+        } else if (editMode) {
             editMode = false;
             selectedHomeIndex = -1;
             showHome(false);
