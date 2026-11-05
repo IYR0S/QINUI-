@@ -43,6 +43,7 @@ import java.util.Locale;
 public class QinsLauncherActivity extends Activity {
     private static final int APPS_PER_PAGE = 4;
     private int page = 0;
+    private int homeAppRowHeightDp = 86;
     private boolean quickPanelVisible = false;
 
     private LinearLayout root;
@@ -306,8 +307,8 @@ public class QinsLauncherActivity extends Activity {
         appRow = new LinearLayout(this);
         appRow.setOrientation(LinearLayout.HORIZONTAL);
         appRow.setGravity(Gravity.CENTER);
-        int appRowHeight = clamp((int) (screenHeightDp() * 0.34f), 64, 112);
-        pageContent.addView(appRow, new LinearLayout.LayoutParams(-1, dp(appRowHeight)));
+        homeAppRowHeightDp = clamp((int) (screenHeightDp() * 0.34f), 64, 112);
+        pageContent.addView(appRow, new LinearLayout.LayoutParams(-1, dp(homeAppRowHeightDp)));
         populateHomeApps(a);
 
         LinearLayout pages = new LinearLayout(this);
@@ -358,7 +359,7 @@ public class QinsLauncherActivity extends Activity {
             int index = start + slot;
             if (index >= installedApps.size()) {
                 View empty = new View(this);
-                appRow.addView(empty, new LinearLayout.LayoutParams(0, dp(64), 1));
+                appRow.addView(empty, new LinearLayout.LayoutParams(0, dp(homeAppRowHeightDp - 2), 1));
                 continue;
             }
             final ResolveInfo info = installedApps.get(index);
@@ -408,7 +409,7 @@ public class QinsLauncherActivity extends Activity {
                     }
                 }
             });
-            appRow.addView(tile, new LinearLayout.LayoutParams(0, dp(appRowHeight - 2), 1));
+            appRow.addView(tile, new LinearLayout.LayoutParams(0, dp(homeAppRowHeightDp - 2), 1));
         }
     }
 
