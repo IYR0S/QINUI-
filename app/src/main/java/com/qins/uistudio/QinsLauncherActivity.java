@@ -1434,6 +1434,7 @@ public class QinsLauncherActivity extends Activity {
         int first = drawerPage * pageSize;
         int last = Math.min(installedApps.size(), first + pageSize);
         int cellHeight = clamp((screenHeightDp() - 100) / rows, 48, 75);
+        int firstGridChild = list.getChildCount();
         for (int rowIndex = 0; rowIndex < rows; rowIndex++) {
             LinearLayout gridRow = new LinearLayout(this);
             gridRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1492,7 +1493,7 @@ public class QinsLauncherActivity extends Activity {
             }
             int rowIndex = (focusIndex - first) / columns;
             int colIndex = (focusIndex - first) % columns;
-            View focusRow = list.getChildAt(list.getChildCount() - rows - 1 + rowIndex);
+            View focusRow = list.getChildAt(firstGridChild + rowIndex);
             if (focusRow instanceof LinearLayout) {
                 LinearLayout row = (LinearLayout) focusRow;
                 if (colIndex < row.getChildCount()) row.getChildAt(colIndex).requestFocus();
