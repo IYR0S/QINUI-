@@ -22,7 +22,7 @@
 - [x] Stabilize Studio dashboard as a standalone Activity and make its launcher shortcut keyboard-activatable.
 - [ ] QINS Home: test default-home selection, boot return, firmware-specific Home key mapping and focus behavior on QINS1+.\n- [ ] Verify long-press timing and focus movement on actual QINS1+ hardware; adjust to the keypad's repeat behavior.\n- [ ] Tune four-app icon sizing and page spacing against the actual QINS1+ screen resolution.
 - [ ] Home Studio: configurable pinned apps, folders, tile ordering and multiple home pages.
-- [x] Quick Panel visual redesign: rounded control tiles, brightness and media-volume sliders, date/time/battery and direct Wi-Fi, Bluetooth, sound controls.\n- [x] Add battery/date/time glance information and in-panel Galaxy / Pixel / Nothing appearance switcher.\n- [ ] Add media transport and custom quick-tile ordering.
+- [x] Quick Panel visual redesign: rounded control tiles, brightness and media-volume sliders, date/time/battery and direct Wi-Fi, Bluetooth, sound controls.\n- [x] Add battery/date/time glance information and in-panel Galaxy / Pixel / Nothing appearance switcher.\n- [ ] Add media transport, reorderable quick-tile slots, and more API-19-supported toggles (hotspot/rotation only where firmware permits).
 - [ ] Edge Panel: opt-in overlay with clear permission checks and graceful fallback.
 - [ ] Theme Studio: expanded design tokens, typography, spacing, component styles and export/import.
 - [ ] Lock Studio: safe companion/customization options within public APIs.
