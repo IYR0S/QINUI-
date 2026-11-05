@@ -80,12 +80,7 @@ public class QinsLauncherActivity extends Activity {
         KeyboardSupport.makeFocusable(studio, palette.surface, palette.accent, palette.text, dp(7));
         studio.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
-                try {
-                    startActivity(new Intent(QinsLauncherActivity.this, MainActivity.class));
-                } catch (RuntimeException error) {
-                    android.widget.Toast.makeText(QinsLauncherActivity.this,
-                            "Studio could not be opened", android.widget.Toast.LENGTH_LONG).show();
-                }
+                openStudio();
             }
         });
         header.addView(studio, new LinearLayout.LayoutParams(-2, dp(46)));
@@ -220,6 +215,17 @@ public class QinsLauncherActivity extends Activity {
         else nextButton.requestFocus();
     }
 
+    private void openStudio() {
+        try {
+            startActivity(new Intent(QinsLauncherActivity.this, MainActivity.class));
+        } catch (RuntimeException error) {
+            String detail = error.getMessage();
+            if (detail == null || detail.length() == 0) detail = error.getClass().getSimpleName();
+            android.widget.Toast.makeText(QinsLauncherActivity.this,
+                    "Studio launch error: " + detail, android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void changePage(int delta) {
         int pageSize = Math.max(1, columns * rows);
         int pageCount = Math.max(1, (installedApps.size() + pageSize - 1) / pageSize);
@@ -231,7 +237,7 @@ public class QinsLauncherActivity extends Activity {
 
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_MENU) {
-            startActivity(new Intent(this, MainActivity.class));
+            openStudio();
             return true;
         }
         return super.onKeyDown(keyCode, event);
