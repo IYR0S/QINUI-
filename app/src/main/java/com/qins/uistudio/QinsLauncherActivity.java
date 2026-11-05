@@ -841,11 +841,7 @@ public class QinsLauncherActivity extends Activity {
                         selectedHomeIndex = absoluteIndex;
                         showHome(false);
                     } else {
-                        try { startActivity(launch); }
-                        catch (RuntimeException ignored) {
-                            android.widget.Toast.makeText(QinsLauncherActivity.this,
-                                    "App unavailable", android.widget.Toast.LENGTH_SHORT).show();
-                        }
+                        launchApp(info);
                     }
                 }
             });
@@ -857,6 +853,43 @@ public class QinsLauncherActivity extends Activity {
             });
             appRow.addView(tile, new LinearLayout.LayoutParams(0, dp(homeAppRowHeightDp - 2), 1));
         }
+    }
+
+    private void launchApp(ResolveInfo info) {
+        if (info == null) return;
+        try {
+            getSharedPreferences("qins_usage", MODE_PRIVATE).edit()
+                    .putInt("count:" + componentKey(info),
+                            getSharedPreferences("qins_usage", MODE_PRIVATE)
+                                    .getInt("count:" + componentKey(info), 0) + 1)
+                    .putLong("last:" + componentKey(info), System.currentTimeMillis())
+                    .commit();
+            startActivity(launchIntent(info));
+        } catch (RuntimeException ignored) {
+            android.widget.Toast.makeText(this, "App unavailable", android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private List<ResolveInfo> getFrequentlyUsedApps(int limit) {
+        final SharedPreferences usage = getSharedPreferences("qins_usage", MODE_PRIVATE);
+        List<ResolveInfo> frequent = new ArrayList<ResolveInfo>();
+        for (ResolveInfo info : installedApps) {
+            if (usage.getInt("count:" + componentKey(info), 0) > 0) frequent.add(info);
+        }
+        Collections.sort(frequent, new Comparator<ResolveInfo>() {
+            @Override public int compare(ResolveInfo left, ResolveInfo right) {
+                int lc = usage.getInt("count:" + componentKey(left), 0);
+                int rc = usage.getInt("count:" + componentKey(right), 0);
+                if (lc != rc) return rc - lc;
+                long lt = usage.getLong("last:" + componentKey(left), 0L);
+                long rt = usage.getLong("last:" + componentKey(right), 0L);
+                return lt == rt ? 0 : (lt > rt ? -1 : 1);
+            }
+        });
+        if (frequent.size() > limit) {
+            return new ArrayList<ResolveInfo>(frequent.subList(0, limit));
+        }
+        return frequent;
     }
 
     private Intent launchIntent(ResolveInfo info) {
@@ -1029,6 +1062,59 @@ public class QinsLauncherActivity extends Activity {
         scroll.addView(list, new ScrollView.LayoutParams(-1, -2));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
 
+        List<ResolveInfo> frequentApps = getFrequentlyUsedApps(4);
+        if (!frequentApps.isEmpty()) {
+            TextView frequentTitle = new TextView(this);
+            frequentTitle.setText(getString(R.string.launcher_frequent));
+            frequentTitle.setTextColor(a.muted);
+            frequentTitle.setTextSize(10);
+            frequentTitle.setPadding(dp(5), dp(4), dp(5), dp(5));
+            list.addView(frequentTitle, new LinearLayout.LayoutParams(-1, dp(25)));
+
+            LinearLayout frequentRow = new LinearLayout(this);
+            frequentRow.setOrientation(LinearLayout.HORIZONTAL);
+            frequentRow.setGravity(Gravity.CENTER);
+            for (final ResolveInfo frequentInfo : frequentApps) {
+                LinearLayout item = new LinearLayout(this);
+                item.setOrientation(LinearLayout.VERTICAL);
+                item.setGravity(Gravity.CENTER);
+                item.setPadding(dp(3), dp(4), dp(3), dp(4));
+                item.setFocusable(true);
+                item.setFocusableInTouchMode(false);
+                item.setClickable(true);
+                item.setLongClickable(true);
+                item.setTag("drawer:" + componentKey(frequentInfo));
+                styleSurface(item, a.surface, a.border, a.focus, a.cornerDp);
+                ImageView frequentIcon = new ImageView(this);
+                frequentIcon.setImageDrawable(frequentInfo.loadIcon(getPackageManager()));
+                item.addView(frequentIcon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+                TextView frequentLabel = new TextView(this);
+                frequentLabel.setText(frequentInfo.loadLabel(getPackageManager()));
+                frequentLabel.setTextColor(a.text);
+                frequentLabel.setTextSize(8);
+                frequentLabel.setSingleLine(true);
+                frequentLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                frequentLabel.setGravity(Gravity.CENTER);
+                item.addView(frequentLabel, new LinearLayout.LayoutParams(-1, dp(20)));
+                item.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) {
+                        if (pinSelectionMode) pinApp(frequentInfo, true);
+                        else launchApp(frequentInfo);
+                    }
+                });
+                item.setOnLongClickListener(new View.OnLongClickListener() {
+                    @Override public boolean onLongClick(View v) {
+                        pinApp(frequentInfo, false);
+                        return true;
+                    }
+                });
+                LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(0, dp(62), 1);
+                itemParams.setMargins(dp(2), 0, dp(2), dp(6));
+                frequentRow.addView(item, itemParams);
+            }
+            list.addView(frequentRow, new LinearLayout.LayoutParams(-1, dp(68)));
+        }
+
         for (final ResolveInfo info : installedApps) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -1070,8 +1156,7 @@ public class QinsLauncherActivity extends Activity {
                     if (pinSelectionMode) {
                         pinApp(info, true);
                     } else {
-                        try { startActivity(launchIntent(info)); }
-                        catch (RuntimeException ignored) { }
+                        launchApp(info);
                     }
                 }
             });
