@@ -60,7 +60,7 @@ public class QinsLauncherActivity extends Activity {
     private int homePageCount = 1;
     private static final String QUICK_PREFS = "qins_quick_tiles";
     private static final String[] QUICK_OPTIONS = new String[] {"sound", "bluetooth", "settings", "wifi", "brightness", "volume"};
-    private static final String[] QUICK_LABELS = new String[] {"Sound", "Bluetooth", "Settings", "Wi-Fi", "Brightness", "Volume"};
+    
     private boolean drawerVisible = false;
     private boolean editMode = false;
     private boolean pinSelectionMode = false;
@@ -575,12 +575,12 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
         TextView title = new TextView(this);
-        title.setText("Quick controls");
+        title.setText(getString(R.string.launcher_quick_controls));
         title.setTextColor(a.text);
         title.setTextSize(10);
         header.addView(title, new LinearLayout.LayoutParams(0, dp(22), 1));
         TextView edit = new TextView(this);
-        edit.setText("Edit");
+        edit.setText(getString(R.string.launcher_edit_shortcuts));
         edit.setTextColor(a.accent);
         edit.setTextSize(10);
         edit.setGravity(Gravity.CENTER);
@@ -637,7 +637,7 @@ public class QinsLauncherActivity extends Activity {
 
     private View compactQuickTile(String key, ThemeManager.Appearance a) {
         String label = quickLabel(key);
-        String glyph = "settings".equals(key) ? "apps" : ("brightness".equals(key) ? "brightness" : ("volume".equals(key) ? "volume" : key));
+        String glyph = "settings".equals(key) ? "settings" : ("brightness".equals(key) ? "brightness" : ("volume".equals(key) ? "volume" : key));
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.VERTICAL);
         tile.setGravity(Gravity.CENTER);
@@ -656,15 +656,21 @@ public class QinsLauncherActivity extends Activity {
         return tile;
     }
 
+    private String[] quickLabels() {
+        return new String[] {getString(R.string.launcher_sound), getString(R.string.launcher_bluetooth),
+                getString(R.string.launcher_settings), getString(R.string.launcher_wifi),
+                getString(R.string.launcher_brightness), getString(R.string.launcher_volume)};
+    }
+
     private String quickLabel(String key) {
-        for (int i = 0; i < QUICK_OPTIONS.length; i++) if (QUICK_OPTIONS[i].equals(key)) return QUICK_LABELS[i];
+        for (int i = 0; i < QUICK_OPTIONS.length; i++) if (QUICK_OPTIONS[i].equals(key)) return quickLabels()[i];
         return key;
     }
 
     private void showQuickSlotPicker() {
         final String[] slots = new String[] {"Shortcut 1", "Shortcut 2", "Shortcut 3", "Shortcut 4"};
         new android.app.AlertDialog.Builder(this)
-                .setTitle("Edit compact controls")
+                .setTitle(getString(R.string.launcher_edit_compact_controls))
                 .setItems(slots, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         showQuickTileEditor(which);
@@ -675,8 +681,8 @@ public class QinsLauncherActivity extends Activity {
     private void showQuickTileEditor(final int index) {
         final String[] keys = getQuickTileKeys();
         new android.app.AlertDialog.Builder(this)
-                .setTitle("Choose shortcut " + (index + 1))
-                .setItems(QUICK_LABELS, new android.content.DialogInterface.OnClickListener() {
+                .setTitle(getString(R.string.launcher_choose_shortcut, index + 1))
+                .setItems(quickLabels(), new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         keys[index] = QUICK_OPTIONS[which];
                         saveQuickTileKeys(keys);
@@ -1065,9 +1071,9 @@ public class QinsLauncherActivity extends Activity {
         firstRow.setOrientation(LinearLayout.HORIZONTAL);
         int quickTileHeight = clamp((int) (screenHeightDp() * 0.27f), 64, 78);
         panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
-        View wifi = quickTile("wifi", "Wi-Fi", a);
+        View wifi = quickTile("wifi", getString(R.string.launcher_wifi), a);
         firstRow.addView(wifi, new LinearLayout.LayoutParams(0, -1, 1));
-        View bluetooth = quickTile("bluetooth", "Bluetooth", a);
+        View bluetooth = quickTile("bluetooth", getString(R.string.launcher_bluetooth), a);
         LinearLayout.LayoutParams btParams = new LinearLayout.LayoutParams(0, -1, 1);
         btParams.leftMargin = dp(7);
         firstRow.addView(bluetooth, btParams);
@@ -1083,9 +1089,9 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams secondParams = new LinearLayout.LayoutParams(-1, dp(quickTileHeight));
         secondParams.topMargin = dp(7);
         panel.addView(secondRow, secondParams);
-        View sound = quickTile("sound", "Sound", a);
+        View sound = quickTile("sound", getString(R.string.launcher_sound), a);
         secondRow.addView(sound, new LinearLayout.LayoutParams(0, -1, 1));
-        View media = quickTile("apps", "Settings", a);
+        View media = quickTile("settings", getString(R.string.launcher_settings), a);
         LinearLayout.LayoutParams mediaParams = new LinearLayout.LayoutParams(0, -1, 1);
         mediaParams.leftMargin = dp(7);
         secondRow.addView(media, mediaParams);
@@ -1098,7 +1104,7 @@ public class QinsLauncherActivity extends Activity {
 
         updateQuickStates();
 
-        addSlider(panel, "☼", "Brightness", readBrightness(), 255,
+        addSlider(panel, "☼", getString(R.string.launcher_brightness), readBrightness(), 255,
                 new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int value, boolean fromUser) {
                 if (fromUser) writeBrightness(Math.max(1, value));
@@ -1110,7 +1116,7 @@ public class QinsLauncherActivity extends Activity {
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         int maxVolume = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
         int currentVolume = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
-        addSlider(panel, "♪", "Volume", currentVolume, maxVolume,
+        addSlider(panel, "♪", getString(R.string.launcher_volume), currentVolume, maxVolume,
                 new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int value, boolean fromUser) {
                 if (fromUser) {
@@ -1167,9 +1173,9 @@ public class QinsLauncherActivity extends Activity {
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
         styleSurface(tile, a.tile, a.border, a.tileActive, a.cornerDp);
-        if ("Wi-Fi".equals(label)) wifiState = state;
-        else if ("Bluetooth".equals(label)) bluetoothState = state;
-        else if ("Sound".equals(label)) soundState = state;
+        if ("wifi".equals(symbol)) wifiState = state;
+        else if ("bluetooth".equals(symbol)) bluetoothState = state;
+        else if ("sound".equals(symbol)) soundState = state;
         return tile;
     }
 
