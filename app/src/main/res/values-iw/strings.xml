@@ -1,5 +1,9 @@
 <resources>
     <string name="qins_home">מסך הבית של QINS</string>
+    <string name="open_studio_short">סטודיו</string>
+    <string name="qins_home_hint">כדי להפוך למסך הבית הקבוע: לחץ על כפתור Home הפיזי, בחר QINS Home ואז תמיד.</string>
+    <string name="previous_page">הקודם</string>
+    <string name="next_page">הבא</string>
     <string name="app_name">QINS UI Studio</string>
     <string name="dashboard_subtitle">התאמה אישית מודולרית • Android 4.4 ומעלה</string>
     <string name="open_app_menu">פתיחת תפריט האפליקציה (מקש MENU)</string>
@@ -8,7 +12,7 @@
     <string name="menu_dashboard">מסך ראשי</string><string name="menu_themes">סטודיו ערכות נושא</string><string name="menu_home">סטודיו מסך הבית</string><string name="menu_close">סגירת התפריט</string>
     <string name="studio_heading">סטודיו</string><string name="studio_description">סביבת התאמה אישית בטוחה, ללא Root.</string>
     <string name="home_studio">סטודיו מסך הבית</string><string name="home_studio_desc">הגדרת פריסת האפליקציות במסך הבית של QINS</string>
-    <string name="home_studio_intro">הגדר סידור רשת פשוט למסך הבית באמצעות המקשים הפיזיים. הפריסה נשמרת כהעדפה מקומית. התצוגה עדיין אינה מחליפה את מפעיל היישומים של QINS.</string>
+    <string name="home_studio_intro">הגדר סידור רשת פשוט למסך הבית באמצעות המקשים הפיזיים. הפריסה נשמרת כהעדפה מקומית. QINS Home הוא מסך בית חלופי. יש להגדיר אותו כברירת מחדל באמצעות כפתור Home הפיזי.</string>
     <string name="home_columns_heading">עמודות</string><string name="home_rows_heading">שורות</string><string name="home_preview_heading">תצוגה מקדימה</string>
     <string name="home_save_layout">שמור פריסת מסך בית</string><string name="home_saved">פריסת מסך הבית נשמרה במכשיר.</string><string name="home_save_failed">לא ניתן לשמור את פריסת מסך הבית.</string>
     <string name="home_layout_summary">הפריסה הנוכחית: %1$d עמודות × %2$d שורות</string>
