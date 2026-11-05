@@ -81,7 +81,7 @@
     <string name="launcher_no_results">No matching apps</string>
     <string name="launcher_create_folder">Create folder</string>
     <string name="launcher_folder">Folder</string>
-    <string name="launcher_choose_folder_app">Choose another pinned app</string>
+    <string name="launcher_choose_folder_app">Choose another app</string>
     <string name="launcher_folder_empty">This folder has no apps</string>
     <string name="launcher_softkey_config_hint">Long-press a physical softkey to change its shortcut. You can also select a side below.</string>
 </resources>
