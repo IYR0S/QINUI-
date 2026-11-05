@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">QINS UI Studio</string>
+    <string name="dashboard_subtitle">התאמה אישית מודולרית • Android 4.4 ומעלה</string>
+    <string name="studio_heading">סטודיו</string><string name="studio_description">סביבת התאמה אישית בטוחה, ללא Root.</string>
+    <string name="home_studio">סטודיו מסך הבית</string><string name="home_studio_desc">רעיונות למפעיל יישומים ולקיצורי דרך</string>
+    <string name="quick_panel">סטודיו לוח מהיר</string><string name="quick_panel_desc">לוח נלווה; אינו מחליף את ממשק המערכת המוגן</string>
+    <string name="edge_panel">לוח Edge</string><string name="edge_panel_desc">חלונית צד אופציונלית; נדרשת בדיקת הרשאות וקושחה</string>
+    <string name="theme_studio">סטודיו ערכות נושא</string><string name="theme_studio_desc">צבעים, טיפוגרפיה ותצוגה מקדימה משותפים</string>
+    <string name="lock_studio">סטודיו מסך נעילה</string><string name="lock_studio_desc">אפשרויות נלוות; החלפת מנגנון הנעילה המאובטח אינה נתמכת</string>
+    <string name="status_foundation">תשתית ראשונית בלבד</string><string name="status_limited">מוגבל ביכולות</string><string name="status_planned">בתכנון</string>
+    <string name="project_status">מצב הפרויקט</string><string name="project_status_desc">זהו שלד ראשוני. שום תכונה לא תסומן כמושלמת לפני מימוש ובדיקה במכשיר QINS1+.</string>
+</resources>
