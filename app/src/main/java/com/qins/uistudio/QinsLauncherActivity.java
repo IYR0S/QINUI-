@@ -58,6 +58,8 @@ public class QinsLauncherActivity extends Activity {
     private boolean drawerVisible = false;
     private boolean editMode = false;
     private boolean pinSelectionMode = false;
+    private View pendingSelectView;
+    private boolean longPressPerformed = false;
 
     private LinearLayout root;
     private LinearLayout pageContent;
@@ -1136,25 +1138,52 @@ public class QinsLauncherActivity extends Activity {
         }
     }
 
+    private boolean isSelectKey(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER ||
+                keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
+    }
+
+    private boolean performLongPressAction(View target) {
+        if (target == null || !(target.getTag() instanceof String)) return false;
+        String tag = (String) target.getTag();
+        if (tag.startsWith("home:")) {
+            try { enterEditMode(Integer.parseInt(tag.substring(5))); return true; }
+            catch (NumberFormatException ignored) { return false; }
+        }
+        if (tag.startsWith("drawer:")) {
+            ResolveInfo info = findApp(tag.substring(7));
+            if (info != null) { pinApp(info, false); return true; }
+        }
+        return false;
+    }
+
     @Override public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER ||
-                keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A) {
-            View focused = getCurrentFocus();
-            if (focused != null && focused.getTag() instanceof String) {
-                String tag = (String) focused.getTag();
-                if (tag.startsWith("home:")) {
-                    try { enterEditMode(Integer.parseInt(tag.substring(5))); return true; }
-                    catch (NumberFormatException ignored) { }
-                } else if (tag.startsWith("drawer:")) {
-                    ResolveInfo info = findApp(tag.substring(7));
-                    if (info != null) { pinApp(info, false); return true; }
-                }
-            }
+        if (isSelectKey(keyCode) && performLongPressAction(
+                pendingSelectView != null ? pendingSelectView : getCurrentFocus())) {
+            longPressPerformed = true;
+            return true;
         }
         return super.onKeyLongPress(keyCode, event);
     }
 
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (isSelectKey(keyCode)) {
+            View focused = getCurrentFocus();
+            if (focused != null && focused.getTag() instanceof String &&
+                    (((String) focused.getTag()).startsWith("home:") ||
+                     ((String) focused.getTag()).startsWith("drawer:"))) {
+                if (event.getRepeatCount() == 0) {
+                    pendingSelectView = focused;
+                    longPressPerformed = false;
+                    event.startTracking();
+                    return true;
+                }
+                if (!longPressPerformed && (event.isLongPress() || event.getRepeatCount() >= 1)) {
+                    longPressPerformed = performLongPressAction(pendingSelectView);
+                }
+                return true;
+            }
+        }
         if (keyCode == KeyEvent.KEYCODE_MENU) {
             openStudio();
             return true;
@@ -1200,6 +1229,17 @@ public class QinsLauncherActivity extends Activity {
             }
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (isSelectKey(keyCode) && pendingSelectView != null) {
+            View target = pendingSelectView;
+            pendingSelectView = null;
+            if (!longPressPerformed) target.performClick();
+            longPressPerformed = false;
+            return true;
+        }
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override public void onBackPressed() {
