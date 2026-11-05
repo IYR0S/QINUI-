@@ -2191,6 +2191,9 @@ public class QinsLauncherActivity extends Activity {
         if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
             return keyCode - KeyEvent.KEYCODE_0;
         }
+        if (keyCode >= KeyEvent.KEYCODE_NUMPAD_0 && keyCode <= KeyEvent.KEYCODE_NUMPAD_9) {
+            return keyCode - KeyEvent.KEYCODE_NUMPAD_0;
+        }
         return -1;
     }
 
@@ -2967,9 +2970,14 @@ public class QinsLauncherActivity extends Activity {
         else if ("home".equals(action)) showHome(false);
     }
 
-    private void openDialer() {
+    private void openDialer() { openDialer(""); }
+
+    private void openDialer(String initialNumber) {
         try {
             Intent dial = new Intent(Intent.ACTION_DIAL);
+            if (initialNumber != null && initialNumber.length() > 0) {
+                dial.setData(Uri.fromParts("tel", initialNumber, null));
+            }
             startActivity(dial);
         } catch (RuntimeException unavailable) {
             ResolveInfo phone = null;
@@ -3082,6 +3090,22 @@ public class QinsLauncherActivity extends Activity {
                     drawerPage = 0;
                     showDrawer(pinSelectionMode);
                 } else showDrawer(pinSelectionMode);
+                return true;
+            }
+        }
+        if (!drawerVisible && !quickPanelVisible && !editMode && folderOverlay == null &&
+                event.getRepeatCount() == 0) {
+            int dialDigit = digitFromKeyCode(keyCode);
+            if (dialDigit >= 0) {
+                openDialer(String.valueOf(dialDigit));
+                return true;
+            }
+            if (keyCode == KeyEvent.KEYCODE_STAR) {
+                openDialer("*");
+                return true;
+            }
+            if (keyCode == KeyEvent.KEYCODE_POUND) {
+                openDialer("#");
                 return true;
             }
         }
