@@ -64,4 +64,24 @@
     <string name="launcher_grid_layout">Choose app grid layout</string>
     <string name="launcher_choose_theme">Choose theme</string>
     <string name="launcher_settings_unavailable">Could not open these settings.</string>
+    <string name="launcher_phone">Phone</string>
+    <string name="launcher_softkey_settings">Softkey shortcuts</string>
+    <string name="launcher_softkey_left">Left softkey</string>
+    <string name="launcher_softkey_right">Right softkey</string>
+    <string name="launcher_softkey_phone">Open dialer</string>
+    <string name="launcher_softkey_apps">All apps</string>
+    <string name="launcher_softkey_quick">Quick settings</string>
+    <string name="launcher_softkey_theme">Choose theme</string>
+    <string name="launcher_softkey_wallpaper">Wallpaper</string>
+    <string name="launcher_softkey_settings_action">System settings</string>
+    <string name="launcher_softkey_studio">QINS Studio</string>
+    <string name="launcher_softkey_home">Return Home</string>
+    <string name="launcher_search_hint">T9 search · press number keys</string>
+    <string name="launcher_search_clear">Clear</string>
+    <string name="launcher_no_results">No matching apps</string>
+    <string name="launcher_create_folder">Create folder</string>
+    <string name="launcher_folder">Folder</string>
+    <string name="launcher_choose_folder_app">Choose another pinned app</string>
+    <string name="launcher_folder_empty">This folder has no apps</string>
+    <string name="launcher_softkey_config_hint">Long-press a physical softkey to change its shortcut. You can also select a side below.</string>
 </resources>
