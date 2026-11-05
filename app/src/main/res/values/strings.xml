@@ -7,7 +7,7 @@
     <string name="app_menu_hint">Use the physical arrow keys and OK / Enter. Press Back to return.</string>
     <string name="menu_dashboard">Dashboard</string><string name="menu_themes">Theme Studio</string><string name="menu_home">Home Studio</string><string name="menu_close">Close menu</string>
     <string name="studio_heading">Studio</string><string name="studio_description">A safe, no-root workspace for personalizing the device.</string>
-    <string name="home_studio">Home Studio</string><string name="home_studio_desc">Configure a keyboard-first home layout preview</string>
+    <string name="home_studio">Home Studio</string><string name="home_studio_desc">Configure the real QINS Home app grid layout</string>
     <string name="home_studio_intro">Arrange a simple home-screen grid using the physical keys. Your layout is saved locally. This preview does not replace the QINS system launcher yet.</string>
     <string name="home_columns_heading">Columns</string><string name="home_rows_heading">Rows</string><string name="home_preview_heading">Layout preview</string>
     <string name="home_save_layout">Save home layout</string><string name="home_saved">Home layout saved on this device.</string><string name="home_save_failed">Could not save the home layout.</string>
