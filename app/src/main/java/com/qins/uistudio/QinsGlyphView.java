@@ -59,6 +59,7 @@ public final class QinsGlyphView extends View {
         else if ("down".equals(glyph)) drawChevron(canvas, false);
         else if ("up".equals(glyph)) drawChevron(canvas, true);
         else if ("palette".equals(glyph)) drawPalette(canvas);
+        else if ("folder".equals(glyph)) drawFolder(canvas);
 
         canvas.restore();
     }
@@ -81,6 +82,18 @@ public final class QinsGlyphView extends View {
         if (up) { p.moveTo(-8, 4); p.lineTo(0, -4); p.lineTo(8, 4); }
         else { p.moveTo(-8, -4); p.lineTo(0, 4); p.lineTo(8, -4); }
         c.drawPath(p, paint);
+    }
+
+    private void drawFolder(Canvas c) {
+        paint.setStyle(Paint.Style.FILL);
+        Path p = new Path();
+        p.moveTo(-10, -7); p.lineTo(-2, -7); p.lineTo(1, -4);
+        p.lineTo(10, -4); p.lineTo(9, 8); p.quadTo(9, 10, 7, 10);
+        p.lineTo(-8, 10); p.quadTo(-10, 10, -10, 8); p.close();
+        c.drawPath(p, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1.3f);
+        c.drawLine(-10, -3, 10, -3, paint);
     }
 
     private void drawPalette(Canvas c) {
