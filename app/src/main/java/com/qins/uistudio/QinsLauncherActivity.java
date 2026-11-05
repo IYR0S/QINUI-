@@ -358,7 +358,7 @@ public class QinsLauncherActivity extends Activity {
             int index = start + slot;
             if (index >= installedApps.size()) {
                 View empty = new View(this);
-                appRow.addView(empty, new LinearLayout.LayoutParams(0, dp(100), 1));
+                appRow.addView(empty, new LinearLayout.LayoutParams(0, dp(64), 1));
                 continue;
             }
             final ResolveInfo info = installedApps.get(index);
