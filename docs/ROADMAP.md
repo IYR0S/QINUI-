@@ -18,6 +18,8 @@
 ## Milestone 2 — independently testable modules
 - [x] Home Studio grid editor: choose 2–4 columns and 2–3 rows, preview and save locally.
 - [x] QINS Home: register a no-root Android HOME activity, discover installed launchable apps, show icons/labels in a D-pad grid and launch selected apps.
+- [x] QINS Home: use saved column/row settings and provide previous/next pages for the installed-app grid.
+- [x] Stabilize Studio dashboard as a standalone Activity and make its launcher shortcut keyboard-activatable.
 - [ ] QINS Home: test default-home selection, boot return, firmware-specific Home key mapping and focus behavior on QINS1+.
 - [ ] Home Studio: configurable pinned apps, folders, tile ordering and multiple home pages.
 - [ ] Quick Panel Studio: in-app/overlay companion, never a claim to replace System UI.
