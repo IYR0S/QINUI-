@@ -4,7 +4,12 @@
     <application android:name=".QinsApplication" android:allowBackup="true" android:label="QINS UI Studio"
         android:supportsRtl="true" android:theme="@style/AppTheme">
         <activity android:name=".QuickPanelActivity" android:label="Quick Panel" />
-        <activity android:name=".CrashReportActivity" android:label="QINS diagnostics" />
+        <activity android:name=".CrashReportActivity" android:label="QINS diagnostics" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity android:name=".AppMenuActivity" android:label="@string/app_menu_title" />
         <activity android:name=".HomeStudioActivity" android:label="@string/home_studio" />
         <activity android:name=".ThemeStudioActivity" android:label="@string/theme_studio" />
