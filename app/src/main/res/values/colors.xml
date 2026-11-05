@@ -1,0 +1,6 @@
+<resources>
+    <color name="qins_primary">#263B63</color>
+    <color name="qins_accent">#4C78C2</color>
+    <color name="qins_background">#F3F5F8</color>
+    <color name="qins_text">#172033</color>
+</resources>
