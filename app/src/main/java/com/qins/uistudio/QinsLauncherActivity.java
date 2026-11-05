@@ -471,6 +471,73 @@ public class QinsLauncherActivity extends Activity {
         return d;
     }
 
+    /** Nothing-inspired 5x7 dot-matrix digits; text remains available to accessibility services. */
+    private final class NothingDotMatrixClockView extends TextView {
+        private final Paint dots = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final String[][] digits = new String[][] {
+                {"01110","10001","10011","10101","11001","10001","01110"},
+                {"00100","01100","00100","00100","00100","00100","01110"},
+                {"01110","10001","00001","00010","00100","01000","11111"},
+                {"11110","00001","00001","01110","00001","00001","11110"},
+                {"00010","00110","01010","10010","11111","00010","00010"},
+                {"11111","10000","10000","11110","00001","00001","11110"},
+                {"00110","01000","10000","11110","10001","10001","01110"},
+                {"11111","00001","00010","00100","01000","01000","01000"},
+                {"01110","10001","10001","01110","10001","10001","01110"},
+                {"01110","10001","10001","01111","00001","00010","11100"}
+        };
+
+        NothingDotMatrixClockView(Context context) {
+            super(context);
+            setIncludeFontPadding(false);
+            setSingleLine(true);
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            String value = getText() == null ? "" : getText().toString();
+            if (value.length() == 0) return;
+            float units = 0f;
+            for (int i = 0; i < value.length(); i++) {
+                units += (value.charAt(i) == ':' ? 2f : 5f);
+                if (i + 1 < value.length()) units += 1.25f;
+            }
+            float available = Math.max(1f, getWidth() - getPaddingLeft() - getPaddingRight());
+            float pitch = Math.min(dp(4.4f), available / units);
+            pitch = Math.max(1f, pitch);
+            float totalWidth = units * pitch;
+            float startX = getLayoutDirection() == View.LAYOUT_DIRECTION_RTL
+                    ? getWidth() - getPaddingRight() - totalWidth : getPaddingLeft();
+            float startY = (getHeight() - 7f * pitch) / 2f;
+            float radius = pitch * 0.24f;
+            dots.setStyle(Paint.Style.FILL);
+            dots.setColor(getCurrentTextColor());
+
+            for (int i = 0; i < value.length(); i++) {
+                char ch = value.charAt(i);
+                if (ch == ':') {
+                    dots.setColor(appearance().accent);
+                    canvas.drawCircle(startX + pitch, startY + pitch * 2.5f, radius, dots);
+                    canvas.drawCircle(startX + pitch, startY + pitch * 4.5f, radius, dots);
+                    dots.setColor(getCurrentTextColor());
+                    startX += 3.25f * pitch;
+                } else if (ch >= '0' && ch <= '9') {
+                    String[] rows = digits[ch - '0'];
+                    for (int row = 0; row < 7; row++) {
+                        for (int col = 0; col < 5; col++) {
+                            if (rows[row].charAt(col) == '1') {
+                                canvas.drawCircle(startX + (col + 0.5f) * pitch,
+                                        startY + (row + 0.5f) * pitch, radius, dots);
+                            }
+                        }
+                    }
+                    startX += 6.25f * pitch;
+                } else {
+                    startX += 3f * pitch;
+                }
+            }
+        }
+    }
+
     /** A small procedural wallpaper gives each preset a distinct identity without large assets. */
     private final class QinsWallpaperDrawable extends Drawable {
         private final ThemeManager.Appearance style;
@@ -514,40 +581,141 @@ public class QinsLauncherActivity extends Activity {
             paint.setShader(null);
 
             if (style.monochrome) {
-                paint.setColor(style.text);
-                paint.setAlpha(16);
-                float step = dp(11);
-                for (float y = dp(22); y < h; y += step) {
-                    for (float x = dp(9); x < w; x += step) {
-                        canvas.drawCircle(x, y, dp(0.65f), paint);
+                drawNothingWallpaper(canvas, w, h);
+            } else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id)) {
+                drawPixelWallpaper(canvas, w, h);
+            } else {
+                drawGalaxyWallpaper(canvas, w, h);
+            }
+        }
+
+        private void drawNothingWallpaper(Canvas canvas, float w, float h) {
+            paint.setShader(new LinearGradient(0, 0, w, h,
+                    0xFF17191B, 0xFF080909, Shader.TileMode.CLAMP));
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawRect(0, 0, w, h, paint);
+            paint.setShader(null);
+            paint.setColor(0x18FFFFFF);
+            float step = dp(10);
+            for (float y = dp(8); y < h; y += step) {
+                for (float x = dp(8); x < w; x += step) {
+                    canvas.drawCircle(x, y, dp(0.65f), paint);
+                }
+            }
+            paint.setColor(0x1FFFFFFF);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(1));
+            canvas.drawCircle(w * 0.84f, h * 0.25f, Math.min(w, h) * 0.22f, paint);
+            paint.setColor(0x55E3343A);
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(w * 0.84f, h * 0.25f, dp(2), paint);
+            paint.setStyle(Paint.Style.FILL);
+        }
+
+        private void drawPixelWallpaper(Canvas canvas, float w, float h) {
+            paint.setStyle(Paint.Style.FILL);
+            paint.setShader(new LinearGradient(0, 0, w, h,
+                    new int[] {0xFF171A30, 0xFF25234B, 0xFF0A1020},
+                    new float[] {0f, 0.52f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawRect(0, 0, w, h, paint);
+            paint.setShader(null);
+
+            Path blueFold = new Path();
+            blueFold.moveTo(-w * 0.18f, h * 0.12f);
+            blueFold.cubicTo(w * 0.04f, -h * 0.08f, w * 0.30f, h * 0.02f, w * 0.48f, h * 0.19f);
+            blueFold.cubicTo(w * 0.66f, h * 0.36f, w * 0.57f, h * 0.55f, w * 0.35f, h * 0.66f);
+            blueFold.cubicTo(w * 0.16f, h * 0.76f, -w * 0.02f, h * 0.56f, -w * 0.18f, h * 0.72f);
+            blueFold.close();
+            drawPixelLayer(canvas, blueFold, 0xFF4D6BC0, 0xFF303B86, 0xFF171B43);
+
+            Path violetFold = new Path();
+            violetFold.moveTo(w * 0.34f, -h * 0.12f);
+            violetFold.cubicTo(w * 0.48f, h * 0.02f, w * 0.76f, h * 0.01f, w * 1.12f, h * 0.17f);
+            violetFold.lineTo(w * 1.12f, h * 0.72f);
+            violetFold.cubicTo(w * 0.84f, h * 0.68f, w * 0.78f, h * 0.50f, w * 0.63f, h * 0.42f);
+            violetFold.cubicTo(w * 0.48f, h * 0.32f, w * 0.28f, h * 0.21f, w * 0.34f, -h * 0.12f);
+            violetFold.close();
+            drawPixelLayer(canvas, violetFold, 0xFF7865C7, 0xFF4B438E, 0xFF202044);
+
+            Path lowerFold = new Path();
+            lowerFold.moveTo(-w * 0.10f, h * 0.78f);
+            lowerFold.cubicTo(w * 0.10f, h * 0.54f, w * 0.37f, h * 0.73f, w * 0.56f, h * 0.86f);
+            lowerFold.cubicTo(w * 0.76f, h * 1.00f, w * 0.92f, h * 0.77f, w * 1.12f, h * 0.70f);
+            lowerFold.lineTo(w * 1.12f, h * 1.12f);
+            lowerFold.lineTo(-w * 0.10f, h * 1.12f);
+            lowerFold.close();
+            drawPixelLayer(canvas, lowerFold, 0xFF355E9C, 0xFF283C78, 0xFF111A39);
+
+            Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
+            sheen.setStyle(Paint.Style.STROKE);
+            sheen.setStrokeWidth(dp(1.1f));
+            sheen.setColor(0x35DCE2FF);
+            Path highlight = new Path();
+            highlight.moveTo(w * 0.02f, h * 0.15f);
+            highlight.cubicTo(w * 0.20f, h * 0.02f, w * 0.43f, h * 0.14f, w * 0.55f, h * 0.29f);
+            canvas.drawPath(highlight, sheen);
+            sheen.setColor(0x27FFFFFF);
+            Path highlight2 = new Path();
+            highlight2.moveTo(w * 0.42f, h * 0.89f);
+            highlight2.cubicTo(w * 0.61f, h * 0.96f, w * 0.79f, h * 0.78f, w * 0.98f, h * 0.73f);
+            canvas.drawPath(highlight2, sheen);
+        }
+
+        private void drawPixelLayer(Canvas canvas, Path path, int light, int middle, int dark) {
+            Paint layer = new Paint(Paint.ANTI_ALIAS_FLAG);
+            layer.setStyle(Paint.Style.FILL);
+            layer.setShader(new LinearGradient(0, 0, getBounds().width() * 0.82f,
+                    getBounds().height(), new int[] {light, middle, dark},
+                    new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawPath(path, layer);
+            layer.setShader(null);
+        }
+
+        private void drawGalaxyWallpaper(Canvas canvas, float w, float h) {
+            paint.setStyle(Paint.Style.FILL);
+            paint.setShader(new LinearGradient(0, 0, w * 0.85f, h,
+                    new int[] {0xFFD9D8EA, 0xFFB8B6D2, 0xFF8586A5},
+                    new float[] {0f, 0.56f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawRect(0, 0, w, h, paint);
+            paint.setShader(null);
+
+            float unit = Math.min(w, h);
+            drawGalaxyOrb(canvas, w * 0.82f, h * 0.02f, unit * 0.39f,
+                    0xFFE4E1F4, 0xFFB2B0CE, 0xFF686987);
+            drawGalaxyOrb(canvas, w * 0.51f, h * 0.54f, unit * 0.43f,
+                    0xFFFFF4C7, 0xFFD4D0E5, 0xFF777895);
+            drawGalaxyOrb(canvas, w * 0.13f, h * 1.02f, unit * 0.30f,
+                    0xFFF1EAD1, 0xFFB7B5D2, 0xFF777994);
+
+            Paint grain = new Paint(Paint.ANTI_ALIAS_FLAG);
+            grain.setColor(0x22FFFFFF);
+            for (int y = 0; y < 24; y++) {
+                for (int x = 0; x < 18; x++) {
+                    int seed = (x * 37 + y * 71 + x * y * 13) % 17;
+                    if (seed < 5) {
+                        float px = (x + 0.35f + (seed * 0.03f)) * w / 18f;
+                        float py = (y + 0.25f) * h / 24f;
+                        canvas.drawCircle(px, py, dp(0.45f), grain);
                     }
                 }
-                paint.setAlpha(20);
-                canvas.drawCircle(w * 0.83f, h * 0.22f, Math.min(w, h) * 0.20f, paint);
-            } else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id)) {
-                paint.setColor(style.accent);
-                paint.setAlpha(25);
-                canvas.drawCircle(w * 0.96f, h * 0.16f, Math.min(w, h) * 0.26f, paint);
-                paint.setColor(0xFFB2A0D6);
-                paint.setAlpha(22);
-                canvas.drawCircle(w * 0.08f, h * 0.76f, Math.min(w, h) * 0.22f, paint);
-                paint.setColor(0xFFE7B7A5);
-                paint.setAlpha(20);
-                canvas.drawCircle(w * 0.80f, h * 0.82f, Math.min(w, h) * 0.17f, paint);
-            } else {
-                paint.setColor(style.accent);
-                paint.setAlpha(18);
-                canvas.drawCircle(w * 0.95f, h * 0.13f, Math.min(w, h) * 0.23f, paint);
-                paint.setColor(0xFF8DA9D7);
-                paint.setAlpha(18);
-                Path wave = new Path();
-                wave.moveTo(0, h * 0.69f);
-                wave.cubicTo(w * 0.30f, h * 0.53f, w * 0.62f, h * 0.88f, w, h * 0.63f);
-                wave.lineTo(w, h);
-                wave.lineTo(0, h);
-                wave.close();
-                canvas.drawPath(wave, paint);
             }
+        }
+
+        private void drawGalaxyOrb(Canvas canvas, float cx, float cy, float radius,
+                                   int highlight, int midtone, int shadow) {
+            Paint orb = new Paint(Paint.ANTI_ALIAS_FLAG);
+            orb.setShader(new android.graphics.RadialGradient(
+                    cx - radius * 0.30f, cy - radius * 0.34f, radius * 1.48f,
+                    new int[] {highlight, midtone, shadow},
+                    new float[] {0f, 0.58f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawCircle(cx, cy, radius, orb);
+            orb.setShader(null);
+            orb.setStyle(Paint.Style.STROKE);
+            orb.setStrokeWidth(dp(0.8f));
+            orb.setColor(0x30FFFFFF);
+            canvas.drawArc(new android.graphics.RectF(cx - radius * 0.83f,
+                    cy - radius * 0.83f, cx + radius * 0.83f, cy + radius * 0.83f),
+                    205, 112, false, orb);
         }
 
         @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
@@ -716,7 +884,8 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout timeBlock = new LinearLayout(this);
         timeBlock.setOrientation(LinearLayout.VERTICAL);
         timeBlock.setGravity(Gravity.CENTER_VERTICAL);
-        clockView = new TextView(this);
+        clockView = (ThemeManager.APPEARANCE_NOTHING.equals(a.id) && "dot".equals(clockStyle(a)))
+                ? new NothingDotMatrixClockView(this) : new TextView(this);
         clockView.setTextColor(a.text);
         clockView.setTextSize(clockSizeForTheme(a, smallScreen == 1));
         clockView.setIncludeFontPadding(false);
@@ -1591,7 +1760,7 @@ public class QinsLauncherActivity extends Activity {
         return new String[] {"oneui", "stacked", "compact"};
     }
     private String[] clockStyleLabels(ThemeManager.Appearance a) {
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Glyph digital", "Mono terminal", "Compact"};
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Dot matrix", "Mono terminal", "Compact"};
         if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Compact"};
         return new String[] {"One UI large", "Stacked digital", "Compact"};
     }
@@ -1625,7 +1794,7 @@ public class QinsLauncherActivity extends Activity {
     private String formatClockForTheme(String time) {
         String style = clockStyle(appearance());
         if ("stacked".equals(style)) return time.replace(":", "\n");
-        if ("dot".equals(style)) return time.replace(":", "·");
+        if ("dot".equals(style)) return time;
         return time;
     }
 
