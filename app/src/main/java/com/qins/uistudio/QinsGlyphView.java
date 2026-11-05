@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.view.View;
 
 /** Small original vector glyphs for QINS controls; drawn at runtime for API 19. */
@@ -57,16 +58,16 @@ public final class QinsGlyphView extends View {
     private void drawApps(Canvas c) {
         paint.setStyle(Paint.Style.FILL);
         float r = 3.2f;
-        c.drawRoundRect(-9, -9, -2, -2, 1.7f, 1.7f, paint);
-        c.drawRoundRect(2, -9, 9, -2, 1.7f, 1.7f, paint);
-        c.drawRoundRect(-9, 2, -2, 9, 1.7f, 1.7f, paint);
-        c.drawRoundRect(2, 2, 9, 9, 1.7f, 1.7f, paint);
+        c.drawRoundRect(new RectF(-9, -9, -2, -2), 1.7f, 1.7f, paint);
+        c.drawRoundRect(new RectF(2, -9, 9, -2), 1.7f, 1.7f, paint);
+        c.drawRoundRect(new RectF(-9, 2, -2, 9), 1.7f, 1.7f, paint);
+        c.drawRoundRect(new RectF(2, 2, 9, 9), 1.7f, 1.7f, paint);
     }
 
     private void drawWifi(Canvas c) {
-        c.drawArc(-10, -10, 10, 10, 225, 90, false, paint);
-        c.drawArc(-6.5f, -6.5f, 6.5f, 6.5f, 225, 90, false, paint);
-        c.drawArc(-3, -3, 3, 3, 225, 90, false, paint);
+        c.drawArc(new RectF(-10, -10, 10, 10), 225, 90, false, paint);
+        c.drawArc(new RectF(-6.5f, -6.5f, 6.5f, 6.5f), 225, 90, false, paint);
+        c.drawArc(new RectF(-3, -3, 3, 3), 225, 90, false, paint);
         paint.setStyle(Paint.Style.FILL);
         c.drawCircle(0, 8.5f, 1.7f, paint);
     }
@@ -93,8 +94,8 @@ public final class QinsGlyphView extends View {
         speaker.lineTo(-10, 4);
         speaker.close();
         c.drawPath(speaker, paint);
-        c.drawArc(-2, -8, 11, 8, -55, 110, false, paint);
-        c.drawArc(-1, -12, 16, 12, -55, 110, false, paint);
+        c.drawArc(new RectF(-2, -8, 11, 8), -55, 110, false, paint);
+        c.drawArc(new RectF(-1, -12, 16, 12), -55, 110, false, paint);
     }
 
     private void drawBrightness(Canvas c) {
