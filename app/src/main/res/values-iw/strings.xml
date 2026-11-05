@@ -52,4 +52,10 @@
     <string name="launcher_theme">ערכת נושא</string>
     <string name="launcher_customize_quick">התאמת ההגדרות המהירות</string>
     <string name="launcher_theme_settings">הגדרות ערכת נושא</string>
+    <string name="launcher_wallpaper">רקע</string>
+    <string name="launcher_wallpaper_gallery">בחירה מהגלריה</string>
+    <string name="launcher_wallpaper_reset">חזרה לרקע של ערכת הנושא</string>
+    <string name="launcher_wallpaper_saved">הרקע נשמר.</string>
+    <string name="launcher_wallpaper_failed">לא ניתן להגדיר את התמונה כרקע.</string>
+    <string name="launcher_wallpaper_unavailable">לא נמצאה אפליקציה לבחירת תמונות.</string>
 </resources>
