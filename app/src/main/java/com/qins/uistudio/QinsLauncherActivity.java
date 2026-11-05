@@ -30,6 +30,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.SeekBar;
@@ -586,10 +587,28 @@ public class QinsLauncherActivity extends Activity {
                 matrix.setSaturation(0f);
                 icon.setColorFilter(new ColorMatrixColorFilter(matrix));
             }
-            int iconSize = clamp((screenWidthDp() - 30) / 4 - 5, 24, 46);
-            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize));
-            iconParams.bottomMargin = dp(3);
-            tile.addView(icon, iconParams);
+            int iconFrameSize = clamp(screenWidthDp() / 4 - 12, 36, 54);
+            int iconSize = iconFrameSize - 11;
+            FrameLayout iconFrame = new FrameLayout(this);
+            GradientDrawable iconBackground = new GradientDrawable();
+            if (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ||
+                    ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+                iconBackground.setShape(GradientDrawable.OVAL);
+            } else {
+                iconBackground.setShape(GradientDrawable.RECTANGLE);
+                iconBackground.setCornerRadius(dp(14));
+            }
+            iconBackground.setColor(a.tile);
+            iconBackground.setStroke(dp(1), a.monochrome ? a.border : a.surfaceAlt);
+            iconFrame.setBackgroundDrawable(iconBackground);
+            FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
+                    dp(iconSize), dp(iconSize), Gravity.CENTER);
+            iconFrame.addView(icon, iconParams);
+            LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(
+                    dp(iconFrameSize), dp(iconFrameSize));
+            frameParams.gravity = Gravity.CENTER_HORIZONTAL;
+            frameParams.bottomMargin = dp(4);
+            tile.addView(iconFrame, frameParams);
 
             TextView label = new TextView(this);
             label.setText(info.loadLabel(getPackageManager()));
