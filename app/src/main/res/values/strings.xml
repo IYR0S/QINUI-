@@ -52,4 +52,10 @@
     <string name="launcher_theme">Theme</string>
     <string name="launcher_customize_quick">Customize quick settings</string>
     <string name="launcher_theme_settings">Theme settings</string>
+    <string name="launcher_wallpaper">Wallpaper</string>
+    <string name="launcher_wallpaper_gallery">Choose from gallery</string>
+    <string name="launcher_wallpaper_reset">Use theme background</string>
+    <string name="launcher_wallpaper_saved">Wallpaper saved.</string>
+    <string name="launcher_wallpaper_failed">Could not set this image as wallpaper.</string>
+    <string name="launcher_wallpaper_unavailable">No image picker is available.</string>
 </resources>
