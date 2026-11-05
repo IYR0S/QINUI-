@@ -1,7 +1,6 @@
 <resources>
-    <!-- Holo is available on API 19; Material theme attributes are not. -->
+    <!-- Holo is available on API 19; keep the base theme free of newer attributes. -->
     <style name="AppTheme" parent="android:style/Theme.Holo.Light.NoActionBar">
-        <item name="android:fontFamily">sans</item>
         <item name="android:windowBackground">@color/qins_background</item>
     </style>
 </resources>
