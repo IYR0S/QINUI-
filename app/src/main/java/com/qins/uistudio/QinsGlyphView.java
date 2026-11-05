@@ -9,7 +9,7 @@ import android.view.View;
 
 /** Small original vector glyphs for QINS controls; drawn at runtime for API 19. */
 public final class QinsGlyphView extends View {
-    private final String glyph;
+    private String glyph;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int tint;
 
@@ -20,6 +20,8 @@ public final class QinsGlyphView extends View {
         setFocusable(false);
         setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
     }
+
+    public void setGlyph(String value) { glyph = value == null ? "" : value; invalidate(); }
 
     public void setTint(int color) {
         tint = color;
@@ -52,6 +54,9 @@ public final class QinsGlyphView extends View {
         else if ("done".equals(glyph)) drawDone(canvas);
         else if ("left".equals(glyph)) drawArrow(canvas, false);
         else if ("right".equals(glyph)) drawArrow(canvas, true);
+        else if ("down".equals(glyph)) drawChevron(canvas, false);
+        else if ("up".equals(glyph)) drawChevron(canvas, true);
+        else if ("palette".equals(glyph)) drawPalette(canvas);
 
         canvas.restore();
     }
@@ -67,6 +72,27 @@ public final class QinsGlyphView extends View {
             c.drawLine(x1, y1, x2, y2, paint);
         }
         c.drawCircle(0, 0, 2.0f, paint);
+    }
+
+    private void drawChevron(Canvas c, boolean up) {
+        Path p = new Path();
+        if (up) { p.moveTo(-8, 4); p.lineTo(0, -4); p.lineTo(8, 4); }
+        else { p.moveTo(-8, -4); p.lineTo(0, 4); p.lineTo(8, -4); }
+        c.drawPath(p, paint);
+    }
+
+    private void drawPalette(Canvas c) {
+        Path p = new Path();
+        p.moveTo(-10, 6);
+        p.cubicTo(-12, -2, -7, -10, 1, -10);
+        p.cubicTo(9, -10, 11, -4, 10, 2);
+        p.cubicTo(9, 8, 3, 10, -2, 8);
+        p.close();
+        c.drawPath(p, paint);
+        paint.setStyle(Paint.Style.FILL);
+        c.drawCircle(-4, -2, 1.3f, paint);
+        c.drawCircle(1, -5, 1.3f, paint);
+        c.drawCircle(6, -1, 1.3f, paint);
     }
 
     private void drawApps(Canvas c) {
