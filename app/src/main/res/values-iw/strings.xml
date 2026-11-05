@@ -81,7 +81,7 @@
     <string name="launcher_no_results">לא נמצאו יישומים תואמים</string>
     <string name="launcher_create_folder">יצירת תיקייה</string>
     <string name="launcher_folder">תיקייה</string>
-    <string name="launcher_choose_folder_app">בחר יישום מוצמד נוסף</string>
+    <string name="launcher_choose_folder_app">בחר יישום נוסף</string>
     <string name="launcher_folder_empty">אין יישומים בתיקייה</string>
     <string name="launcher_softkey_config_hint">לחיצה ארוכה על מקש Softkey פיזי תשנה את קיצור הדרך שלו. אפשר גם לבחור צד כאן.</string>
 </resources>
