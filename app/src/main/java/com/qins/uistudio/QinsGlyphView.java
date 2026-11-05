@@ -47,6 +47,8 @@ public final class QinsGlyphView extends View {
         else if ("wifi".equals(glyph)) drawWifi(canvas);
         else if ("bluetooth".equals(glyph)) drawBluetooth(canvas);
         else if ("sound".equals(glyph) || "volume".equals(glyph)) drawSound(canvas);
+        else if ("sound-muted".equals(glyph)) drawMutedSound(canvas);
+        else if ("sound-vibrate".equals(glyph)) drawVibrateSound(canvas);
         else if ("brightness".equals(glyph)) drawBrightness(canvas);
         else if ("home".equals(glyph)) drawHome(canvas);
         else if ("add".equals(glyph)) drawAdd(canvas);
@@ -136,6 +138,34 @@ public final class QinsGlyphView extends View {
         c.drawPath(speaker, paint);
         c.drawArc(new RectF(-2, -8, 11, 8), -55, 110, false, paint);
         c.drawArc(new RectF(-1, -12, 16, 12), -55, 110, false, paint);
+    }
+
+    private void drawMutedSound(Canvas c) {
+        Path speaker = new Path();
+        speaker.moveTo(-10, -4);
+        speaker.lineTo(-5, -4);
+        speaker.lineTo(1, -9);
+        speaker.lineTo(1, 9);
+        speaker.lineTo(-5, 4);
+        speaker.lineTo(-10, 4);
+        speaker.close();
+        c.drawPath(speaker, paint);
+        c.drawLine(4, -6, 11, 6, paint);
+        c.drawLine(11, -6, 4, 6, paint);
+    }
+
+    private void drawVibrateSound(Canvas c) {
+        Path speaker = new Path();
+        speaker.moveTo(-10, -4);
+        speaker.lineTo(-5, -4);
+        speaker.lineTo(1, -9);
+        speaker.lineTo(1, 9);
+        speaker.lineTo(-5, 4);
+        speaker.lineTo(-10, 4);
+        speaker.close();
+        c.drawPath(speaker, paint);
+        c.drawLine(5, -8, 5, 8, paint);
+        c.drawLine(9, -6, 9, 6, paint);
     }
 
     private void drawBrightness(Canvas c) {
