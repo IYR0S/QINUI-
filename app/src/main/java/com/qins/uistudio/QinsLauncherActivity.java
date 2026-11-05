@@ -71,12 +71,17 @@ public class QinsLauncherActivity extends Activity {
         studio.setTextSize(14);
         studio.setTextColor(palette.accent);
         studio.setGravity(Gravity.CENTER);
-        studio.setFocusable(true);
-        studio.setFocusableInTouchMode(true);
+        KeyboardSupport.makeFocusable(studio, palette.surface, palette.accent, palette.text, dp(7));
         studio.setPadding(dp(12), dp(6), dp(12), dp(6));
         studio.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
-                startActivity(new Intent(QinsLauncherActivity.this, MainActivity.class));
+                try {
+                    startActivity(new Intent(QinsLauncherActivity.this, MainActivity.class));
+                } catch (RuntimeException error) {
+                    android.widget.Toast.makeText(QinsLauncherActivity.this,
+                            "Could not open QINS Studio: " + error.getClass().getSimpleName(),
+                            android.widget.Toast.LENGTH_LONG).show();
+                }
             }
         });
         header.addView(studio, new LinearLayout.LayoutParams(-2, dp(44)));
