@@ -53,7 +53,7 @@ public class AppMenuActivity extends StudioActivity {
         });
         addItem(page, "Quick Panel", new View.OnClickListener() {
             @Override public void onClick(View v) {
-                startActivity(new Intent(AppMenuActivity.this, QuickPanelActivity.class));
+                startActivity(new Intent(AppMenuActivity.this, QinsLauncherActivity.class).putExtra("open_quick_panel", true));
                 finish();
             }
         });
