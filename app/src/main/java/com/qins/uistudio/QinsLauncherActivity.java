@@ -9,6 +9,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Typeface;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
@@ -19,6 +21,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -77,6 +80,7 @@ public class QinsLauncherActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         setTheme(R.style.AppTheme);
         super.onCreate(state);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         loadApps();
         buildShell();
@@ -126,7 +130,7 @@ public class QinsLauncherActivity extends Activity {
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(dp(14), dp(8), dp(14), dp(6));
-        root.setBackgroundColor(a.background);
+        root.setBackground(makeBackdrop(a));
 
         pageContent = new LinearLayout(this);
         pageContent.setOrientation(LinearLayout.VERTICAL);
@@ -158,7 +162,7 @@ public class QinsLauncherActivity extends Activity {
 
     private void applyAppearanceToShell() {
         ThemeManager.Appearance a = appearance();
-        root.setBackgroundColor(a.background);
+        root.setBackground(makeBackdrop(a));
         TextView handle = (TextView) bottomHandle;
         handle.setText(quickPanelVisible ? "⌃" : "⌄");
         handle.setTextColor(a.text);
@@ -174,6 +178,13 @@ public class QinsLauncherActivity extends Activity {
                         hasFocus ? appearance().accent : border, cornerDp, hasFocus));
             }
         });
+    }
+
+    private Drawable makeBackdrop(ThemeManager.Appearance a) {
+        if (a.monochrome) return new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR, new int[] {a.background, a.background});
+        return new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[] {a.backgroundAlt, a.background});
     }
 
     private GradientDrawable makeShape(int fill, int stroke, float radiusDp, boolean focused) {
@@ -235,7 +246,7 @@ public class QinsLauncherActivity extends Activity {
         quickPanelVisible = false;
         pageContent.removeAllViews();
         ThemeManager.Appearance a = appearance();
-        pageContent.setBackgroundColor(a.background);
+        pageContent.setBackground(makeBackdrop(a));
 
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
@@ -347,6 +358,11 @@ public class QinsLauncherActivity extends Activity {
             ImageView icon = new ImageView(this);
             icon.setImageDrawable(info.loadIcon(getPackageManager()));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            if (a.monochrome) {
+                ColorMatrix matrix = new ColorMatrix();
+                matrix.setSaturation(0f);
+                icon.setColorFilter(new ColorMatrixColorFilter(matrix));
+            }
             LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(40), dp(40));
             iconParams.bottomMargin = dp(5);
             tile.addView(icon, iconParams);
@@ -360,7 +376,7 @@ public class QinsLauncherActivity extends Activity {
             label.setEllipsize(android.text.TextUtils.TruncateAt.END);
             tile.addView(label, new LinearLayout.LayoutParams(-1, -2));
 
-            styleSurface(tile, a.surface, a.border, a.focus, a.monochrome ? 5f : 17f);
+            styleSurface(tile, 0x00000000, 0x00000000, a.focus, a.monochrome ? 5f : 17f);
             tile.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     try { startActivity(launch); }
