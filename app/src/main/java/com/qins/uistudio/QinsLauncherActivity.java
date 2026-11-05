@@ -1666,7 +1666,7 @@ public class QinsLauncherActivity extends Activity {
         if (firstKey.equals(secondKey)) return;
         int secondIndex = pinnedApps.indexOf(second);
         SharedPreferences.Editor editor = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit();
-        editor.putString("apps:" + firstKey, firstKey + "\\n" + secondKey);
+        editor.putString("apps:" + firstKey, firstKey + "\n" + secondKey);
         editor.putString("name:" + firstKey, getString(R.string.launcher_folder));
         editor.commit();
         pinnedApps.remove(secondIndex);
@@ -1774,7 +1774,7 @@ public class QinsLauncherActivity extends Activity {
                         String raw = prefs.getString("apps:" + key, key);
                         String addKey = componentKey(candidates.get(which));
                         if (!containsComponent(getFolderApps(folder), addKey)) {
-                            prefs.edit().putString("apps:" + key, raw + "\\n" + addKey).commit();
+                            prefs.edit().putString("apps:" + key, raw + "\n" + addKey).commit();
                         }
                         showHome(false);
                     }
@@ -1803,15 +1803,14 @@ public class QinsLauncherActivity extends Activity {
         List<ResolveInfo> apps = getFolderApps(folder);
         int position = pinnedApps.indexOf(folder);
         if (position < 0) return;
+        String folderKey = componentKey(folder);
         pinnedApps.remove(position);
-        for (ResolveInfo info : apps) {
-            if (!componentKey(info).equals(componentKey(folder)) && !isPinned(info)) {
-                pinnedApps.add(Math.min(position++, pinnedApps.size()), info);
-            }
-        }
         getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit()
-                .remove("apps:" + componentKey(folder))
-                .remove("name:" + componentKey(folder)).commit();
+                .remove("apps:" + folderKey)
+                .remove("name:" + folderKey).commit();
+        for (ResolveInfo info : apps) {
+            if (!isPinned(info)) pinnedApps.add(Math.min(position++, pinnedApps.size()), info);
+        }
         savePinnedApps();
         selectedHomeIndex = -1;
         editMode = false;
