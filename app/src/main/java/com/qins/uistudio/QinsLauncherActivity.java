@@ -82,12 +82,13 @@ public class QinsLauncherActivity extends Activity {
     private boolean pinSelectionMode = false;
     private View pendingSelectView;
     private boolean longPressPerformed = false;
-    private int pendingSoftKeyCode = 0;
-    private boolean softKeyLongPressPerformed = false;
+    private String pendingSoftKeySide;
+    private String learningSoftKeySide;
+    private android.app.AlertDialog softKeyLearningDialog;
+    private View folderOverlay;
     private String drawerSearchQuery = "";
     private TextView drawerSearchStatus;
     private SignalStrengthIndicatorView signalIndicator;
-    private TextView phoneButton;
     private TelephonyManager telephonyManager;
     private PhoneStateListener phoneStateListener;
     private int cellularSignalLevel = -1;
@@ -314,31 +315,24 @@ public class QinsLauncherActivity extends Activity {
         signalIndicator = new SignalStrengthIndicatorView(this);
         signalIndicator.setSignal(cellularSignalLevel,
                 cellularServiceKnown && !cellularServiceAvailable, a.accent, a.muted);
-        signalIndicator.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { openDialer(); }
-        });
-        signalIndicator.setContentDescription("Cellular signal strength. Press to open phone.");
+        signalIndicator.setContentDescription("Cellular signal strength");
         topBar.addView(signalIndicator, new LinearLayout.LayoutParams(dp(23), dp(22)));
 
-        phoneButton = new TextView(this);
-        phoneButton.setText("☎");
-        phoneButton.setTextSize(18);
-        phoneButton.setTextColor(a.text);
-        phoneButton.setGravity(Gravity.CENTER);
-        phoneButton.setFocusable(true);
-        phoneButton.setFocusableInTouchMode(false);
-        phoneButton.setContentDescription(getString(R.string.launcher_phone));
-        phoneButton.setTag("header:phone");
-        styleSurface(phoneButton, a.surface, a.border, a.focus, a.cornerDp);
-        phoneButton.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { openDialer(); }
+        TextView keysButton = new TextView(this);
+        keysButton.setText("⌘");
+        keysButton.setTextSize(17);
+        keysButton.setTextColor(a.text);
+        keysButton.setGravity(Gravity.CENTER);
+        keysButton.setFocusable(true);
+        keysButton.setFocusableInTouchMode(false);
+        keysButton.setContentDescription(getString(R.string.launcher_softkey_settings));
+        styleSurface(keysButton, a.surface, a.border, a.focus, a.cornerDp);
+        keysButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showSoftkeySettings(); }
         });
-        phoneButton.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override public boolean onLongClick(View v) { showSoftkeySettings(); return true; }
-        });
-        LinearLayout.LayoutParams phoneParams = new LinearLayout.LayoutParams(dp(30), dp(36));
-        phoneParams.rightMargin = dp(5);
-        topBar.addView(phoneButton, phoneParams);
+        LinearLayout.LayoutParams keysParams = new LinearLayout.LayoutParams(dp(30), dp(36));
+        keysParams.rightMargin = dp(5);
+        topBar.addView(keysButton, keysParams);
 
         themeButton = new TextView(this);
         themeButton.setText("◉");
@@ -640,11 +634,11 @@ public class QinsLauncherActivity extends Activity {
                 if (i + 1 < value.length()) units += 1.25f;
             }
             float available = Math.max(1f, getWidth() - getPaddingLeft() - getPaddingRight());
-            float pitch = Math.min(dp(4.4f), available / units);
-            pitch = Math.max(1f, pitch);
+            float verticalRoom = Math.max(dp(7), getHeight() - getPaddingTop() - getPaddingBottom());
+            float pitch = Math.min(dp(4.4f), Math.min(available / units, verticalRoom / 7f));
+            pitch = Math.max(dp(2.1f), pitch);
             float totalWidth = units * pitch;
-            float startX = getLayoutDirection() == View.LAYOUT_DIRECTION_RTL
-                    ? getWidth() - getPaddingRight() - totalWidth : getPaddingLeft();
+            float startX = getPaddingLeft() + Math.max(0f, (available - totalWidth) / 2f);
             float startY = (getHeight() - 7f * pitch) / 2f;
             float radius = pitch * 0.24f;
             dots.setStyle(Paint.Style.FILL);
@@ -1043,9 +1037,11 @@ public class QinsLauncherActivity extends Activity {
         ThemeManager.Appearance a = appearance();
         updateNavigationButton();
 
+        final boolean nothingDotClock = ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
+                "dot".equals(clockStyle(a));
         LinearLayout top = new LinearLayout(this);
-        top.setOrientation(LinearLayout.HORIZONTAL);
-        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setOrientation(nothingDotClock ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        top.setGravity(nothingDotClock ? Gravity.CENTER_HORIZONTAL : Gravity.CENTER_VERTICAL);
         int smallScreen = screenWidthDp() < 210 || screenHeightDp() < 280 ? 1 : 0;
         int topSide = smallScreen == 1 ? 10 : 18;
         int topVertical = smallScreen == 1 ? 6 : 12;
@@ -1054,9 +1050,13 @@ public class QinsLauncherActivity extends Activity {
 
         LinearLayout timeBlock = new LinearLayout(this);
         timeBlock.setOrientation(LinearLayout.VERTICAL);
-        timeBlock.setGravity(Gravity.CENTER_VERTICAL);
-        clockView = (ThemeManager.APPEARANCE_NOTHING.equals(a.id) && "dot".equals(clockStyle(a)))
-                ? new NothingDotMatrixClockView(this) : new TextView(this);
+        timeBlock.setGravity(nothingDotClock ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
+        clockView = nothingDotClock ? new NothingDotMatrixClockView(this) : new TextView(this);
+        if (nothingDotClock) {
+            clockView.setGravity(Gravity.CENTER);
+            clockView.setMinHeight(dp(smallScreen == 1 ? 38 : 46));
+            clockView.setMinWidth(dp(132));
+        }
         clockView.setTextColor(a.text);
         clockView.setTextSize(clockSizeForTheme(a, smallScreen == 1));
         clockView.setIncludeFontPadding(false);
@@ -1077,13 +1077,19 @@ public class QinsLauncherActivity extends Activity {
         dateView.setTextSize(smallScreen == 1 ? 9 : 11);
         dateView.setSingleLine(true);
         timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
-        top.addView(timeBlock, new LinearLayout.LayoutParams(0, -2, 1));
+        if (nothingDotClock) {
+            top.addView(timeBlock, new LinearLayout.LayoutParams(-1, -2));
+        } else {
+            top.addView(timeBlock, new LinearLayout.LayoutParams(0, -2, 1));
+        }
 
         batteryView = new TextView(this);
         batteryView.setTextColor(a.muted);
         batteryView.setTextSize(12);
         batteryView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        top.addView(batteryView, new LinearLayout.LayoutParams(-2, -1));
+        top.addView(batteryView, nothingDotClock
+                ? new LinearLayout.LayoutParams(-1, dp(17))
+                : new LinearLayout.LayoutParams(-2, -1));
         LinearLayout.LayoutParams topParams = new LinearLayout.LayoutParams(-1, -2);
         topParams.topMargin = dp(smallScreen == 1 ? 3 : 9);
         topParams.bottomMargin = dp(smallScreen == 1 ? 5 : 10);
