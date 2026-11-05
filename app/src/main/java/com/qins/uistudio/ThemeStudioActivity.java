@@ -2,14 +2,13 @@ package com.qins.uistudio;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-/** Functional first Theme Studio: preview, persist and apply an app-wide palette. */
+/** Functional first Theme Studio: keyboard/touch selection, preview and apply. */
 public class ThemeStudioActivity extends Activity {
     private ThemeManager.Palette selected;
     private LinearLayout page;
@@ -28,6 +27,8 @@ public class ThemeStudioActivity extends Activity {
 
     private void buildScreen() {
         ScrollView scroll = new ScrollView(this);
+        scroll.setFocusable(false);
+        scroll.setFocusableInTouchMode(false);
         page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(20), dp(24), dp(20), dp(24));
@@ -83,6 +84,7 @@ public class ThemeStudioActivity extends Activity {
 
         Button apply = new Button(this);
         apply.setText(R.string.theme_apply);
+        KeyboardSupport.makeFocusable(apply);
         LinearLayout.LayoutParams ap = new LinearLayout.LayoutParams(-1, -2);
         ap.topMargin = dp(16);
         page.addView(apply, ap);
@@ -114,6 +116,7 @@ public class ThemeStudioActivity extends Activity {
     private void addChoice(final String id, int labelId) {
         Button choice = new Button(this);
         choice.setText(labelId);
+        KeyboardSupport.makeFocusable(choice);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(6);
         page.addView(choice, params);
@@ -128,13 +131,16 @@ public class ThemeStudioActivity extends Activity {
         });
     }
 
+    @Override public void onBackPressed() {
+        super.onBackPressed();
+    }
+
     private void renderPreview() {
         page.setBackgroundColor(selected.background);
-        previewTitle.setTextColor(selected.text);
+        previewTitle.setTextColor(selected.primary);
         previewBody.setTextColor(selected.muted);
         View preview = (View) previewTitle.getParent();
         preview.setBackgroundColor(selected.surface);
-        previewTitle.setTextColor(selected.primary);
         status.setTextColor(selected.muted);
     }
 }
