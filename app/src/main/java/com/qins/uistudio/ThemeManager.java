@@ -111,11 +111,33 @@ public final class ThemeManager {
         return APPEARANCES[0];
     }
 
+    public static boolean setCustomColor(Context context, String appearanceId, String role, int color) {
+        boolean known = false;
+        for (Appearance appearance : APPEARANCES) if (appearance.id.equals(appearanceId)) known = true;
+        if (!known || !("accent".equals(role) || "background".equals(role) ||
+                "surface".equals(role) || "text".equals(role))) return false;
+        String key = "custom_" + appearanceId + "_" + role;
+        SharedPreferences.Editor editor = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE).edit();
+        if (color == 0) editor.remove(key); else editor.putInt(key, color);
+        return editor.commit();
+    }
+
+    private static Appearance withCustomColors(Context context, Appearance a) {
+        SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
+        int accent = prefs.getInt("custom_" + a.id + "_accent", a.accent);
+        int background = prefs.getInt("custom_" + a.id + "_background", a.background);
+        int surface = prefs.getInt("custom_" + a.id + "_surface", a.surface);
+        int text = prefs.getInt("custom_" + a.id + "_text", a.text);
+        return new Appearance(a.id, a.title, background, a.backgroundAlt, surface, a.surfaceAlt,
+                a.tile, a.tileActive, accent, text, a.muted, a.border, a.focus,
+                a.cornerDp, a.monochrome, a.useMonoType);
+    }
+
     public static Appearance getAppearance(Context context) {
         String selected = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
                 .getString(APPEARANCE_KEY, APPEARANCE_GALAXY);
         for (Appearance appearance : APPEARANCES) {
-            if (appearance.id.equals(selected)) return appearance;
+            if (appearance.id.equals(selected)) return withCustomColors(context, appearance);
         }
         return APPEARANCES[0];
     }
