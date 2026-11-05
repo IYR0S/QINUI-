@@ -5,8 +5,13 @@
     <string name="home_studio">סטודיו מסך הבית</string><string name="home_studio_desc">רעיונות למפעיל יישומים ולקיצורי דרך</string>
     <string name="quick_panel">סטודיו לוח מהיר</string><string name="quick_panel_desc">לוח נלווה; אינו מחליף את ממשק המערכת המוגן</string>
     <string name="edge_panel">לוח Edge</string><string name="edge_panel_desc">חלונית צד אופציונלית; נדרשת בדיקת הרשאות וקושחה</string>
-    <string name="theme_studio">סטודיו ערכות נושא</string><string name="theme_studio_desc">צבעים, טיפוגרפיה ותצוגה מקדימה משותפים</string>
+    <string name="theme_studio">סטודיו ערכות נושא</string><string name="theme_studio_desc">בחירת ערכת צבעים והחלתה על ממשק האפליקציה</string>
     <string name="lock_studio">סטודיו מסך נעילה</string><string name="lock_studio_desc">אפשרויות נלוות; החלפת מנגנון הנעילה המאובטח אינה נתמכת</string>
-    <string name="status_foundation">תשתית ראשונית בלבד</string><string name="status_limited">מוגבל ביכולות</string><string name="status_planned">בתכנון</string>
-    <string name="project_status">מצב הפרויקט</string><string name="project_status_desc">זהו שלד ראשוני. שום תכונה לא תסומן כמושלמת לפני מימוש ובדיקה במכשיר QINS1+.</string>
+    <string name="status_foundation">תשתית ראשונית בלבד</string><string name="status_limited">מוגבל ביכולות</string><string name="status_planned">בתכנון</string><string name="status_active">מודול פעיל</string>
+    <string name="project_status">מצב הפרויקט</string><string name="project_status_desc">Theme Studio הוא המודול הפעיל הראשון. שאר המודולים עדיין בפיתוח ודורשים בדיקה במכשיר.</string>
+    <string name="theme_intro">בחר ערכת צבעים, צפה בתצוגה מקדימה והחל אותה על ממשק האפליקציה.</string>
+    <string name="theme_choose">ערכות זמינות</string><string name="theme_ocean">אוקיינוס</string><string name="theme_midnight">חצות</string><string name="theme_forest">יער</string>
+    <string name="theme_preview">תצוגה מקדימה</string><string name="preview_card_title">QINS UI Studio</string><string name="preview_card_body">ערכת הצבעים שבחרת משותפת לכל מסכי האפליקציה.</string>
+    <string name="theme_apply">החל ערכת צבעים</string><string name="theme_saved">ערכת הצבעים נשמרה והוחלה.</string><string name="theme_save_failed">לא ניתן לשמור את ערכת הצבעים.</string>
+    <string name="theme_scope_note">בגרסה זו משתנה המראה של QINS UI Studio בלבד. לא מתבצע שינוי בממשק מערכת Android או באפליקציות אחרות.</string>
 </resources>
