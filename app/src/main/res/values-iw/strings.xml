@@ -48,4 +48,7 @@
     <string name="launcher_wifi">Wi-Fi</string>
     <string name="launcher_brightness">בהירות</string>
     <string name="launcher_volume">עוצמת קול</string>
+    <string name="launcher_theme">ערכת נושא</string>
+    <string name="launcher_customize_quick">התאמת ההגדרות המהירות</string>
+    <string name="launcher_theme_settings">הגדרות ערכת נושא</string>
 </resources>
