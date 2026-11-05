@@ -1,4 +1,5 @@
 <resources>
+    <string name="qins_home">מסך הבית של QINS</string>
     <string name="app_name">QINS UI Studio</string>
     <string name="dashboard_subtitle">התאמה אישית מודולרית • Android 4.4 ומעלה</string>
     <string name="open_app_menu">פתיחת תפריט האפליקציה (מקש MENU)</string>
