@@ -415,7 +415,7 @@ public class QinsLauncherActivity extends Activity {
         quickPanelVisible = true;
         pageContent.removeAllViews();
         ThemeManager.Appearance a = appearance();
-        pageContent.setBackgroundColor(a.background);
+        pageContent.setBackground(makeBackdrop(a));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
