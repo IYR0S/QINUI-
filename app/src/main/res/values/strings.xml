@@ -4,18 +4,19 @@
     <string name="open_app_menu">Open app menu (MENU key)</string>
     <string name="app_menu_title">QINS UI Studio Menu</string>
     <string name="app_menu_hint">Use the physical arrow keys and OK / Enter. Press Back to return.</string>
-    <string name="menu_dashboard">Dashboard</string>
-    <string name="menu_themes">Theme Studio</string>
-    <string name="menu_close">Close menu</string>
-    <string name="studio_heading">Studio</string>
-    <string name="studio_description">A safe, no-root workspace for personalizing the device.</string>
-    <string name="home_studio">Home Studio</string><string name="home_studio_desc">Launcher concepts and shortcuts</string>
+    <string name="menu_dashboard">Dashboard</string><string name="menu_themes">Theme Studio</string><string name="menu_home">Home Studio</string><string name="menu_close">Close menu</string>
+    <string name="studio_heading">Studio</string><string name="studio_description">A safe, no-root workspace for personalizing the device.</string>
+    <string name="home_studio">Home Studio</string><string name="home_studio_desc">Configure a keyboard-first home layout preview</string>
+    <string name="home_studio_intro">Arrange a simple home-screen grid using the physical keys. Your layout is saved locally. This preview does not replace the QINS system launcher yet.</string>
+    <string name="home_columns_heading">Columns</string><string name="home_rows_heading">Rows</string><string name="home_preview_heading">Layout preview</string>
+    <string name="home_save_layout">Save home layout</string><string name="home_saved">Home layout saved on this device.</string><string name="home_save_failed">Could not save the home layout.</string>
+    <string name="home_layout_summary">Current layout: %1$d columns × %2$d rows</string>
     <string name="quick_panel">Quick Panel Studio</string><string name="quick_panel_desc">A companion panel; cannot replace protected System UI</string>
     <string name="edge_panel">Edge Panel</string><string name="edge_panel_desc">Optional edge launcher overlay; permission and firmware checks required</string>
     <string name="theme_studio">Theme Studio</string><string name="theme_studio_desc">Choose and apply a color palette across the app</string>
     <string name="lock_studio">Lock Studio</string><string name="lock_studio_desc">Lock-screen companion concepts; secure keyguard replacement is out of scope</string>
     <string name="status_foundation">Foundation only</string><string name="status_limited">Capability-limited</string><string name="status_planned">Planned</string><string name="status_active">Working module</string>
-    <string name="project_status">Project status</string><string name="project_status_desc">Theme Studio is the first working module. Other modules remain under development and require device testing.</string>
+    <string name="project_status">Project status</string><string name="project_status_desc">Home Studio now saves a keyboard-first grid layout. Theme Studio is working. Other modules remain under development and require device testing.</string>
     <string name="theme_intro">Select a palette, preview it, then apply it to every QINS UI Studio screen and its in-app menus.</string>
     <string name="theme_choose">Available palettes</string><string name="theme_ocean">Ocean</string><string name="theme_midnight">Midnight</string><string name="theme_forest">Forest</string>
     <string name="theme_preview">Preview</string><string name="preview_card_title">QINS UI Studio</string><string name="preview_card_body">Your selected palette is shared across the app.</string>
