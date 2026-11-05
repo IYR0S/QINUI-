@@ -22,7 +22,7 @@
 - [x] Stabilize Studio dashboard as a standalone Activity and make its launcher shortcut keyboard-activatable.
 - [ ] QINS Home: test default-home selection, boot return, firmware-specific Home key mapping and focus behavior on QINS1+.
 - [ ] Home Studio: configurable pinned apps, folders, tile ordering and multiple home pages.
-- [ ] Quick Panel Studio: in-app/overlay companion, never a claim to replace System UI.
+- [x] Quick Panel companion: keyboard-accessible shortcuts to Android Wi-Fi, Bluetooth, sound, display, location, date/time and app settings (no-root; Android retains control of protected switches).
 - [ ] Edge Panel: opt-in overlay with clear permission checks and graceful fallback.
 - [ ] Theme Studio: expanded design tokens, typography, spacing, component styles and export/import.
 - [ ] Lock Studio: safe companion/customization options within public APIs.
