@@ -94,6 +94,18 @@ public class QinsLauncherActivity extends Activity {
         hp.bottomMargin = dp(8);
         root.addView(hint, hp);
 
+        Button diagnostics = new Button(this);
+        diagnostics.setText("Diagnostics / Crash log");
+        KeyboardSupport.makeFocusable(diagnostics, palette.surface, palette.accent, palette.text, dp(7));
+        diagnostics.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(QinsLauncherActivity.this, CrashReportActivity.class));
+            }
+        });
+        LinearLayout.LayoutParams diagnosticParams = new LinearLayout.LayoutParams(-1, dp(42));
+        diagnosticParams.bottomMargin = dp(6);
+        root.addView(diagnostics, diagnosticParams);
+
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         appGrid = new GridLayout(this);
