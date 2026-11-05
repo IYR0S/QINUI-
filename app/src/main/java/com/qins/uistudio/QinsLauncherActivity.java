@@ -270,6 +270,8 @@ public class QinsLauncherActivity extends Activity {
             android.graphics.Rect bounds = getBounds();
             float w = bounds.width();
             float h = bounds.height();
+            paint.setAlpha(255);
+            paint.setColorFilter(null);
             paint.setShader(new LinearGradient(0, 0, w, h,
                     style.backgroundAlt, style.background, Shader.TileMode.CLAMP));
             canvas.drawRect(bounds, paint);
