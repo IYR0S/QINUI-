@@ -30,8 +30,8 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public void onCreate(Bundle state) {
-        super.onCreate(state);
         setTheme(android.R.style.Theme_Holo_Light_NoActionBar);
+        super.onCreate(state);
         columns = getSharedPreferences("HomeStudioActivity", MODE_PRIVATE)
                 .getInt("home_columns", 3);
         if (columns < 2 || columns > 4) columns = 3;
@@ -40,7 +40,13 @@ public class QinsLauncherActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
-        if (appGrid != null) populateApps();
+        int savedColumns = getSharedPreferences("HomeStudioActivity", MODE_PRIVATE)
+                .getInt("home_columns", 3);
+        if (savedColumns >= 2 && savedColumns <= 4) columns = savedColumns;
+        if (appGrid != null) {
+            appGrid.setColumnCount(columns);
+            populateApps();
+        }
     }
 
     private void buildHome() {
@@ -144,8 +150,8 @@ public class QinsLauncherActivity extends Activity {
             labelParams.topMargin = dp(5);
             tile.addView(label, labelParams);
 
-            KeyboardSupport.makeFocusable(tile, palette.surface, palette.accent,
-                    palette.text, dp(7));
+            KeyboardSupport.makeFocusable(tile, palette.surface, palette.text,
+                    palette.accent, dp(7));
             tile.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
                     try { startActivity(launch); }
