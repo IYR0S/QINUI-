@@ -48,6 +48,8 @@ public final class QinsGlyphView extends View {
         else if ("add".equals(glyph)) drawAdd(canvas);
         else if ("remove".equals(glyph)) drawRemove(canvas);
         else if ("done".equals(glyph)) drawDone(canvas);
+        else if ("left".equals(glyph)) drawArrow(canvas, false);
+        else if ("right".equals(glyph)) drawArrow(canvas, true);
 
         canvas.restore();
     }
@@ -128,6 +130,13 @@ public final class QinsGlyphView extends View {
     private void drawRemove(Canvas c) {
         c.drawLine(-8, -8, 8, 8, paint);
         c.drawLine(8, -8, -8, 8, paint);
+    }
+
+    private void drawArrow(Canvas c, boolean right) {
+        Path p = new Path();
+        if (right) { p.moveTo(-4, -8); p.lineTo(4, 0); p.lineTo(-4, 8); }
+        else { p.moveTo(4, -8); p.lineTo(-4, 0); p.lineTo(4, 8); }
+        c.drawPath(p, paint);
     }
 
     private void drawDone(Canvas c) {
