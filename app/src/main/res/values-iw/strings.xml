@@ -27,4 +27,15 @@
     <string name="theme_preview">תצוגה מקדימה</string><string name="preview_card_title">QINS UI Studio</string><string name="preview_card_body">ערכת הצבעים שבחרת משותפת לכל מסכי האפליקציה.</string>
     <string name="theme_apply">החל ערכת צבעים</string><string name="theme_saved">ערכת הצבעים נשמרה והוחלה בכל האפליקציה.</string><string name="theme_save_failed">לא ניתן לשמור את ערכת הצבעים.</string>
     <string name="theme_scope_note">ערכת הצבעים משנה את מסכי QINS UI Studio והתפריטים שלה בלבד. תפריטי Android ואפליקציות אחרות אינם משתנים.</string>
+    <string name="launcher_apps">יישומים</string>
+    <string name="launcher_home">בית</string>
+    <string name="launcher_edit">עריכה</string>
+    <string name="launcher_add_apps">הוסף יישומים</string>
+    <string name="launcher_remove">הסר</string>
+    <string name="launcher_done">סיום</string>
+    <string name="launcher_pinned">במסך הבית</string>
+    <string name="launcher_add_hint">לחיצה ארוכה על יישום תוסיף אותו למסך הבית.</string>
+    <string name="launcher_empty">הוסף את היישומים המועדפים</string>
+    <string name="launcher_added">נוסף למסך הבית</string>
+    <string name="launcher_already_pinned">כבר נמצא במסך הבית</string>
 </resources>
