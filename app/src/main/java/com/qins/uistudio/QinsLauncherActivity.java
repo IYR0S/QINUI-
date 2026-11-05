@@ -212,7 +212,6 @@ public class QinsLauncherActivity extends Activity {
         footer.setPadding(0, dp(3), 0, dp(2));
         QinsGlyphView handle = new QinsGlyphView(this, "down", a.text);
         bottomHandle = handle;
-        handle.setGravity(Gravity.CENTER);
         handle.setContentDescription("Open quick settings");
         handle.setFocusable(true);
         handle.setFocusableInTouchMode(false);
