@@ -455,10 +455,23 @@ public class QinsLauncherActivity extends Activity {
 
     private void pickWallpaperFromGallery() {
         try {
-            Intent pick = new Intent(Intent.ACTION_GET_CONTENT);
-            pick.setType("image/*");
-            pick.addCategory(Intent.CATEGORY_OPENABLE);
-            startActivityForResult(Intent.createChooser(pick,
+            Intent documentPick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            documentPick.setType("image/*");
+            documentPick.addCategory(Intent.CATEGORY_OPENABLE);
+            documentPick.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            try {
+                startActivityForResult(documentPick, REQUEST_PICK_WALLPAPER);
+                return;
+            } catch (RuntimeException noDocumentPicker) {
+                // Some Android 4.4 firmware builds omit DocumentsUI. Fall back to
+                // the older content chooser rather than making wallpaper selection unavailable.
+            }
+
+            Intent contentPick = new Intent(Intent.ACTION_GET_CONTENT);
+            contentPick.setType("image/*");
+            contentPick.addCategory(Intent.CATEGORY_OPENABLE);
+            contentPick.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivityForResult(Intent.createChooser(contentPick,
                     getString(R.string.launcher_wallpaper_gallery)), REQUEST_PICK_WALLPAPER);
         } catch (RuntimeException error) {
             android.widget.Toast.makeText(this, R.string.launcher_wallpaper_unavailable,
@@ -525,11 +538,20 @@ public class QinsLauncherActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != REQUEST_PICK_WALLPAPER || resultCode != RESULT_OK ||
-                data == null || data.getData() == null) return;
+        if (requestCode != REQUEST_PICK_WALLPAPER || resultCode != RESULT_OK || data == null) return;
+        Uri selectedUri = data.getData();
+        if (selectedUri == null && data.getClipData() != null &&
+                data.getClipData().getItemCount() > 0) {
+            selectedUri = data.getClipData().getItemAt(0).getUri();
+        }
+        if (selectedUri == null) {
+            android.widget.Toast.makeText(this, R.string.launcher_wallpaper_failed,
+                    android.widget.Toast.LENGTH_LONG).show();
+            return;
+        }
         Bitmap selected = null;
         try {
-            selected = decodeSelectedWallpaper(data.getData());
+            selected = decodeSelectedWallpaper(selectedUri);
             if (selected == null) throw new java.io.IOException("Unsupported image");
             saveWallpaper(selected);
             selected.recycle();
@@ -628,21 +650,32 @@ public class QinsLauncherActivity extends Activity {
         }
 
         @Override protected void onDraw(Canvas canvas) {
-            String value = getText() == null ? "" : getText().toString();
+            String raw = getText() == null ? "" : getText().toString();
+            StringBuilder normalized = new StringBuilder();
+            for (int i = 0; i < raw.length(); i++) {
+                char ch = raw.charAt(i);
+                int digit = Character.digit(ch, 10);
+                if (digit >= 0) normalized.append((char) ('0' + digit));
+                else if (ch == ':') normalized.append(':');
+            }
+            String value = normalized.toString();
             if (value.length() == 0) return;
+
+            // A digit occupies five dot columns; the colon occupies one.
+            // One column of spacing follows every character except the last.
             float units = 0f;
             for (int i = 0; i < value.length(); i++) {
-                units += (value.charAt(i) == ':' ? 2f : 5f);
-                if (i + 1 < value.length()) units += 1.25f;
+                units += value.charAt(i) == ':' ? 1f : 5f;
+                if (i + 1 < value.length()) units += 1f;
             }
             float available = Math.max(1f, getWidth() - getPaddingLeft() - getPaddingRight());
             float verticalRoom = Math.max(dp(7), getHeight() - getPaddingTop() - getPaddingBottom());
-            float pitch = Math.min(dp(4.4f), Math.min(available / units, verticalRoom / 7f));
-            pitch = Math.max(dp(2.1f), pitch);
+            float pitch = Math.min(dp(4.8f), Math.min(available / units, verticalRoom / 7f));
+            pitch = Math.max(dp(1.5f), pitch);
             float totalWidth = units * pitch;
             float startX = getPaddingLeft() + Math.max(0f, (available - totalWidth) / 2f);
-            float startY = (getHeight() - 7f * pitch) / 2f;
-            float radius = pitch * 0.24f;
+            float startY = getPaddingTop() + Math.max(0f, (verticalRoom - 7f * pitch) / 2f);
+            float radius = pitch * 0.27f;
             dots.setStyle(Paint.Style.FILL);
             dots.setColor(getCurrentTextColor());
 
@@ -650,11 +683,11 @@ public class QinsLauncherActivity extends Activity {
                 char ch = value.charAt(i);
                 if (ch == ':') {
                     dots.setColor(appearance().accent);
-                    canvas.drawCircle(startX + pitch, startY + pitch * 2.5f, radius, dots);
-                    canvas.drawCircle(startX + pitch, startY + pitch * 4.5f, radius, dots);
+                    canvas.drawCircle(startX + pitch * 0.5f, startY + pitch * 2.5f, radius, dots);
+                    canvas.drawCircle(startX + pitch * 0.5f, startY + pitch * 4.5f, radius, dots);
                     dots.setColor(getCurrentTextColor());
-                    startX += 3.25f * pitch;
-                } else if (ch >= '0' && ch <= '9') {
+                    startX += pitch;
+                } else {
                     String[] rows = digits[ch - '0'];
                     for (int row = 0; row < 7; row++) {
                         for (int col = 0; col < 5; col++) {
@@ -664,10 +697,9 @@ public class QinsLauncherActivity extends Activity {
                             }
                         }
                     }
-                    startX += 6.25f * pitch;
-                } else {
-                    startX += 3f * pitch;
+                    startX += 5f * pitch;
                 }
+                if (i + 1 < value.length()) startX += pitch;
             }
         }
     }
@@ -1066,6 +1098,9 @@ public class QinsLauncherActivity extends Activity {
         clockView.setTypeface(clockTypefaceForTheme(a), clockTypefaceStyle());
         clockView.setFocusable(true);
         clockView.setFocusableInTouchMode(false);
+        clockView.setTextDirection(View.TEXT_DIRECTION_LTR);
+        clockView.setPadding(dp(7), dp(4), dp(7), dp(4));
+        styleSurface(clockView, 0x00000000, 0x00000000, a.focus, a.cornerDp);
         clockView.setContentDescription("Clock style. Press to customize.");
         clockView.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showClockStylePicker(); }
@@ -2872,7 +2907,8 @@ public class QinsLauncherActivity extends Activity {
         for (String side : sides) {
             int keyCode = prefs.getInt("keycode_" + side, defaultSoftKeyCode(side));
             int scanCode = prefs.getInt("scancode_" + side, 0);
-            if (scanCode > 0 ? event.getScanCode() == scanCode : event.getKeyCode() == keyCode) {
+            if (event.getKeyCode() == keyCode ||
+                    (scanCode > 0 && event.getScanCode() == scanCode)) {
                 return side;
             }
         }
@@ -3036,9 +3072,6 @@ public class QinsLauncherActivity extends Activity {
         }
 
         if (learningSoftKeySide != null) {
-            if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-                return super.dispatchKeyEvent(event);
-            }
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
                 String side = learningSoftKeySide;
                 int code = event.getKeyCode();
@@ -3190,6 +3223,22 @@ public class QinsLauncherActivity extends Activity {
             View focused = getCurrentFocus();
             Object tag = focused == null ? null : focused.getTag();
             boolean rtl = isRtlLayout();
+            if ("home:drawer-trigger".equals(tag) &&
+                    (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) &&
+                    appRow != null && appRow.getChildCount() > 0) {
+                boolean physicalLeft = keyCode == KeyEvent.KEYCODE_DPAD_LEFT;
+                int edge = 0;
+                for (int i = 1; i < appRow.getChildCount(); i++) {
+                    View candidate = appRow.getChildAt(i);
+                    View current = appRow.getChildAt(edge);
+                    if (physicalLeft ? candidate.getLeft() < current.getLeft() :
+                            candidate.getRight() > current.getRight()) {
+                        edge = i;
+                    }
+                }
+                appRow.getChildAt(edge).requestFocus();
+                return true;
+            }
             if (tag instanceof String && ((String) tag).startsWith("page-dot:")) {
                 int delta = keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? (rtl ? 1 : -1) : (rtl ? -1 : 1);
                 int target = page + delta;
