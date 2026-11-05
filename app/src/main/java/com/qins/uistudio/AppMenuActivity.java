@@ -51,6 +51,12 @@ public class AppMenuActivity extends StudioActivity {
                 finish();
             }
         });
+        addItem(page, R.string.menu_home, new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(AppMenuActivity.this, HomeStudioActivity.class));
+                finish();
+            }
+        });
         addItem(page, R.string.menu_themes, new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(AppMenuActivity.this, ThemeStudioActivity.class));
