@@ -1180,6 +1180,9 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showQuickPanel(boolean focusFirst) {
+        wifiState = null;
+        bluetoothState = null;
+        soundState = null;
         quickPanelVisible = true;
         quickPanelExpanded = true;
         drawerVisible = false;
