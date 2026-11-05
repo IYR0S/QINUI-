@@ -59,7 +59,7 @@ public class QinsLauncherActivity extends Activity {
     private boolean quickPanelExpanded = false;
     private int homePageCount = 1;
     private static final String QUICK_PREFS = "qins_quick_tiles";
-    private static final String[] QUICK_OPTIONS = new String[] {"sound", "bluetooth", "settings", "wifi", "brightness", "volume"};
+    private static final String[] QUICK_OPTIONS = new String[] {"sound", "bluetooth", "settings", "theme", "wifi", "brightness", "volume"};
     
     private boolean drawerVisible = false;
     private boolean editMode = false;
@@ -210,12 +210,9 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout footer = new LinearLayout(this);
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(0, dp(3), 0, dp(2));
-        TextView handle = new TextView(this);
+        QinsGlyphView handle = new QinsGlyphView(this, "down", a.text);
         bottomHandle = handle;
-        handle.setText("━━");
-        handle.setTextSize(20);
         handle.setGravity(Gravity.CENTER);
-        handle.setTextColor(a.text);
         handle.setContentDescription("Open quick settings");
         handle.setFocusable(true);
         handle.setFocusableInTouchMode(false);
@@ -227,7 +224,7 @@ public class QinsLauncherActivity extends Activity {
                 else showHome(false);
             }
         });
-        footer.addView(handle, new LinearLayout.LayoutParams(dp(76), dp(footerHeight - 3)));
+        footer.addView(handle, new LinearLayout.LayoutParams(dp(44), dp(footerHeight - 3)));
         root.addView(footer, new LinearLayout.LayoutParams(-1, dp(footerHeight)));
         setContentView(root);
         updateNavigationButton();
@@ -240,10 +237,10 @@ public class QinsLauncherActivity extends Activity {
                 ? getString(R.string.launcher_home) : getString(R.string.launcher_apps));
         appsNavButton.setTextColor(a.text);
         styleSurface(appsNavButton, a.surface, a.border, a.focus, a.cornerDp);
-        TextView handle = (TextView) bottomHandle;
-        handle.setText(quickPanelVisible ? "⌃" : "━━");
-        handle.setTextColor(a.text);
-        styleSurface(handle, a.surface, a.border, a.focus, a.cornerDp);
+        QinsGlyphView handle = (QinsGlyphView) bottomHandle;
+        handle.setGlyph(quickPanelVisible ? "up" : "down");
+        handle.setTint(a.text);
+        styleSurface(handle, 0x00000000, 0x00000000, a.focus, a.cornerDp);
         root.setBackground(new QinsWallpaperDrawable(a));
     }
 
@@ -442,7 +439,7 @@ public class QinsLauncherActivity extends Activity {
         String time = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
         String date = new SimpleDateFormat("EEEE, d MMMM", Locale.getDefault()).format(new Date());
         String battery = batterySummary();
-        if (clockView != null) clockView.setText(time);
+        if (clockView != null) clockView.setText(formatClockForTheme(time));
         if (dateView != null) dateView.setText(date);
         if (batteryView != null) batteryView.setText(battery);
         if (panelClock != null) panelClock.setText(time);
@@ -484,9 +481,18 @@ public class QinsLauncherActivity extends Activity {
         timeBlock.setGravity(Gravity.CENTER_VERTICAL);
         clockView = new TextView(this);
         clockView.setTextColor(a.text);
-        clockView.setTextSize(smallScreen == 1 ? 29 : 42);
+        clockView.setTextSize(clockSizeForTheme(a, smallScreen == 1));
         clockView.setIncludeFontPadding(false);
-        clockView.setTypeface(a.useMonoType ? Typeface.MONOSPACE : Typeface.DEFAULT, Typeface.NORMAL);
+        clockView.setTypeface(clockTypefaceForTheme(a), clockTypefaceStyle());
+        clockView.setFocusable(true);
+        clockView.setFocusableInTouchMode(false);
+        clockView.setContentDescription("Clock style. Press to customize.");
+        clockView.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showClockStylePicker(); }
+        });
+        clockView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) { showClockStylePicker(); return true; }
+        });
         timeBlock.addView(clockView, new LinearLayout.LayoutParams(-1, -2));
 
         dateView = new TextView(this);
@@ -519,35 +525,26 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout pages = new LinearLayout(this);
         pages.setGravity(Gravity.CENTER);
         pages.setOrientation(LinearLayout.HORIZONTAL);
-        QinsGlyphView previous = pageArrow("left", a);
-        QinsGlyphView next = pageArrow("right", a);
         pageDots = new TextView(this);
         pageDots.setTextColor(a.muted);
-        pageDots.setTextSize(14);
+        pageDots.setTextSize(13);
         pageDots.setGravity(Gravity.CENTER);
-        pages.addView(previous, new LinearLayout.LayoutParams(dp(38), dp(32)));
-        pages.addView(pageDots, new LinearLayout.LayoutParams(dp(100), dp(32)));
-        pages.addView(next, new LinearLayout.LayoutParams(dp(38), dp(32)));
-        QinsGlyphView addPage = pageArrow("add", a);
-        pages.addView(addPage, new LinearLayout.LayoutParams(dp(34), dp(32)));
-        addPage.setContentDescription("Add home page");
-        addPage.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { addHomePage(); }
+        pages.addView(pageDots, new LinearLayout.LayoutParams(-2, dp(32)));
+        pageDots.setFocusable(true);
+        pageDots.setFocusableInTouchMode(false);
+        pageDots.setTag("pages");
+        pageDots.setContentDescription("Home pages. Press to choose a page, long press to add one.");
+        pageDots.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showPagePicker(); }
+        });
+        pageDots.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) { showAddPageDialog(); return true; }
         });
         LinearLayout.LayoutParams pageParams = new LinearLayout.LayoutParams(-1,
                 dp(screenHeightDp() < 280 ? 26 : 36));
         pageParams.topMargin = dp(screenHeightDp() < 280 ? 2 : 5);
         pageContent.addView(pages, pageParams);
-        previous.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { changePage(-1); }
-        });
-        next.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { changePage(1); }
-        });
-        previous.setEnabled(page > 0);
-        next.setEnabled(page + 1 < pageCount());
-        previous.setAlpha(page > 0 ? 1f : 0.28f);
-        next.setAlpha(page + 1 < pageCount() ? 1f : 0.28f);
+        
         updatePageDots();
 
         if (editMode) buildEditBar(a);
@@ -616,7 +613,7 @@ public class QinsLauncherActivity extends Activity {
 
     private String[] getQuickTileKeys() {
         String saved = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("order", "");
-        String[] defaults = new String[] {"sound", "bluetooth", "settings", "wifi"};
+        String[] defaults = new String[] {"sound", "bluetooth", "settings", "theme"};
         if (saved.length() == 0) return defaults;
         String[] parts = saved.split(",");
         String[] result = new String[4];
@@ -637,7 +634,7 @@ public class QinsLauncherActivity extends Activity {
 
     private View compactQuickTile(String key, ThemeManager.Appearance a) {
         String label = quickLabel(key);
-        String glyph = "settings".equals(key) ? "settings" : ("brightness".equals(key) ? "brightness" : ("volume".equals(key) ? "volume" : key));
+        String glyph = "settings".equals(key) ? "settings" : ("theme".equals(key) ? "palette" : ("brightness".equals(key) ? "brightness" : ("volume".equals(key) ? "volume" : key)));
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.VERTICAL);
         tile.setGravity(Gravity.CENTER);
@@ -658,7 +655,7 @@ public class QinsLauncherActivity extends Activity {
 
     private String[] quickLabels() {
         return new String[] {getString(R.string.launcher_sound), getString(R.string.launcher_bluetooth),
-                getString(R.string.launcher_settings), getString(R.string.launcher_wifi),
+                getString(R.string.launcher_settings), getString(R.string.launcher_theme), getString(R.string.launcher_wifi),
                 getString(R.string.launcher_brightness), getString(R.string.launcher_volume)};
     }
 
@@ -703,6 +700,7 @@ public class QinsLauncherActivity extends Activity {
         else if ("bluetooth".equals(key)) toggleBluetooth();
         else if ("sound".equals(key)) toggleSound();
         else if ("settings".equals(key)) openSystemSettings();
+        else if ("theme".equals(key)) cycleAppearance();
         else if ("brightness".equals(key) || "volume".equals(key)) showQuickPanel(true);
     }
 
@@ -1024,6 +1022,126 @@ public class QinsLauncherActivity extends Activity {
         }
     }
 
+    private void showPagePicker() {
+        final String[] labels = new String[pageCount()];
+        for (int i = 0; i < labels.length; i++) labels[i] = "Page " + (i + 1) + (i == page ? "  •" : "");
+        new android.app.AlertDialog.Builder(this).setTitle("Go to page")
+                .setItems(labels, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        page = which; editMode = false; showHome(false);
+                    }
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void showAddPageDialog() {
+        if (pageCount() >= 12) {
+            android.widget.Toast.makeText(this, "Maximum 12 pages", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new android.app.AlertDialog.Builder(this).setTitle("Add a home page?")
+                .setMessage("Create another page for your apps.")
+                .setPositiveButton("＋ Add page", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) { addHomePage(); }
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void cycleAppearance() {
+        String[] ids = new String[] {ThemeManager.APPEARANCE_GALAXY, ThemeManager.APPEARANCE_PIXEL, ThemeManager.APPEARANCE_NOTHING};
+        String current = appearance().id;
+        int next = 0;
+        for (int i = 0; i < ids.length; i++) if (ids[i].equals(current)) next = (i + 1) % ids.length;
+        ThemeManager.applyAppearance(this, ids[next]);
+        if (quickPanelExpanded) showQuickPanel(false);
+        else showCompactQuickPanel(false);
+    }
+
+    private String clockStyleKey(ThemeManager.Appearance a) { return "clock_" + a.id; }
+    private String clockStyle(ThemeManager.Appearance a) {
+        return getSharedPreferences("qins_clock", MODE_PRIVATE).getString(clockStyleKey(a), defaultClockStyle(a));
+    }
+    private String defaultClockStyle(ThemeManager.Appearance a) {
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return "dot";
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return "material";
+        return "oneui";
+    }
+    private String[] clockStyleOptions(ThemeManager.Appearance a) {
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"dot", "mono", "compact"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"material", "bold", "compact"};
+        return new String[] {"oneui", "stacked", "compact"};
+    }
+    private String[] clockStyleLabels(ThemeManager.Appearance a) {
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Glyph digital", "Mono terminal", "Compact"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Compact"};
+        return new String[] {"One UI large", "Stacked digital", "Compact"};
+    }
+    private void showClockStylePicker() {
+        final ThemeManager.Appearance a = appearance();
+        final String[] values = clockStyleOptions(a);
+        new android.app.AlertDialog.Builder(this).setTitle("Clock design · " + a.title)
+                .setItems(clockStyleLabels(a), new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        getSharedPreferences("qins_clock", MODE_PRIVATE).edit()
+                                .putString(clockStyleKey(a), values[which]).commit();
+                        showHome(false);
+                    }
+                }).setNegativeButton("Cancel", null).show();
+    }
+    private float clockSizeForTheme(ThemeManager.Appearance a, boolean small) {
+        String style = clockStyle(a);
+        if ("compact".equals(style)) return small ? 23 : 31;
+        if ("stacked".equals(style)) return small ? 27 : 37;
+        if ("bold".equals(style)) return small ? 30 : 43;
+        if ("mono".equals(style)) return small ? 27 : 38;
+        return small ? 29 : 42;
+    }
+    private Typeface clockTypefaceForTheme(ThemeManager.Appearance a) {
+        String style = clockStyle(a);
+        if ("mono".equals(style) || "dot".equals(style) || a.useMonoType) return Typeface.MONOSPACE;
+        if ("bold".equals(style) || "material".equals(style)) return Typeface.create("sans-serif-medium", Typeface.NORMAL);
+        return Typeface.create("sans-serif-light", Typeface.NORMAL);
+    }
+    private int clockTypefaceStyle() { return Typeface.NORMAL; }
+    private String formatClockForTheme(String time) {
+        String style = clockStyle(appearance());
+        if ("stacked".equals(style)) return time.replace(":", "\n");
+        if ("dot".equals(style)) return time.replace(":", "·");
+        return time;
+    }
+
+    private void showThemeEditor() {
+        final String[] roles = new String[] {"Accent", "Background", "Surface", "Text"};
+        new android.app.AlertDialog.Builder(this).setTitle("Theme settings · " + appearance().title)
+                .setItems(roles, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        showThemeColorPicker(new String[] {"accent", "background", "surface", "text"}[which]);
+                    }
+                }).setNegativeButton("Done", null).show();
+    }
+
+    private void showThemeColorPicker(final String role) {
+        final String[] names = new String[] {"Theme default", "Soft blue", "Violet", "Coral", "Mint", "Amber", "White", "Charcoal"};
+        final int[] colors = new int[] {0, 0xFF4D83E6, 0xFF8B65C8, 0xFFE56B5F, 0xFF4C9B7C, 0xFFD49A35, 0xFFF4F4F4, 0xFF242629};
+        new android.app.AlertDialog.Builder(this).setTitle("Choose " + role + " color")
+                .setItems(names, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, role, colors[which]);
+                        if (quickPanelExpanded) showQuickPanel(false); else showHome(false);
+                    }
+                }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void showQuickSettingsEditor() {
+        final String[] slots = new String[] {"Compact shortcut 1", "Compact shortcut 2", "Compact shortcut 3", "Compact shortcut 4", "Theme colors", "Clock design"};
+        new android.app.AlertDialog.Builder(this).setTitle("Customize quick settings")
+                .setItems(slots, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (which < 4) showQuickTileEditor(which);
+                        else if (which == 4) showThemeEditor();
+                        else showClockStylePicker();
+                    }
+                }).setNegativeButton("Done", null).show();
+    }
+
     private void showQuickPanel(boolean focusFirst) {
         quickPanelVisible = true;
         quickPanelExpanded = true;
@@ -1128,21 +1246,37 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         }, a);
 
-        TextView styleTitle = new TextView(this);
-        styleTitle.setText("Style");
-        styleTitle.setTextColor(a.muted);
-        styleTitle.setTextSize(11);
-        LinearLayout.LayoutParams styleTitleParams = new LinearLayout.LayoutParams(-1, -2);
-        styleTitleParams.topMargin = dp(10);
-        styleTitleParams.bottomMargin = dp(4);
-        panel.addView(styleTitle, styleTitleParams);
-
-        LinearLayout styles = new LinearLayout(this);
-        styles.setOrientation(LinearLayout.HORIZONTAL);
-        panel.addView(styles, new LinearLayout.LayoutParams(-1, dp(42)));
-        addStyleButton(styles, "GALAXY", ThemeManager.APPEARANCE_GALAXY, a);
-        addStyleButton(styles, "PIXEL", ThemeManager.APPEARANCE_PIXEL, a);
-        addStyleButton(styles, "NOTHING", ThemeManager.APPEARANCE_NOTHING, a);
+        LinearLayout tools = new LinearLayout(this);
+        tools.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams toolsParams = new LinearLayout.LayoutParams(-1, dp(42));
+        toolsParams.topMargin = dp(10);
+        panel.addView(tools, toolsParams);
+        TextView customize = new TextView(this);
+        customize.setText(getString(R.string.launcher_customize_quick));
+        customize.setTextColor(a.text);
+        customize.setGravity(Gravity.CENTER);
+        customize.setTextSize(10);
+        customize.setFocusable(true);
+        customize.setFocusableInTouchMode(false);
+        styleSurface(customize, a.surface, a.border, a.focus, a.cornerDp);
+        tools.addView(customize, new LinearLayout.LayoutParams(0, -1, 1));
+        customize.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showQuickSettingsEditor(); }
+        });
+        TextView themeSettings = new TextView(this);
+        themeSettings.setText(getString(R.string.launcher_theme_settings));
+        themeSettings.setTextColor(a.accent);
+        themeSettings.setGravity(Gravity.CENTER);
+        themeSettings.setTextSize(10);
+        themeSettings.setFocusable(true);
+        themeSettings.setFocusableInTouchMode(false);
+        styleSurface(themeSettings, a.surface, a.border, a.focus, a.cornerDp);
+        LinearLayout.LayoutParams themeParams = new LinearLayout.LayoutParams(0, -1, 1);
+        themeParams.leftMargin = dp(6);
+        tools.addView(themeSettings, themeParams);
+        themeSettings.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showThemeEditor(); }
+        });
 
         updateClockAndBattery();
         if (focusFirst) wifi.requestFocus();
@@ -1324,6 +1458,7 @@ public class QinsLauncherActivity extends Activity {
     private boolean performLongPressAction(View target) {
         if (target == null || !(target.getTag() instanceof String)) return false;
         String tag = (String) target.getTag();
+        if ("pages".equals(tag)) { showAddPageDialog(); return true; }
         if (tag.startsWith("home:")) {
             try { enterEditMode(Integer.parseInt(tag.substring(5))); return true; }
             catch (NumberFormatException ignored) { return false; }
