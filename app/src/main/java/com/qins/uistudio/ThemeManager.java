@@ -106,6 +106,11 @@ public final class ThemeManager {
 
     public static Appearance[] getAppearances() { return APPEARANCES.clone(); }
 
+    public static Appearance getAppearanceById(String id) {
+        for (Appearance appearance : APPEARANCES) if (appearance.id.equals(id)) return appearance;
+        return APPEARANCES[0];
+    }
+
     public static Appearance getAppearance(Context context) {
         String selected = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
                 .getString(APPEARANCE_KEY, APPEARANCE_GALAXY);
