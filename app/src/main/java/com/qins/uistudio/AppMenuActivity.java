@@ -76,7 +76,15 @@ public class AppMenuActivity extends StudioActivity {
         if (page.getChildCount() > 2) page.getChildAt(2).requestFocus();
     }
 
+    private void addItem(LinearLayout page, String label, View.OnClickListener listener) {
+        addItemView(page, label, listener);
+    }
+
     private void addItem(LinearLayout page, int label, View.OnClickListener listener) {
+        addItemView(page, getString(label), listener);
+    }
+
+    private void addItemView(LinearLayout page, String label, View.OnClickListener listener) {
         Button item = new Button(this);
         item.setText(label);
         item.setFocusable(true);
