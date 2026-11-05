@@ -522,6 +522,8 @@ public class QinsLauncherActivity extends Activity {
         });
         previous.setEnabled(page > 0);
         next.setEnabled(page + 1 < pageCount());
+        previous.setAlpha(page > 0 ? 1f : 0.28f);
+        next.setAlpha(page + 1 < pageCount() ? 1f : 0.28f);
         updatePageDots();
 
         if (editMode) buildEditBar(a);
@@ -591,6 +593,7 @@ public class QinsLauncherActivity extends Activity {
 
             TextView label = new TextView(this);
             label.setText(info.loadLabel(getPackageManager()));
+            tile.setContentDescription(label.getText() + ". Long press to edit.");
             label.setTextColor(a.text);
             label.setTextSize(screenWidthDp() < 210 ? 8 : 10);
             label.setGravity(Gravity.CENTER);
@@ -763,6 +766,7 @@ public class QinsLauncherActivity extends Activity {
             row.setClickable(true);
             row.setLongClickable(true);
             row.setTag("drawer:" + componentKey(info));
+            row.setContentDescription(info.loadLabel(getPackageManager()) + ". Press to open, long press to pin.");
             styleSurface(row, a.surface, a.border, a.focus, a.cornerDp);
 
             ImageView icon = new ImageView(this);
@@ -1188,10 +1192,6 @@ public class QinsLauncherActivity extends Activity {
                 showHome(false);
                 return true;
             }
-        }
-        if (!quickPanelVisible && !drawerVisible && keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
-            showQuickPanel(true);
-            return true;
         }
         if (!quickPanelVisible && !drawerVisible && (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ||
                 keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)) {
