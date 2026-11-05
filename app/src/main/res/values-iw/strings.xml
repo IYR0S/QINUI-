@@ -58,4 +58,10 @@
     <string name="launcher_wallpaper_saved">הרקע נשמר.</string>
     <string name="launcher_wallpaper_failed">לא ניתן להגדיר את התמונה כרקע.</string>
     <string name="launcher_wallpaper_unavailable">לא נמצאה אפליקציה לבחירת תמונות.</string>
+    <string name="launcher_open_all_apps">פתיחת כל היישומים</string>
+    <string name="launcher_all_apps">כל היישומים</string>
+    <string name="launcher_edit_grid">רשת</string>
+    <string name="launcher_grid_layout">בחירת מבנה רשת היישומים</string>
+    <string name="launcher_choose_theme">בחירת ערכת נושא</string>
+    <string name="launcher_settings_unavailable">לא ניתן לפתוח את ההגדרות המבוקשות.</string>
 </resources>
