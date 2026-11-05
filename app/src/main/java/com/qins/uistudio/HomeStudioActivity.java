@@ -3,7 +3,6 @@ package com.qins.uistudio;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -11,7 +10,7 @@ import android.widget.TextView;
 /** Keyboard-first home-layout editor. This milestone previews and saves settings inside Studio. */
 public class HomeStudioActivity extends StudioActivity {
     private int columns = 3, rows = 2;
-    private GridLayout preview;
+    private LinearLayout preview;
     private TextView status;
     private Button[] columnButtons = new Button[3], rowButtons = new Button[2];
     private int dp(float v) { return (int)(v * getResources().getDisplayMetrics().density + 0.5f); }
@@ -45,7 +44,7 @@ public class HomeStudioActivity extends StudioActivity {
             b.setOnClickListener(new View.OnClickListener(){public void onClick(View v){rows=value;updatePreview();}});
         }
         heading(page,R.string.home_preview_heading,p.text);
-        preview=new GridLayout(this); preview.setBackgroundColor(p.surface); preview.setPadding(dp(6),dp(6),dp(6),dp(6));
+        preview=new LinearLayout(this); preview.setOrientation(LinearLayout.VERTICAL); preview.setBackgroundColor(p.surface); preview.setPadding(dp(6),dp(6),dp(6),dp(6));
         page.addView(preview,new LinearLayout.LayoutParams(-1,-2));
         status=new TextView(this); status.setTextSize(13); status.setTextColor(p.muted);
         LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(-1,-2); sp.topMargin=dp(10); sp.bottomMargin=dp(10); page.addView(status,sp);
@@ -64,14 +63,20 @@ public class HomeStudioActivity extends StudioActivity {
         KeyboardSupport.makeFocusable(b,p.surface,p.accent,p.text,dp(8));return b;}
     private void updatePreview(){
         if(preview==null)return; ThemeManager.Palette p=ThemeManager.getPalette(this);
-        preview.removeAllViews();preview.setColumnCount(columns);preview.setRowCount(rows);
+        preview.removeAllViews();
         String[] names={"Phone","Music","Files","Settings","Photos","Tools","Browser","Calendar","Notes","Radio","Clock","Apps"};
-        for(int i=0;i<columns*rows;i++){TextView tile=new TextView(this);tile.setText(names[i%names.length]);tile.setTextColor(p.text);
-            tile.setTextSize(12);tile.setGravity(17);android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();
-            bg.setColor(p.background);bg.setCornerRadius(dp(6));bg.setStroke(dp(1),p.accent);tile.setBackgroundDrawable(bg);
-            GridLayout.LayoutParams lp=new GridLayout.LayoutParams();lp.width=0;lp.height=dp(58);
-            lp.columnSpec=GridLayout.spec(i%columns,1f);lp.rowSpec=GridLayout.spec(i/columns,1f);
-            lp.setMargins(dp(3),dp(3),dp(3),dp(3));preview.addView(tile,lp);
+        for(int row=0;row<rows;row++){
+            LinearLayout previewRow=new LinearLayout(this);
+            previewRow.setOrientation(LinearLayout.HORIZONTAL);
+            preview.addView(previewRow,new LinearLayout.LayoutParams(-1,-2));
+            for(int column=0;column<columns;column++){
+                int i=row*columns+column;
+                TextView tile=new TextView(this);tile.setText(names[i%names.length]);tile.setTextColor(p.text);
+                tile.setTextSize(12);tile.setGravity(17);android.graphics.drawable.GradientDrawable bg=new android.graphics.drawable.GradientDrawable();
+                bg.setColor(p.background);bg.setCornerRadius(dp(6));bg.setStroke(dp(1),p.accent);tile.setBackgroundDrawable(bg);
+                LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(58),1f);
+                lp.setMargins(dp(3),dp(3),dp(3),dp(3));previewRow.addView(tile,lp);
+            }
         }
         for(int i=0;i<3;i++)columnButtons[i].setText((i+2)+(columns==i+2?"  *":""));
         for(int i=0;i<2;i++)rowButtons[i].setText((i+2)+(rows==i+2?"  *":""));
