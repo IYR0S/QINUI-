@@ -321,6 +321,7 @@ public class QinsLauncherActivity extends Activity {
         phoneButton.setFocusable(true);
         phoneButton.setFocusableInTouchMode(false);
         phoneButton.setContentDescription(getString(R.string.launcher_phone));
+        phoneButton.setTag("header:phone");
         styleSurface(phoneButton, a.surface, a.border, a.focus, a.cornerDp);
         phoneButton.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { openDialer(); }
@@ -2083,8 +2084,7 @@ public class QinsLauncherActivity extends Activity {
         String query = drawerSearchQuery;
         for (ResolveInfo info : installedApps) {
             String label = info.loadLabel(getPackageManager()).toString();
-            String searchText = label + " " + info.activityInfo.packageName;
-            if (T9Matcher.matches(searchText, query)) result.add(info);
+            if (T9Matcher.matches(label, query)) result.add(info);
         }
         return result;
     }
@@ -2865,6 +2865,7 @@ public class QinsLauncherActivity extends Activity {
             if (info != null) { pinApp(info, false); return true; }
         }
         if (tag.startsWith("quick:")) return openQuickSetting(tag.substring(6));
+        if ("header:phone".equals(tag)) { showSoftkeySettings(); return true; }
         return false;
     }
 
@@ -2923,6 +2924,7 @@ public class QinsLauncherActivity extends Activity {
                      ((String) focused.getTag()).startsWith("drawer:") ||
                      ((String) focused.getTag()).startsWith("page-dot:") ||
                      ((String) focused.getTag()).startsWith("quick:") ||
+                     "header:phone".equals(focused.getTag()) ||
                      "home:drawer-trigger".equals(focused.getTag()) ||
                      "pages".equals(focused.getTag()))) {
                 if (event.getRepeatCount() == 0) {
