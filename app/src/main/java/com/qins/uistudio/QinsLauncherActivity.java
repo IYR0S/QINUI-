@@ -73,6 +73,20 @@ public class QinsLauncherActivity extends Activity {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
+    private int screenWidthDp() {
+        return (int) (getResources().getDisplayMetrics().widthPixels /
+                getResources().getDisplayMetrics().density);
+    }
+
+    private int screenHeightDp() {
+        return (int) (getResources().getDisplayMetrics().heightPixels /
+                getResources().getDisplayMetrics().density);
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
     private ThemeManager.Appearance appearance() {
         return ThemeManager.getAppearance(this);
     }
@@ -129,7 +143,9 @@ public class QinsLauncherActivity extends Activity {
         ThemeManager.Appearance a = appearance();
         root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(14), dp(8), dp(14), dp(6));
+        int sidePadding = clamp(screenWidthDp() / 14, 8, 14);
+        int footerHeight = clamp((int) (screenHeightDp() * 0.18f), 32, 44);
+        root.setPadding(dp(sidePadding), dp(4), dp(sidePadding), dp(3));
         root.setBackground(makeBackdrop(a));
 
         pageContent = new LinearLayout(this);
@@ -155,8 +171,8 @@ public class QinsLauncherActivity extends Activity {
                 else showQuickPanel(true);
             }
         });
-        footer.addView(handle, new LinearLayout.LayoutParams(dp(78), dp(38)));
-        root.addView(footer, new LinearLayout.LayoutParams(-1, dp(44)));
+        footer.addView(handle, new LinearLayout.LayoutParams(dp(78), dp(footerHeight - 4)));
+        root.addView(footer, new LinearLayout.LayoutParams(-1, dp(footerHeight)));
         setContentView(root);
     }
 
@@ -251,7 +267,10 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setPadding(dp(18), dp(12), dp(18), dp(12));
+        int smallScreen = screenWidthDp() < 210 || screenHeightDp() < 280 ? 1 : 0;
+        int topSide = smallScreen == 1 ? 10 : 18;
+        int topVertical = smallScreen == 1 ? 6 : 12;
+        top.setPadding(dp(topSide), dp(topVertical), dp(topSide), dp(topVertical));
         top.setBackground(makeShape(a.surface, a.border, a.cornerDp + 4, false));
 
         LinearLayout timeBlock = new LinearLayout(this);
@@ -259,14 +278,14 @@ public class QinsLauncherActivity extends Activity {
         timeBlock.setGravity(Gravity.CENTER_VERTICAL);
         clockView = new TextView(this);
         clockView.setTextColor(a.text);
-        clockView.setTextSize(42);
+        clockView.setTextSize(smallScreen == 1 ? 29 : 42);
         clockView.setIncludeFontPadding(false);
         clockView.setTypeface(a.useMonoType ? Typeface.MONOSPACE : Typeface.DEFAULT, Typeface.NORMAL);
         timeBlock.addView(clockView, new LinearLayout.LayoutParams(-1, -2));
 
         dateView = new TextView(this);
         dateView.setTextColor(a.muted);
-        dateView.setTextSize(11);
+        dateView.setTextSize(smallScreen == 1 ? 9 : 11);
         dateView.setSingleLine(true);
         timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
         top.addView(timeBlock, new LinearLayout.LayoutParams(0, -2, 1));
@@ -277,8 +296,8 @@ public class QinsLauncherActivity extends Activity {
         batteryView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         top.addView(batteryView, new LinearLayout.LayoutParams(-2, -1));
         LinearLayout.LayoutParams topParams = new LinearLayout.LayoutParams(-1, -2);
-        topParams.topMargin = dp(9);
-        topParams.bottomMargin = dp(10);
+        topParams.topMargin = dp(smallScreen == 1 ? 3 : 9);
+        topParams.bottomMargin = dp(smallScreen == 1 ? 5 : 10);
         pageContent.addView(top, topParams);
 
         View spacer = new View(this);
@@ -287,7 +306,8 @@ public class QinsLauncherActivity extends Activity {
         appRow = new LinearLayout(this);
         appRow.setOrientation(LinearLayout.HORIZONTAL);
         appRow.setGravity(Gravity.CENTER);
-        pageContent.addView(appRow, new LinearLayout.LayoutParams(-1, dp(112)));
+        int appRowHeight = clamp((int) (screenHeightDp() * 0.34f), 64, 112);
+        pageContent.addView(appRow, new LinearLayout.LayoutParams(-1, dp(appRowHeight)));
         populateHomeApps(a);
 
         LinearLayout pages = new LinearLayout(this);
@@ -302,8 +322,9 @@ public class QinsLauncherActivity extends Activity {
         pages.addView(previous, new LinearLayout.LayoutParams(dp(38), dp(32)));
         pages.addView(pageDots, new LinearLayout.LayoutParams(dp(100), dp(32)));
         pages.addView(next, new LinearLayout.LayoutParams(dp(38), dp(32)));
-        LinearLayout.LayoutParams pageParams = new LinearLayout.LayoutParams(-1, dp(36));
-        pageParams.topMargin = dp(5);
+        LinearLayout.LayoutParams pageParams = new LinearLayout.LayoutParams(-1,
+                dp(screenHeightDp() < 280 ? 26 : 36));
+        pageParams.topMargin = dp(screenHeightDp() < 280 ? 2 : 5);
         pageContent.addView(pages, pageParams);
         previous.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { changePage(-1); }
@@ -321,7 +342,7 @@ public class QinsLauncherActivity extends Activity {
     private TextView pageArrow(String symbol, ThemeManager.Appearance a) {
         TextView button = new TextView(this);
         button.setText(symbol);
-        button.setTextSize(25);
+        button.setTextSize(screenHeightDp() < 280 ? 21 : 25);
         button.setGravity(Gravity.CENTER);
         button.setTextColor(a.muted);
         button.setFocusable(true);
@@ -363,14 +384,15 @@ public class QinsLauncherActivity extends Activity {
                 matrix.setSaturation(0f);
                 icon.setColorFilter(new ColorMatrixColorFilter(matrix));
             }
-            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(40), dp(40));
-            iconParams.bottomMargin = dp(5);
+            int iconSize = clamp((screenWidthDp() - 30) / 4 - 5, 22, 40);
+            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize));
+            iconParams.bottomMargin = dp(3);
             tile.addView(icon, iconParams);
 
             TextView label = new TextView(this);
             label.setText(info.loadLabel(getPackageManager()));
             label.setTextColor(a.text);
-            label.setTextSize(10);
+            label.setTextSize(screenWidthDp() < 210 ? 8 : 10);
             label.setGravity(Gravity.CENTER);
             label.setSingleLine(true);
             label.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -386,7 +408,7 @@ public class QinsLauncherActivity extends Activity {
                     }
                 }
             });
-            appRow.addView(tile, new LinearLayout.LayoutParams(0, dp(100), 1));
+            appRow.addView(tile, new LinearLayout.LayoutParams(0, dp(appRowHeight - 2), 1));
         }
     }
 
@@ -434,6 +456,7 @@ public class QinsLauncherActivity extends Activity {
         panelClock.setTextSize(34);
         panelClock.setIncludeFontPadding(false);
         panelClock.setTypeface(a.useMonoType ? Typeface.MONOSPACE : Typeface.DEFAULT, Typeface.NORMAL);
+        panelClock.setTextSize(screenWidthDp() < 210 ? 29 : 34);
         heading.addView(panelClock, new LinearLayout.LayoutParams(0, -2, 1));
 
         panelBattery = new TextView(this);
@@ -451,7 +474,8 @@ public class QinsLauncherActivity extends Activity {
 
         LinearLayout firstRow = new LinearLayout(this);
         firstRow.setOrientation(LinearLayout.HORIZONTAL);
-        panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(78)));
+        int quickTileHeight = clamp((int) (screenHeightDp() * 0.27f), 64, 78);
+        panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
         View wifi = quickTile("◉", "Wi-Fi", a);
         firstRow.addView(wifi, new LinearLayout.LayoutParams(0, -1, 1));
         View bluetooth = quickTile("ᛒ", "Bluetooth", a);
@@ -467,7 +491,7 @@ public class QinsLauncherActivity extends Activity {
 
         LinearLayout secondRow = new LinearLayout(this);
         secondRow.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams secondParams = new LinearLayout.LayoutParams(-1, dp(78));
+        LinearLayout.LayoutParams secondParams = new LinearLayout.LayoutParams(-1, dp(quickTileHeight));
         secondParams.topMargin = dp(7);
         panel.addView(secondRow, secondParams);
         View sound = quickTile("♪", "Sound", a);
@@ -539,30 +563,29 @@ public class QinsLauncherActivity extends Activity {
 
     private View quickTile(String symbol, String label, ThemeManager.Appearance a) {
         LinearLayout tile = new LinearLayout(this);
-        tile.setOrientation(LinearLayout.HORIZONTAL);
-        tile.setGravity(Gravity.CENTER_VERTICAL);
-        tile.setPadding(dp(12), dp(7), dp(8), dp(7));
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setPadding(dp(3), dp(3), dp(3), dp(3));
         TextView icon = new TextView(this);
         icon.setText(symbol);
         icon.setTextColor(a.accent);
-        icon.setTextSize(24);
+        icon.setTextSize(21);
         icon.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(34), dp(40));
-        tile.addView(icon, iconParams);
+        tile.addView(icon, new LinearLayout.LayoutParams(-1, dp(27)));
 
         LinearLayout textBlock = new LinearLayout(this);
         textBlock.setOrientation(LinearLayout.VERTICAL);
-        textBlock.setGravity(Gravity.CENTER_VERTICAL);
+        textBlock.setGravity(Gravity.CENTER);
         TextView name = new TextView(this);
         name.setText(label);
         name.setTextColor(a.text);
-        name.setTextSize(12);
+        name.setTextSize(10);
         textBlock.addView(name);
         TextView state = new TextView(this);
         state.setTextColor(a.muted);
-        state.setTextSize(10);
+        state.setTextSize(8);
         textBlock.addView(state);
-        tile.addView(textBlock, new LinearLayout.LayoutParams(0, -2, 1));
+        tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
@@ -613,7 +636,7 @@ public class QinsLauncherActivity extends Activity {
         final ThemeManager.Appearance style = ThemeManager.getAppearanceById(id);
         TextView button = new TextView(this);
         button.setText(label);
-        button.setTextSize(9);
+        button.setTextSize(8);
         button.setGravity(Gravity.CENTER);
         button.setTextColor(style.text);
         button.setFocusable(true);
