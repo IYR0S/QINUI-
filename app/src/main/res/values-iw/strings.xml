@@ -27,6 +27,7 @@
     <string name="theme_preview">תצוגה מקדימה</string><string name="preview_card_title">QINS UI Studio</string><string name="preview_card_body">ערכת הצבעים שבחרת משותפת לכל מסכי האפליקציה.</string>
     <string name="theme_apply">החל ערכת צבעים</string><string name="theme_saved">ערכת הצבעים נשמרה והוחלה בכל האפליקציה.</string><string name="theme_save_failed">לא ניתן לשמור את ערכת הצבעים.</string>
     <string name="theme_scope_note">ערכת הצבעים משנה את מסכי QINS UI Studio והתפריטים שלה בלבד. תפריטי Android ואפליקציות אחרות אינם משתנים.</string>
+    <string name="launcher_frequent">בשימוש תכוף</string>
     <string name="launcher_apps">יישומים</string>
     <string name="launcher_home">בית</string>
     <string name="launcher_edit">עריכה</string>
