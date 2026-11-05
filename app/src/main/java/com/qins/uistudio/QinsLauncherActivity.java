@@ -84,7 +84,7 @@ public class QinsLauncherActivity extends Activity {
     private View wifiTile;
     private View bluetoothTile;
     private View soundTile;
-    private TextView pageDots;
+    private LinearLayout pageDots;
     private View bottomHandle;
 
     private final List<ResolveInfo> installedApps = new ArrayList<ResolveInfo>();
@@ -567,21 +567,10 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout pages = new LinearLayout(this);
         pages.setGravity(Gravity.CENTER);
         pages.setOrientation(LinearLayout.HORIZONTAL);
-        pageDots = new TextView(this);
-        pageDots.setTextColor(a.muted);
-        pageDots.setTextSize(13);
+        pageDots = new LinearLayout(this);
         pageDots.setGravity(Gravity.CENTER);
+        pageDots.setOrientation(LinearLayout.HORIZONTAL);
         pages.addView(pageDots, new LinearLayout.LayoutParams(-2, dp(32)));
-        pageDots.setFocusable(true);
-        pageDots.setFocusableInTouchMode(false);
-        pageDots.setTag("pages");
-        pageDots.setContentDescription("Home pages. Press to choose a page, long press to add one.");
-        pageDots.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { showPagePicker(); }
-        });
-        pageDots.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override public boolean onLongClick(View v) { showAddPageDialog(); return true; }
-        });
         LinearLayout.LayoutParams pageParams = new LinearLayout.LayoutParams(-1,
                 dp(screenHeightDp() < 280 ? 26 : 36));
         pageParams.topMargin = dp(screenHeightDp() < 280 ? 2 : 5);
@@ -652,6 +641,7 @@ public class QinsLauncherActivity extends Activity {
         params.topMargin = dp(4);
         pageContent.addView(compact, 0, params);
         updateNavigationButton();
+        updateQuickStates();
         if (focusFirst && row.getChildCount() > 0) row.getChildAt(0).requestFocus();
     }
 
@@ -883,16 +873,47 @@ public class QinsLauncherActivity extends Activity {
 
     private void updatePageDots() {
         if (pageDots == null) return;
-        StringBuilder dots = new StringBuilder();
+        pageDots.removeAllViews();
         int count = pageCount();
         int visible = Math.min(7, count);
         int start = Math.max(0, Math.min(page - 3, count - visible));
         for (int i = 0; i < visible; i++) {
-            int p = start + i;
-            dots.append(p == page ? "●" : "○");
-            if (i < visible - 1) dots.append("  ");
+            final int targetPage = start + i;
+            TextView dot = new TextView(this);
+            dot.setText(targetPage == page ? "●" : "○");
+            dot.setTextColor(targetPage == page ? appearance().accent : appearance().muted);
+            dot.setTextSize(targetPage == page ? 14 : 12);
+            dot.setGravity(Gravity.CENTER);
+            dot.setFocusable(true);
+            dot.setFocusableInTouchMode(false);
+            dot.setTag("page-dot:" + targetPage);
+            dot.setContentDescription("Page " + (targetPage + 1));
+            dot.setPadding(dp(5), 0, dp(5), 0);
+            styleSurface(dot, 0x00000000, 0x00000000, appearance().accent, 12);
+            dot.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    page = targetPage;
+                    editMode = false;
+                    showHome(false);
+                }
+            });
+            dot.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override public boolean onLongClick(View v) { showAddPageDialog(); return true; }
+            });
+            pageDots.addView(dot, new LinearLayout.LayoutParams(dp(26), -1));
         }
-        pageDots.setText(dots.toString());
+    }
+
+    private void focusPageDot(int targetPage) {
+        if (pageDots == null) return;
+        for (int i = 0; i < pageDots.getChildCount(); i++) {
+            View dot = pageDots.getChildAt(i);
+            if (dot.getTag() instanceof String &&
+                    ("page-dot:" + targetPage).equals(dot.getTag())) {
+                dot.requestFocus();
+                return;
+            }
+        }
     }
 
     private void changePage(int delta, int focusSlot) {
@@ -1255,12 +1276,12 @@ public class QinsLauncherActivity extends Activity {
         for (int i = 0; i < roles.length; i++) {
             final int roleIndex = i;
             TextView option = new TextView(this);
-            option.setText(roles[i] + "     ●");
+            option.setText(roles[i] + "   ·   #" + Integer.toHexString(colors[i] & 0x00FFFFFF).toUpperCase(Locale.ROOT));
             option.setTextSize(11);
-            option.setTextColor(colors[i == 0 ? 0 : (i == 1 ? 3 : (i == 2 ? 3 : 3))]);
+            option.setTextColor(colors[3]);
             option.setGravity(Gravity.CENTER_VERTICAL);
             option.setPadding(dp(10), 0, dp(10), 0);
-            GradientDrawable swatch = makeShape(colors[i], 0x55808080, 8, false);
+            GradientDrawable swatch = makeShape(colors[2], 0x55808080, 8, false);
             option.setBackgroundDrawable(swatch);
             LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(-1, dp(38));
             op.topMargin = dp(4);
@@ -1568,10 +1589,34 @@ public class QinsLauncherActivity extends Activity {
         });
     }
 
-    private void registerQuickTile(String key, View tile, TextView state) {
+    private void registerQuickTile(final String key, final View tile, TextView state) {
         if ("wifi".equals(key)) { wifiTile = tile; wifiState = state; }
         else if ("bluetooth".equals(key)) { bluetoothTile = tile; bluetoothState = state; }
         else if ("sound".equals(key)) { soundTile = tile; soundState = state; }
+        tile.setTag("quick:" + key);
+        tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override public void onFocusChange(View v, boolean hasFocus) {
+                updateQuickTileVisual(key, tile, quickKeyIsActive(key));
+            }
+        });
+    }
+
+    private boolean quickKeyIsActive(String key) {
+        try {
+            if ("wifi".equals(key)) {
+                WifiManager manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                return manager != null && manager.isWifiEnabled();
+            }
+            if ("bluetooth".equals(key)) {
+                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+                return adapter != null && adapter.isEnabled();
+            }
+            if ("sound".equals(key)) {
+                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                return audio != null && audio.getRingerMode() != AudioManager.RINGER_MODE_SILENT;
+            }
+        } catch (RuntimeException ignored) { }
+        return false;
     }
 
     private void updateQuickTileVisual(String key, View tile, boolean active) {
@@ -1676,7 +1721,7 @@ public class QinsLauncherActivity extends Activity {
     private boolean performLongPressAction(View target) {
         if (target == null || !(target.getTag() instanceof String)) return false;
         String tag = (String) target.getTag();
-        if ("pages".equals(tag)) { showAddPageDialog(); return true; }
+        if ("pages".equals(tag) || tag.startsWith("page-dot:")) { showAddPageDialog(); return true; }
         if (tag.startsWith("home:")) {
             try { enterEditMode(Integer.parseInt(tag.substring(5))); return true; }
             catch (NumberFormatException ignored) { return false; }
@@ -1736,6 +1781,16 @@ public class QinsLauncherActivity extends Activity {
                 keyCode == KeyEvent.KEYCODE_DPAD_RIGHT)) {
             View focused = getCurrentFocus();
             Object tag = focused == null ? null : focused.getTag();
+            if (tag instanceof String && ((String) tag).startsWith("page-dot:")) {
+                int target = page + (keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? -1 : 1);
+                if (target >= 0 && target < pageCount()) {
+                    page = target;
+                    editMode = false;
+                    showHome(false);
+                    focusPageDot(target);
+                }
+                return true;
+            }
             if (tag instanceof String && ((String) tag).startsWith("home:")) {
                 try {
                     int index = Integer.parseInt(((String) tag).substring(5));
