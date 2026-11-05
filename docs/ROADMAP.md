@@ -18,11 +18,11 @@
 ## Milestone 2 — independently testable modules
 - [x] Home Studio grid editor: choose 2–4 columns and 2–3 rows, preview and save locally.
 - [x] QINS Home: register a no-root Android HOME activity, discover installed launchable apps, show icons/labels in a D-pad grid and launch selected apps.
-- [x] QINS Home: use saved column/row settings and provide previous/next pages for the installed-app grid.
+- [x] QINS Home: use saved column/row settings and provide previous/next pages for the installed-app grid.\n- [x] Unify Home and Quick Panel as pages inside one QINS HOME activity; no separate Quick Panel Activity launch required.\n- [x] Replace GridLayout-based launcher app grid with API-19-safe LinearLayout rows.
 - [x] Stabilize Studio dashboard as a standalone Activity and make its launcher shortcut keyboard-activatable.
 - [ ] QINS Home: test default-home selection, boot return, firmware-specific Home key mapping and focus behavior on QINS1+.
 - [ ] Home Studio: configurable pinned apps, folders, tile ordering and multiple home pages.
-- [x] Quick Panel companion: keyboard-accessible shortcuts to Android Wi-Fi, Bluetooth, sound, display, location, date/time and app settings (no-root; Android retains control of protected switches).
+- [x] Quick Panel first direct-control prototype: Wi-Fi, Bluetooth, ringer mode, media volume and screen brightness from inside QINS HOME (no-root; exact support must be validated on QINS1+ firmware).\n- [ ] Add media transport, battery/date widgets, quick tile customization and firmware-specific fallback states to Quick Panel.
 - [ ] Edge Panel: opt-in overlay with clear permission checks and graceful fallback.
 - [ ] Theme Studio: expanded design tokens, typography, spacing, component styles and export/import.
 - [ ] Lock Studio: safe companion/customization options within public APIs.
