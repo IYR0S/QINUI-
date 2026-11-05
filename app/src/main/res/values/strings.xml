@@ -27,6 +27,7 @@
     <string name="theme_preview">Preview</string><string name="preview_card_title">QINS UI Studio</string><string name="preview_card_body">Your selected palette is shared across the app.</string>
     <string name="theme_apply">Apply palette</string><string name="theme_saved">Palette saved and applied across the app.</string><string name="theme_save_failed">Could not save palette.</string>
     <string name="theme_scope_note">The palette changes QINS UI Studio screens and menus only. Android system menus and other apps are not changed.</string>
+    <string name="launcher_frequent">Frequently used</string>
     <string name="launcher_apps">Apps</string>
     <string name="launcher_home">Home</string>
     <string name="launcher_edit">Edit</string>
