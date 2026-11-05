@@ -1,6 +1,6 @@
 package com.qins.uistudio;
 
-import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -8,13 +8,14 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-/** Functional first Theme Studio: keyboard/touch selection, preview and apply. */
-public class ThemeStudioActivity extends Activity {
+/** Theme Studio operated entirely by physical keys. */
+public class ThemeStudioActivity extends StudioActivity {
     private ThemeManager.Palette selected;
     private LinearLayout page;
     private TextView previewTitle;
     private TextView previewBody;
     private TextView status;
+    private Button firstChoice;
 
     private int dp(float value) { return (int) (value * getResources().getDisplayMetrics().density + 0.5f); }
 
@@ -39,6 +40,16 @@ public class ThemeStudioActivity extends Activity {
         title.setTextSize(26);
         title.setTextColor(selected.text);
         page.addView(title);
+
+        Button menu = new Button(this);
+        menu.setText(R.string.open_app_menu);
+        KeyboardSupport.makeFocusable(menu);
+        menu.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(ThemeStudioActivity.this, AppMenuActivity.class));
+            }
+        });
+        page.addView(menu);
 
         TextView intro = new TextView(this);
         intro.setText(R.string.theme_intro);
@@ -93,6 +104,7 @@ public class ThemeStudioActivity extends Activity {
                 boolean saved = ThemeManager.apply(ThemeStudioActivity.this, selected.id);
                 status.setText(saved ? R.string.theme_saved : R.string.theme_save_failed);
                 renderPreview();
+                applySharedThemeRefresh();
             }
         });
 
@@ -111,12 +123,14 @@ public class ThemeStudioActivity extends Activity {
         np.topMargin = dp(20);
         page.addView(note, np);
         setContentView(scroll);
+        if (firstChoice != null) firstChoice.requestFocus();
     }
 
     private void addChoice(final String id, int labelId) {
         Button choice = new Button(this);
         choice.setText(labelId);
         KeyboardSupport.makeFocusable(choice);
+        if (firstChoice == null) firstChoice = choice;
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(6);
         page.addView(choice, params);
@@ -131,8 +145,10 @@ public class ThemeStudioActivity extends Activity {
         });
     }
 
-    @Override public void onBackPressed() {
-        super.onBackPressed();
+    private void applySharedThemeRefresh() {
+        // Refresh the app-owned controls immediately after saving the new palette.
+        View root = findViewById(android.R.id.content);
+        if (root != null) root.invalidate();
     }
 
     private void renderPreview() {
