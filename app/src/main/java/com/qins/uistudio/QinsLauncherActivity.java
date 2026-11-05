@@ -1753,6 +1753,7 @@ public class QinsLauncherActivity extends Activity {
             if (focused != null && focused.getTag() instanceof String &&
                     (((String) focused.getTag()).startsWith("home:") ||
                      ((String) focused.getTag()).startsWith("drawer:") ||
+                     ((String) focused.getTag()).startsWith("page-dot:") ||
                      "pages".equals(focused.getTag()))) {
                 if (event.getRepeatCount() == 0) {
                     pendingSelectView = focused;
