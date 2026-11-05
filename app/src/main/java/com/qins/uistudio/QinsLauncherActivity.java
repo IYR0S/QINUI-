@@ -55,6 +55,8 @@ import java.util.Locale;
  */
 public class QinsLauncherActivity extends Activity {
     private static final int APPS_PER_PAGE = 4;
+    private static final String DRAWER_PREFS = "qins_drawer";
+    private int drawerPage = 0;
     private static final int REQUEST_PICK_WALLPAPER = 7301;
     private static final String LAUNCHER_PREFS = "qins_launcher";
     private static final String PINS_KEY = "home_pins";
@@ -82,6 +84,7 @@ public class QinsLauncherActivity extends Activity {
     private LinearLayout editBar;
     private TextView appsNavButton;
     private TextView wallpaperButton;
+    private TextView themeButton;
     private Bitmap wallpaperBitmap;
     private TextView clockView;
     private TextView dateView;
@@ -199,6 +202,21 @@ public class QinsLauncherActivity extends Activity {
                 Typeface.BOLD);
         topBar.addView(wordmark, new LinearLayout.LayoutParams(0, dp(42), 1));
 
+        themeButton = new TextView(this);
+        themeButton.setText("◉");
+        themeButton.setTextSize(18);
+        themeButton.setGravity(Gravity.CENTER);
+        themeButton.setFocusable(true);
+        themeButton.setFocusableInTouchMode(false);
+        themeButton.setContentDescription(getString(R.string.launcher_theme));
+        styleSurface(themeButton, a.surface, a.border, a.focus, a.cornerDp);
+        themeButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showThemePicker(); }
+        });
+        LinearLayout.LayoutParams themeButtonParams = new LinearLayout.LayoutParams(dp(34), dp(36));
+        themeButtonParams.rightMargin = dp(5);
+        topBar.addView(themeButton, themeButtonParams);
+
         appsNavButton = new TextView(this);
         appsNavButton.setGravity(Gravity.CENTER);
         appsNavButton.setTextSize(12);
@@ -253,6 +271,10 @@ public class QinsLauncherActivity extends Activity {
         if (wallpaperButton != null) {
             wallpaperButton.setTextColor(a.text);
             styleSurface(wallpaperButton, a.surface, a.border, a.focus, a.cornerDp);
+        }
+        if (themeButton != null) {
+            themeButton.setTextColor(a.text);
+            styleSurface(themeButton, a.surface, a.border, a.focus, a.cornerDp);
         }
         root.setBackground(new QinsWallpaperDrawable(a));
     }
@@ -728,6 +750,13 @@ public class QinsLauncherActivity extends Activity {
         pageContent.addView(top, topParams);
 
         View spacer = new View(this);
+        spacer.setFocusable(true);
+        spacer.setFocusableInTouchMode(false);
+        spacer.setTag("home:drawer-trigger");
+        spacer.setContentDescription(getString(R.string.launcher_open_all_apps));
+        spacer.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { drawerPage = 0; showDrawer(false); }
+        });
         pageContent.addView(spacer, new LinearLayout.LayoutParams(1, 0, 1));
 
         appRow = new LinearLayout(this);
@@ -756,8 +785,7 @@ public class QinsLauncherActivity extends Activity {
         updateNavigationButton();
 
         if (editMode && selectedHomeIndex >= 0) focusHomeIndex(selectedHomeIndex);
-        else if (appRow.getChildCount() > 0) appRow.getChildAt(0).requestFocus();
-        else appsNavButton.requestFocus();
+        else spacer.requestFocus();
     }
 
     /** Compact quick controls stay on top of the home page and leave most of it visible. */
@@ -860,6 +888,7 @@ public class QinsLauncherActivity extends Activity {
         tile.setGravity(Gravity.CENTER);
         tile.setPadding(dp(2), dp(2), dp(2), dp(2));
         QinsGlyphView icon = new QinsGlyphView(this, glyph, a.accent);
+        icon.setTag("quick-glyph");
         tile.addView(icon, new LinearLayout.LayoutParams(dp(23), dp(23)));
         TextView text = new TextView(this);
         text.setText(label);
@@ -912,6 +941,44 @@ public class QinsLauncherActivity extends Activity {
                         showCompactQuickPanel(true);
                     }
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    private boolean openQuickSetting(String key) {
+        try {
+            Intent intent;
+            if ("bluetooth".equals(key)) intent = new Intent(Settings.ACTION_BLUETOOTH_SETTINGS);
+            else if ("wifi".equals(key)) intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
+            else if ("sound".equals(key) || "volume".equals(key)) intent = new Intent(Settings.ACTION_SOUND_SETTINGS);
+            else if ("brightness".equals(key)) intent = new Intent(Settings.ACTION_DISPLAY_SETTINGS);
+            else if ("theme".equals(key)) { showThemePicker(); return true; }
+            else intent = new Intent(Settings.ACTION_SETTINGS);
+            startActivity(intent);
+            return true;
+        } catch (RuntimeException error) {
+            android.widget.Toast.makeText(this, R.string.launcher_settings_unavailable,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return true;
+        }
+    }
+
+    private void updateSoundGlyph(View tile, int mode) {
+        if (tile == null) return;
+        QinsGlyphView glyph = findQuickGlyph(tile);
+        if (glyph == null) return;
+        glyph.setGlyph(mode == AudioManager.RINGER_MODE_SILENT ? "sound-muted" :
+                (mode == AudioManager.RINGER_MODE_VIBRATE ? "sound-vibrate" : "sound"));
+    }
+
+    private QinsGlyphView findQuickGlyph(View view) {
+        if (view instanceof QinsGlyphView && "quick-glyph".equals(view.getTag())) return (QinsGlyphView) view;
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                QinsGlyphView found = findQuickGlyph(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     private void openSystemSettings() {
@@ -1226,6 +1293,78 @@ public class QinsLauncherActivity extends Activity {
         showHome(false);
     }
 
+    private int drawerColumns() {
+        return getSharedPreferences(DRAWER_PREFS, MODE_PRIVATE).getInt("columns", 4);
+    }
+
+    private int drawerRows() {
+        return getSharedPreferences(DRAWER_PREFS, MODE_PRIVATE).getInt("rows", 4);
+    }
+
+    private void showDrawerGridSettings() {
+        final String[] choices = new String[] {"3 × 4", "4 × 4", "4 × 5", "5 × 5"};
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_grid_layout)
+                .setItems(choices, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        int columns = which == 0 ? 3 : (which == 3 ? 5 : 4);
+                        int rows = which == 0 || which == 1 ? 4 : 5;
+                        getSharedPreferences(DRAWER_PREFS, MODE_PRIVATE).edit()
+                                .putInt("columns", columns).putInt("rows", rows).commit();
+                        drawerPage = 0;
+                        showDrawer(pinSelectionMode);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private View createDrawerAppTile(final ResolveInfo info, ThemeManager.Appearance a) {
+        LinearLayout tile = new LinearLayout(this);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setPadding(dp(2), dp(3), dp(2), dp(3));
+        tile.setFocusable(true);
+        tile.setFocusableInTouchMode(false);
+        tile.setClickable(true);
+        tile.setLongClickable(true);
+        tile.setTag("drawer:" + componentKey(info));
+        tile.setContentDescription(info.loadLabel(getPackageManager()) +
+                ". Press to open, long press to pin.");
+        styleSurface(tile, a.surface, a.border, a.focus, a.cornerDp);
+
+        ImageView icon = new ImageView(this);
+        icon.setImageDrawable(info.loadIcon(getPackageManager()));
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        int iconSize = clamp(screenWidthDp() / Math.max(5, drawerColumns()) - 15, 24, 40);
+        tile.addView(icon, new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)));
+
+        TextView label = new TextView(this);
+        label.setText(info.loadLabel(getPackageManager()));
+        label.setTextColor(a.text);
+        label.setTextSize(screenWidthDp() < 210 ? 7 : 9);
+        label.setGravity(Gravity.CENTER);
+        label.setSingleLine(true);
+        label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        tile.addView(label, new LinearLayout.LayoutParams(-1, dp(19)));
+
+        TextView mark = new TextView(this);
+        mark.setText(isPinned(info) ? "●" : "");
+        mark.setTextColor(a.accent);
+        mark.setTextSize(8);
+        mark.setGravity(Gravity.CENTER);
+        tile.addView(mark, new LinearLayout.LayoutParams(-1, dp(10)));
+
+        tile.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                if (pinSelectionMode) pinApp(info, true);
+                else launchApp(info);
+            }
+        });
+        tile.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) { pinApp(info, false); return true; }
+        });
+        return tile;
+    }
+
     private void showDrawer(boolean chooseToPin) {
         removeCompactPanelOverlay();
         drawerVisible = true;
@@ -1251,106 +1390,114 @@ public class QinsLauncherActivity extends Activity {
             frequentTitle.setTextColor(a.muted);
             frequentTitle.setTextSize(10);
             frequentTitle.setPadding(dp(5), dp(4), dp(5), dp(5));
-            list.addView(frequentTitle, new LinearLayout.LayoutParams(-1, dp(25)));
+            list.addView(frequentTitle, new LinearLayout.LayoutParams(-1, dp(22)));
 
             LinearLayout frequentRow = new LinearLayout(this);
             frequentRow.setOrientation(LinearLayout.HORIZONTAL);
             frequentRow.setGravity(Gravity.CENTER);
             for (final ResolveInfo frequentInfo : frequentApps) {
-                LinearLayout item = new LinearLayout(this);
-                item.setOrientation(LinearLayout.VERTICAL);
-                item.setGravity(Gravity.CENTER);
-                item.setPadding(dp(3), dp(4), dp(3), dp(4));
-                item.setFocusable(true);
-                item.setFocusableInTouchMode(false);
-                item.setClickable(true);
-                item.setLongClickable(true);
-                item.setTag("drawer:" + componentKey(frequentInfo));
-                styleSurface(item, a.surface, a.border, a.focus, a.cornerDp);
-                ImageView frequentIcon = new ImageView(this);
-                frequentIcon.setImageDrawable(frequentInfo.loadIcon(getPackageManager()));
-                item.addView(frequentIcon, new LinearLayout.LayoutParams(dp(30), dp(30)));
-                TextView frequentLabel = new TextView(this);
-                frequentLabel.setText(frequentInfo.loadLabel(getPackageManager()));
-                frequentLabel.setTextColor(a.text);
-                frequentLabel.setTextSize(8);
-                frequentLabel.setSingleLine(true);
-                frequentLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                frequentLabel.setGravity(Gravity.CENTER);
-                item.addView(frequentLabel, new LinearLayout.LayoutParams(-1, dp(20)));
-                item.setOnClickListener(new View.OnClickListener() {
-                    @Override public void onClick(View v) {
-                        if (pinSelectionMode) pinApp(frequentInfo, true);
-                        else launchApp(frequentInfo);
-                    }
-                });
-                item.setOnLongClickListener(new View.OnLongClickListener() {
-                    @Override public boolean onLongClick(View v) {
-                        pinApp(frequentInfo, false);
-                        return true;
-                    }
-                });
+                View item = createDrawerAppTile(frequentInfo, a);
                 LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(0, dp(62), 1);
-                itemParams.setMargins(dp(2), 0, dp(2), dp(6));
+                itemParams.setMargins(dp(2), 0, dp(2), dp(4));
                 frequentRow.addView(item, itemParams);
             }
-            list.addView(frequentRow, new LinearLayout.LayoutParams(-1, dp(68)));
+            list.addView(frequentRow, new LinearLayout.LayoutParams(-1, dp(66)));
         }
 
-        for (final ResolveInfo info : installedApps) {
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(9), dp(4), dp(10), dp(4));
-            row.setFocusable(true);
-            row.setFocusableInTouchMode(false);
-            row.setClickable(true);
-            row.setLongClickable(true);
-            row.setTag("drawer:" + componentKey(info));
-            row.setContentDescription(info.loadLabel(getPackageManager()) + ". Press to open, long press to pin.");
-            styleSurface(row, a.surface, a.border, a.focus, a.cornerDp);
+        LinearLayout gridHeading = new LinearLayout(this);
+        gridHeading.setGravity(Gravity.CENTER_VERTICAL);
+        TextView allTitle = new TextView(this);
+        allTitle.setText(getString(R.string.launcher_all_apps));
+        allTitle.setTextColor(a.text);
+        allTitle.setTextSize(12);
+        gridHeading.addView(allTitle, new LinearLayout.LayoutParams(0, dp(32), 1));
+        TextView editGrid = new TextView(this);
+        editGrid.setText(getString(R.string.launcher_edit_grid));
+        editGrid.setTextColor(a.accent);
+        editGrid.setTextSize(9);
+        editGrid.setGravity(Gravity.CENTER);
+        editGrid.setFocusable(true);
+        editGrid.setFocusableInTouchMode(false);
+        editGrid.setPadding(dp(7), 0, dp(7), 0);
+        styleSurface(editGrid, a.surface, a.border, a.focus, a.cornerDp);
+        editGrid.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showDrawerGridSettings(); }
+        });
+        gridHeading.addView(editGrid, new LinearLayout.LayoutParams(-2, dp(28)));
+        list.addView(gridHeading, new LinearLayout.LayoutParams(-1, dp(34)));
 
-            ImageView icon = new ImageView(this);
-            icon.setImageDrawable(info.loadIcon(getPackageManager()));
-            LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(34), dp(34));
-            iconParams.rightMargin = dp(10);
-            row.addView(icon, iconParams);
-
-            TextView label = new TextView(this);
-            label.setText(info.loadLabel(getPackageManager()));
-            label.setTextColor(a.text);
-            label.setTextSize(12);
-            label.setSingleLine(true);
-            label.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            row.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
-
-            TextView mark = new TextView(this);
-            mark.setText(isPinned(info) ? "●" : "＋");
-            mark.setTextColor(isPinned(info) ? a.accent : a.muted);
-            mark.setTextSize(13);
-            row.addView(mark, new LinearLayout.LayoutParams(dp(25), -2));
-
-            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(48));
-            rowParams.bottomMargin = dp(4);
-            list.addView(row, rowParams);
-            row.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) {
-                    if (pinSelectionMode) {
-                        pinApp(info, true);
-                    } else {
-                        launchApp(info);
-                    }
-                }
-            });
-            row.setOnLongClickListener(new View.OnLongClickListener() {
-                @Override public boolean onLongClick(View v) {
-                    pinApp(info, false);
-                    return true;
-                }
-            });
+        final int columns = drawerColumns();
+        final int rows = drawerRows();
+        int pageSize = columns * rows;
+        int pageCount = Math.max(1, (installedApps.size() + pageSize - 1) / pageSize);
+        drawerPage = Math.max(0, Math.min(drawerPage, pageCount - 1));
+        int first = drawerPage * pageSize;
+        int last = Math.min(installedApps.size(), first + pageSize);
+        int cellHeight = clamp((screenHeightDp() - 100) / rows, 48, 75);
+        for (int rowIndex = 0; rowIndex < rows; rowIndex++) {
+            LinearLayout gridRow = new LinearLayout(this);
+            gridRow.setOrientation(LinearLayout.HORIZONTAL);
+            gridRow.setGravity(Gravity.CENTER);
+            for (int col = 0; col < columns; col++) {
+                int appIndex = first + rowIndex * columns + col;
+                View cell;
+                if (appIndex < last) cell = createDrawerAppTile(installedApps.get(appIndex), a);
+                else cell = new View(this);
+                LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, dp(cellHeight), 1);
+                cellParams.setMargins(dp(2), dp(2), dp(2), dp(2));
+                gridRow.addView(cell, cellParams);
+            }
+            list.addView(gridRow, new LinearLayout.LayoutParams(-1, dp(cellHeight + 4)));
         }
-        if (list.getChildCount() > 0) list.getChildAt(0).requestFocus();
-        else appsNavButton.requestFocus();
+
+        LinearLayout pager = new LinearLayout(this);
+        pager.setGravity(Gravity.CENTER);
+        TextView previous = new TextView(this);
+        previous.setText("‹");
+        previous.setTextSize(23);
+        previous.setTextColor(drawerPage > 0 ? a.accent : a.muted);
+        previous.setGravity(Gravity.CENTER);
+        previous.setFocusable(drawerPage > 0);
+        previous.setFocusableInTouchMode(false);
+        previous.setTag("drawer-page-prev");
+        styleSurface(previous, a.surface, a.border, a.focus, a.cornerDp);
+        previous.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { if (drawerPage > 0) { drawerPage--; showDrawer(pinSelectionMode); } }
+        });
+        pager.addView(previous, new LinearLayout.LayoutParams(dp(48), dp(34)));
+        TextView pageLabel = new TextView(this);
+        pageLabel.setText((drawerPage + 1) + " / " + pageCount);
+        pageLabel.setTextColor(a.muted);
+        pageLabel.setGravity(Gravity.CENTER);
+        pager.addView(pageLabel, new LinearLayout.LayoutParams(dp(65), dp(34)));
+        TextView next = new TextView(this);
+        next.setText("›");
+        next.setTextSize(23);
+        next.setTextColor(drawerPage + 1 < pageCount ? a.accent : a.muted);
+        next.setGravity(Gravity.CENTER);
+        next.setFocusable(drawerPage + 1 < pageCount);
+        next.setFocusableInTouchMode(false);
+        next.setTag("drawer-page-next");
+        styleSurface(next, a.surface, a.border, a.focus, a.cornerDp);
+        next.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { if (drawerPage + 1 < pageCount) { drawerPage++; showDrawer(pinSelectionMode); } }
+        });
+        pager.addView(next, new LinearLayout.LayoutParams(dp(48), dp(34)));
+        list.addView(pager, new LinearLayout.LayoutParams(-1, dp(38)));
+
+        if (last > first) {
+            int focusIndex = first;
+            for (int i = first; i < last; i++) {
+                if (isPinned(installedApps.get(i))) { focusIndex = i; break; }
+            }
+            int rowIndex = (focusIndex - first) / columns;
+            int colIndex = (focusIndex - first) % columns;
+            View focusRow = list.getChildAt(list.getChildCount() - rows - 1 + rowIndex);
+            if (focusRow instanceof LinearLayout) {
+                LinearLayout row = (LinearLayout) focusRow;
+                if (colIndex < row.getChildCount()) row.getChildAt(colIndex).requestFocus();
+            }
+        } else editGrid.requestFocus();
     }
 
     private void pinApp(ResolveInfo info, boolean returnHome) {
@@ -1397,6 +1544,25 @@ public class QinsLauncherActivity extends Activity {
                 .setPositiveButton("＋ Add page", new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) { addHomePage(); }
                 }).setNegativeButton("Cancel", null).show();
+    }
+
+    private void showThemePicker() {
+        final ThemeManager.Appearance[] options = ThemeManager.getAppearances();
+        String[] labels = new String[options.length];
+        int selected = 0;
+        for (int i = 0; i < options.length; i++) {
+            labels[i] = options[i].title + (options[i].id.equals(appearance().id) ? "  ✓" : "");
+            if (options[i].id.equals(appearance().id)) selected = i;
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_choose_theme)
+                .setSingleChoiceItems(labels, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        ThemeManager.applyAppearance(QinsLauncherActivity.this, options[which].id);
+                        dialog.dismiss();
+                        refreshLauncherSurface();
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void cycleAppearance() {
@@ -1783,6 +1949,7 @@ public class QinsLauncherActivity extends Activity {
         tile.setGravity(Gravity.CENTER);
         tile.setPadding(dp(3), dp(3), dp(3), dp(3));
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
+        icon.setTag("quick-glyph");
         tile.addView(icon, new LinearLayout.LayoutParams(-1, dp(31)));
 
         LinearLayout textBlock = new LinearLayout(this);
@@ -1869,6 +2036,9 @@ public class QinsLauncherActivity extends Activity {
         else if ("bluetooth".equals(key)) { bluetoothTile = tile; bluetoothState = state; }
         else if ("sound".equals(key)) { soundTile = tile; soundState = state; }
         tile.setTag("quick:" + key);
+        tile.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) { return openQuickSetting(key); }
+        });
         tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View v, boolean hasFocus) {
                 updateQuickTileVisual(key, tile, quickKeyIsActive(key));
@@ -1925,10 +2095,9 @@ public class QinsLauncherActivity extends Activity {
         try {
             AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             int mode = audio == null ? AudioManager.RINGER_MODE_NORMAL : audio.getRingerMode();
-            String label = mode == AudioManager.RINGER_MODE_SILENT ? "SILENT" :
-                    (mode == AudioManager.RINGER_MODE_VIBRATE ? "VIBRATE" : "ON");
-            setQuickState("sound", soundState, soundTile, label, mode != AudioManager.RINGER_MODE_SILENT);
-        } catch (RuntimeException ignored) { setQuickState("sound", soundState, soundTile, "N/A", false); }
+            setQuickState("sound", soundState, soundTile, "", mode != AudioManager.RINGER_MODE_SILENT);
+            updateSoundGlyph(soundTile, mode);
+        } catch (RuntimeException ignored) { setQuickState("sound", soundState, soundTile, "", false); }
     }
 
     private void toggleWifi() {
@@ -1957,8 +2126,11 @@ public class QinsLauncherActivity extends Activity {
         try {
             AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
             if (audio == null) return;
-            audio.setRingerMode(audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT
-                    ? AudioManager.RINGER_MODE_NORMAL : AudioManager.RINGER_MODE_SILENT);
+            int mode = audio.getRingerMode();
+            int next = mode == AudioManager.RINGER_MODE_NORMAL ? AudioManager.RINGER_MODE_VIBRATE :
+                    (mode == AudioManager.RINGER_MODE_VIBRATE ? AudioManager.RINGER_MODE_SILENT :
+                            AudioManager.RINGER_MODE_NORMAL);
+            audio.setRingerMode(next);
             updateQuickStates();
         } catch (RuntimeException error) {
             android.widget.Toast.makeText(this, "Sound unavailable", android.widget.Toast.LENGTH_SHORT).show();
@@ -2005,6 +2177,7 @@ public class QinsLauncherActivity extends Activity {
             ResolveInfo info = findApp(tag.substring(7));
             if (info != null) { pinApp(info, false); return true; }
         }
+        if (tag.startsWith("quick:")) return openQuickSetting(tag.substring(6));
         return false;
     }
 
@@ -2020,10 +2193,20 @@ public class QinsLauncherActivity extends Activity {
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (isSelectKey(keyCode)) {
             View focused = getCurrentFocus();
+            if (focused != null && "home:drawer-trigger".equals(focused.getTag())) {
+                if (event.getRepeatCount() == 0) {
+                    pendingSelectView = focused;
+                    longPressPerformed = false;
+                    event.startTracking();
+                    return true;
+                }
+            }
             if (focused != null && focused.getTag() instanceof String &&
                     (((String) focused.getTag()).startsWith("home:") ||
                      ((String) focused.getTag()).startsWith("drawer:") ||
                      ((String) focused.getTag()).startsWith("page-dot:") ||
+                     ((String) focused.getTag()).startsWith("quick:") ||
+                     "home:drawer-trigger".equals(focused.getTag()) ||
                      "pages".equals(focused.getTag()))) {
                 if (event.getRepeatCount() == 0) {
                     pendingSelectView = focused;
