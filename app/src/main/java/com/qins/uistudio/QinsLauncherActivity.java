@@ -588,7 +588,7 @@ public class QinsLauncherActivity extends Activity {
         edit.setFocusableInTouchMode(false);
         header.addView(edit, new LinearLayout.LayoutParams(dp(48), dp(24)));
         edit.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { showQuickTileEditor(0); }
+            @Override public void onClick(View v) { showQuickSlotPicker(); }
         });
         compact.addView(header);
 
@@ -659,6 +659,17 @@ public class QinsLauncherActivity extends Activity {
     private String quickLabel(String key) {
         for (int i = 0; i < QUICK_OPTIONS.length; i++) if (QUICK_OPTIONS[i].equals(key)) return QUICK_LABELS[i];
         return key;
+    }
+
+    private void showQuickSlotPicker() {
+        final String[] slots = new String[] {"Shortcut 1", "Shortcut 2", "Shortcut 3", "Shortcut 4"};
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Edit compact controls")
+                .setItems(slots, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        showQuickTileEditor(which);
+                    }
+                }).setNegativeButton("Done", null).show();
     }
 
     private void showQuickTileEditor(final int index) {
