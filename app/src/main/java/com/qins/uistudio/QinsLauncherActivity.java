@@ -212,6 +212,13 @@ public class QinsLauncherActivity extends Activity {
                 updateSignalIndicator();
                 return;
             }
+            int simState = telephonyManager.getSimState();
+            if (simState == TelephonyManager.SIM_STATE_ABSENT ||
+                    simState == TelephonyManager.SIM_STATE_UNKNOWN) {
+                cellularServiceKnown = true;
+                cellularServiceAvailable = false;
+                cellularSignalLevel = 0;
+            }
             if (phoneStateListener == null) {
                 phoneStateListener = new PhoneStateListener() {
                     @Override public void onSignalStrengthsChanged(SignalStrength signal) {
@@ -1636,9 +1643,10 @@ public class QinsLauncherActivity extends Activity {
         final ResolveInfo first = pinnedApps.get(selectedHomeIndex);
         if (isFolder(first)) { showFolderActions(first); return; }
         final List<ResolveInfo> candidates = new ArrayList<ResolveInfo>();
-        for (int i = 0; i < pinnedApps.size(); i++) {
-            ResolveInfo candidate = pinnedApps.get(i);
-            if (i != selectedHomeIndex && !isFolder(candidate)) candidates.add(candidate);
+        for (ResolveInfo candidate : installedApps) {
+            if (candidate == first || isFolder(candidate)) continue;
+            boolean alreadyInAnotherFolder = isPinned(candidate) && !pinnedApps.contains(candidate);
+            if (!alreadyInAnotherFolder) candidates.add(candidate);
         }
         if (candidates.isEmpty()) {
             android.widget.Toast.makeText(this, R.string.launcher_folder_empty,
@@ -1670,8 +1678,10 @@ public class QinsLauncherActivity extends Activity {
         editor.putString("apps:" + firstKey, firstKey + "\n" + secondKey);
         editor.putString("name:" + firstKey, getString(R.string.launcher_folder));
         editor.commit();
-        pinnedApps.remove(secondIndex);
-        if (secondIndex < selectedHomeIndex) selectedHomeIndex--;
+        if (secondIndex >= 0) {
+            pinnedApps.remove(secondIndex);
+            if (secondIndex < selectedHomeIndex) selectedHomeIndex--;
+        }
         page = selectedHomeIndex / APPS_PER_PAGE;
         savePinnedApps();
         showHome(false);
@@ -2938,6 +2948,10 @@ public class QinsLauncherActivity extends Activity {
                 }
                 return true;
             }
+        }
+        if (keyCode == KeyEvent.KEYCODE_CALL && event.getRepeatCount() == 0) {
+            openDialer();
+            return true;
         }
         if (keyCode == KeyEvent.KEYCODE_MENU) {
             openStudio();
