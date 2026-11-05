@@ -32,7 +32,7 @@ public abstract class StudioActivity extends Activity {
         applyTheme(view);
     }
 
-    private void applySharedTheme() {
+    protected final void refreshSharedTheme() {
         ViewGroup content = (ViewGroup) findViewById(android.R.id.content);
         if (content != null && content.getChildCount() > 0) {
             applyTheme(content.getChildAt(0));
