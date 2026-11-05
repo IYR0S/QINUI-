@@ -605,7 +605,7 @@ public class QinsLauncherActivity extends Activity {
         compact.addView(row, new LinearLayout.LayoutParams(-1, dp(52)));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(80));
         params.topMargin = dp(4);
-        pageContent.addView(compact, params);
+        pageContent.addView(compact, 0, params);
         updateNavigationButton();
         if (focusFirst && row.getChildCount() > 0) row.getChildAt(0).requestFocus();
     }
@@ -1313,7 +1313,7 @@ public class QinsLauncherActivity extends Activity {
         });
 
         updateClockAndBattery();
-        if (focusFirst) wifi.requestFocus();
+        if (focusFirst && firstRow.getChildCount() > 0) firstRow.getChildAt(0).requestFocus();
     }
 
     private View quickTile(String symbol, String label, ThemeManager.Appearance a) {
