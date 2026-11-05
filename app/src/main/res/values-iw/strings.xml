@@ -83,5 +83,10 @@
     <string name="launcher_folder">תיקייה</string>
     <string name="launcher_choose_folder_app">בחר יישום נוסף</string>
     <string name="launcher_folder_empty">אין יישומים בתיקייה</string>
-    <string name="launcher_softkey_config_hint">לחיצה ארוכה על מקש Softkey פיזי תשנה את קיצור הדרך שלו. אפשר גם לבחור צד כאן.</string>
+    <string name="launcher_softkey_config_hint">בחר פעולה לכל צד, או השתמש באפשרות לימוד כדי לזהות את קוד המקש הפיזי שהמכשיר מדווח בפועל.</string>
+    <string name="launcher_softkey_learn">לימוד מקש פיזי</string>
+    <string name="launcher_softkey_learning">לחץ עכשיו על המקש הפיזי שברצונך לשייך. קוד המקש וקוד הסריקה יישמרו.</string>
+    <string name="launcher_softkey_detected">המקש זוהה ונשמר</string>
+    <string name="launcher_softkey_reset">איפוס זיהוי המקשים</string>
+    <string name="launcher_softkey_reset_done">מיפוי המקשים אופס.</string>
 </resources>
