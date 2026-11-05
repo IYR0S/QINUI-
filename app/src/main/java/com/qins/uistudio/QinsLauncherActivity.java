@@ -632,9 +632,17 @@ public class QinsLauncherActivity extends Activity {
         getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).edit().putString("order", value.toString()).commit();
     }
 
+    private String glyphForQuickKey(String key) {
+        if ("settings".equals(key)) return "settings";
+        if ("theme".equals(key)) return "palette";
+        if ("brightness".equals(key)) return "brightness";
+        if ("volume".equals(key)) return "volume";
+        return key;
+    }
+
     private View compactQuickTile(String key, ThemeManager.Appearance a) {
         String label = quickLabel(key);
-        String glyph = "settings".equals(key) ? "settings" : ("theme".equals(key) ? "palette" : ("brightness".equals(key) ? "brightness" : ("volume".equals(key) ? "volume" : key)));
+        String glyph = glyphForQuickKey(key);
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.VERTICAL);
         tile.setGravity(Gravity.CENTER);
@@ -1130,13 +1138,43 @@ public class QinsLauncherActivity extends Activity {
                 }).setNegativeButton("Cancel", null).show();
     }
 
+    private String[] getExpandedQuickTileKeys() {
+        String saved = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("expanded_order", "");
+        String[] defaults = new String[] {"wifi", "bluetooth", "sound", "settings"};
+        if (saved.length() == 0) return defaults;
+        String[] parts = saved.split(",");
+        String[] result = new String[4];
+        for (int i = 0; i < 4; i++) result[i] = i < parts.length && isQuickOption(parts[i]) ? parts[i] : defaults[i];
+        return result;
+    }
+
+    private void saveExpandedQuickTileKeys(String[] keys) {
+        StringBuilder value = new StringBuilder();
+        for (int i = 0; i < 4; i++) { if (i > 0) value.append(','); value.append(keys[i]); }
+        getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).edit().putString("expanded_order", value.toString()).commit();
+    }
+
+    private void showExpandedQuickTileEditor(final int index) {
+        final String[] keys = getExpandedQuickTileKeys();
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Choose expanded tile " + (index + 1))
+                .setItems(quickLabels(), new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        keys[index] = QUICK_OPTIONS[which];
+                        saveExpandedQuickTileKeys(keys);
+                        showQuickPanel(true);
+                    }
+                }).setNegativeButton("Cancel", null).show();
+    }
+
     private void showQuickSettingsEditor() {
-        final String[] slots = new String[] {"Compact shortcut 1", "Compact shortcut 2", "Compact shortcut 3", "Compact shortcut 4", "Theme colors", "Clock design"};
+        final String[] slots = new String[] {"Compact shortcut 1", "Compact shortcut 2", "Compact shortcut 3", "Compact shortcut 4", "Expanded tile 1", "Expanded tile 2", "Expanded tile 3", "Expanded tile 4", "Theme colors", "Clock design"};
         new android.app.AlertDialog.Builder(this).setTitle("Customize quick settings")
                 .setItems(slots, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         if (which < 4) showQuickTileEditor(which);
-                        else if (which == 4) showThemeEditor();
+                        else if (which < 8) showExpandedQuickTileEditor(which - 4);
+                        else if (which == 8) showThemeEditor();
                         else showClockStylePicker();
                     }
                 }).setNegativeButton("Done", null).show();
@@ -1185,40 +1223,37 @@ public class QinsLauncherActivity extends Activity {
         dateParams.bottomMargin = dp(14);
         panel.addView(panelDate, dateParams);
 
+        String[] expandedKeys = getExpandedQuickTileKeys();
         LinearLayout firstRow = new LinearLayout(this);
         firstRow.setOrientation(LinearLayout.HORIZONTAL);
         int quickTileHeight = clamp((int) (screenHeightDp() * 0.27f), 64, 78);
         panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
-        View wifi = quickTile("wifi", getString(R.string.launcher_wifi), a);
-        firstRow.addView(wifi, new LinearLayout.LayoutParams(0, -1, 1));
-        View bluetooth = quickTile("bluetooth", getString(R.string.launcher_bluetooth), a);
-        LinearLayout.LayoutParams btParams = new LinearLayout.LayoutParams(0, -1, 1);
-        btParams.leftMargin = dp(7);
-        firstRow.addView(bluetooth, btParams);
-        wifi.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { toggleWifi(); }
-        });
-        bluetooth.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { toggleBluetooth(); }
-        });
+        for (int i = 0; i < 2; i++) {
+            final String key = expandedKeys[i];
+            View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
+            LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
+            if (i > 0) tileParams.leftMargin = dp(7);
+            firstRow.addView(tile, tileParams);
+            tile.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { performQuickAction(key); }
+            });
+        }
 
         LinearLayout secondRow = new LinearLayout(this);
         secondRow.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams secondParams = new LinearLayout.LayoutParams(-1, dp(quickTileHeight));
         secondParams.topMargin = dp(7);
         panel.addView(secondRow, secondParams);
-        View sound = quickTile("sound", getString(R.string.launcher_sound), a);
-        secondRow.addView(sound, new LinearLayout.LayoutParams(0, -1, 1));
-        View media = quickTile("settings", getString(R.string.launcher_settings), a);
-        LinearLayout.LayoutParams mediaParams = new LinearLayout.LayoutParams(0, -1, 1);
-        mediaParams.leftMargin = dp(7);
-        secondRow.addView(media, mediaParams);
-        sound.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { toggleSound(); }
-        });
-        media.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { openSystemSettings(); }
-        });
+        for (int i = 2; i < 4; i++) {
+            final String key = expandedKeys[i];
+            View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
+            LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
+            if (i > 2) tileParams.leftMargin = dp(7);
+            secondRow.addView(tile, tileParams);
+            tile.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { performQuickAction(key); }
+            });
+        }
 
         updateQuickStates();
 
@@ -1484,7 +1519,8 @@ public class QinsLauncherActivity extends Activity {
             View focused = getCurrentFocus();
             if (focused != null && focused.getTag() instanceof String &&
                     (((String) focused.getTag()).startsWith("home:") ||
-                     ((String) focused.getTag()).startsWith("drawer:"))) {
+                     ((String) focused.getTag()).startsWith("drawer:") ||
+                     "pages".equals(focused.getTag()))) {
                 if (event.getRepeatCount() == 0) {
                     pendingSelectView = focused;
                     longPressPerformed = false;
