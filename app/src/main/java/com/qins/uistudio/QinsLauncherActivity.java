@@ -81,6 +81,9 @@ public class QinsLauncherActivity extends Activity {
     private TextView wifiState;
     private TextView bluetoothState;
     private TextView soundState;
+    private View wifiTile;
+    private View bluetoothTile;
+    private View soundTile;
     private TextView pageDots;
     private View bottomHandle;
 
@@ -245,14 +248,54 @@ public class QinsLauncherActivity extends Activity {
 
     private void styleSurface(final View view, final int fill, final int border,
                               final int focus, final float cornerDp) {
-        view.setBackground(makeShape(fill, border, cornerDp, false));
+        view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        view.setBackgroundDrawable(new FocusSurfaceDrawable(fill, border, focus, cornerDp, false));
         view.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View v, boolean hasFocus) {
-                ThemeManager.Appearance a = appearance();
-                v.setBackground(makeShape(hasFocus ? focus : fill,
-                        hasFocus ? a.accent : border, cornerDp, hasFocus));
+                v.setBackgroundDrawable(new FocusSurfaceDrawable(fill, border, focus, cornerDp, hasFocus));
             }
         });
+    }
+
+    /** Keeps the original fill and draws a luminous outline only; focus never adds a grey plate. */
+    private final class FocusSurfaceDrawable extends Drawable {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int fill;
+        private final int border;
+        private final int glow;
+        private final float radius;
+        private final boolean focused;
+
+        FocusSurfaceDrawable(int fill, int border, int glow, float radiusDp, boolean focused) {
+            this.fill = fill; this.border = border; this.glow = glow;
+            this.radius = dp(radiusDp); this.focused = focused;
+        }
+
+        @Override public void draw(Canvas canvas) {
+            android.graphics.Rect b = getBounds();
+            android.graphics.RectF r = new android.graphics.RectF(
+                    b.left + dp(focused ? 3 : 1), b.top + dp(focused ? 3 : 1),
+                    b.right - dp(focused ? 3 : 1), b.bottom - dp(focused ? 3 : 1));
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(fill);
+            if (focused) paint.setShadowLayer(dp(7), 0, 0, glow);
+            canvas.drawRoundRect(r, radius, radius, paint);
+            paint.clearShadowLayer();
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(focused ? 2 : 1));
+            paint.setColor(focused ? glow : border);
+            canvas.drawRoundRect(r, radius, radius, paint);
+            if (focused) {
+                paint.setStrokeWidth(dp(1));
+                paint.setColor(0x66FFFFFF);
+                android.graphics.RectF inner = new android.graphics.RectF(r.left + dp(2), r.top + dp(2),
+                        r.right - dp(2), r.bottom - dp(2));
+                canvas.drawRoundRect(inner, Math.max(0, radius - dp(2)), Math.max(0, radius - dp(2)), paint);
+            }
+        }
+        @Override public void setAlpha(int alpha) { }
+        @Override public void setColorFilter(ColorFilter filter) { }
+        @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
     }
 
     private GradientDrawable makeShape(int fill, int stroke, float radiusDp, boolean focused) {
@@ -558,6 +601,8 @@ public class QinsLauncherActivity extends Activity {
 
     /** Compact quick controls stay on top of the home page and leave most of it visible. */
     private void showCompactQuickPanel(boolean focusFirst) {
+        wifiState = null; bluetoothState = null; soundState = null;
+        wifiTile = null; bluetoothTile = null; soundTile = null;
         showHome(false);
         quickPanelVisible = true;
         quickPanelExpanded = false;
@@ -654,9 +699,15 @@ public class QinsLauncherActivity extends Activity {
         text.setTextSize(8);
         text.setGravity(Gravity.CENTER);
         tile.addView(text);
+        TextView state = new TextView(this);
+        state.setTextColor(a.muted);
+        state.setTextSize(7);
+        state.setGravity(Gravity.CENTER);
+        tile.addView(state);
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
-        styleSurface(tile, a.tile, a.border, a.tileActive, a.cornerDp);
+        styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
+        registerQuickTile(key, tile, state);
         return tile;
     }
 
@@ -844,13 +895,19 @@ public class QinsLauncherActivity extends Activity {
         pageDots.setText(dots.toString());
     }
 
-    private void changePage(int delta) {
+    private void changePage(int delta, int focusSlot) {
         int target = page + delta;
         if (target < 0 || target >= pageCount()) return;
         page = target;
         editMode = false;
         selectedHomeIndex = -1;
         showHome(false);
+        // Keep the D-pad on the matching edge of the new page instead of
+        // unexpectedly jumping to the first icon on every page transition.
+        if (appRow != null && appRow.getChildCount() > 0) {
+            int slot = Math.max(0, Math.min(focusSlot, appRow.getChildCount() - 1));
+            appRow.getChildAt(slot).requestFocus();
+        }
     }
 
     private void enterEditMode(int absoluteIndex) {
@@ -1115,26 +1172,132 @@ public class QinsLauncherActivity extends Activity {
         return time;
     }
 
-    private void showThemeEditor() {
-        final String[] roles = new String[] {"Accent", "Background", "Surface", "Text"};
-        new android.app.AlertDialog.Builder(this).setTitle("Theme settings · " + appearance().title)
-                .setItems(roles, new android.content.DialogInterface.OnClickListener() {
-                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        showThemeColorPicker(new String[] {"accent", "background", "surface", "text"}[which]);
-                    }
-                }).setNegativeButton("Done", null).show();
+    private final class ThemePreview extends LinearLayout {
+        private final TextView heading;
+        private final TextView body;
+        private final TextView activeButton;
+        private final TextView inactiveButton;
+        ThemePreview(Context context) {
+            super(context);
+            setOrientation(LinearLayout.VERTICAL);
+            setPadding(dp(12), dp(10), dp(12), dp(10));
+            heading = new TextView(context);
+            heading.setText("QINS HOME  ·  LIVE PREVIEW");
+            heading.setTextSize(10);
+            addView(heading, new LinearLayout.LayoutParams(-1, dp(24)));
+            body = new TextView(context);
+            body.setText("12:45\nFriday  ·  Battery 82%");
+            body.setTextSize(18);
+            body.setPadding(dp(10), dp(8), dp(10), dp(8));
+            addView(body, new LinearLayout.LayoutParams(-1, dp(70)));
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            activeButton = new TextView(context);
+            activeButton.setText("Wi-Fi  ·  ON");
+            activeButton.setGravity(Gravity.CENTER);
+            activeButton.setTextSize(10);
+            inactiveButton = new TextView(context);
+            inactiveButton.setText("Bluetooth  ·  OFF");
+            inactiveButton.setGravity(Gravity.CENTER);
+            inactiveButton.setTextSize(10);
+            LinearLayout.LayoutParams cell = new LinearLayout.LayoutParams(0, dp(42), 1);
+            row.addView(activeButton, cell);
+            LinearLayout.LayoutParams second = new LinearLayout.LayoutParams(0, dp(42), 1);
+            second.leftMargin = dp(6);
+            row.addView(inactiveButton, second);
+            addView(row);
+        }
+        void update(int[] colors) {
+            setBackgroundColor(colors[1]);
+            heading.setTextColor(colors[3]);
+            body.setBackgroundDrawable(makeShape(colors[2], colors[2], 14, false));
+            body.setTextColor(colors[3]);
+            activeButton.setBackgroundDrawable(makeShape(colors[0], colors[0], 10, false));
+            activeButton.setTextColor(0xFFFFFFFF);
+            inactiveButton.setBackgroundDrawable(makeShape(colors[2], colors[2], 10, false));
+            inactiveButton.setTextColor(colors[3]);
+        }
     }
 
-    private void showThemeColorPicker(final String role) {
-        final String[] names = new String[] {"Theme default", "Soft blue", "Violet", "Coral", "Mint", "Amber", "White", "Charcoal"};
-        final int[] colors = new int[] {0, 0xFF4D83E6, 0xFF8B65C8, 0xFFE56B5F, 0xFF4C9B7C, 0xFFD49A35, 0xFFF4F4F4, 0xFF242629};
-        new android.app.AlertDialog.Builder(this).setTitle("Choose " + role + " color")
-                .setItems(names, new android.content.DialogInterface.OnClickListener() {
-                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, role, colors[which]);
-                        if (quickPanelExpanded) showQuickPanel(false); else showHome(false);
+    private int[] themeDefaultColors(ThemeManager.Appearance base) {
+        return new int[] {base.accent, base.background, base.surface, base.text};
+    }
+
+    private void showThemeEditor() {
+        final ThemeManager.Appearance base = ThemeManager.getAppearanceById(appearance().id);
+        final int[] colors = themeDefaultColors(appearance());
+        final String[] roles = new String[] {
+                "Accent  ·  active buttons and focus",
+                "Background  ·  screen behind cards",
+                "Surface  ·  cards and panels",
+                "Text  ·  labels and clock"
+        };
+        final String[] keys = new String[] {"accent", "background", "surface", "text"};
+        final String[] names = new String[] {
+                "Theme default", "Soft blue", "Violet", "Coral", "Mint", "Amber", "White", "Charcoal"
+        };
+        final int[] choices = new int[] {
+                0, 0xFF4D83E6, 0xFF8B65C8, 0xFFE56B5F,
+                0xFF4C9B7C, 0xFFD49A35, 0xFFF4F4F4, 0xFF242629
+        };
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(10), dp(4), dp(10), dp(4));
+        final ThemePreview preview = new ThemePreview(this);
+        preview.update(colors);
+        content.addView(preview, new LinearLayout.LayoutParams(-1, dp(150)));
+        TextView hint = new TextView(this);
+        hint.setText("Choose a part below. The preview changes immediately; Save applies it.");
+        hint.setTextSize(10);
+        hint.setPadding(dp(2), dp(8), dp(2), dp(8));
+        content.addView(hint);
+        for (int i = 0; i < roles.length; i++) {
+            final int roleIndex = i;
+            TextView option = new TextView(this);
+            option.setText(roles[i] + "     ●");
+            option.setTextSize(11);
+            option.setTextColor(colors[i == 0 ? 0 : (i == 1 ? 3 : (i == 2 ? 3 : 3))]);
+            option.setGravity(Gravity.CENTER_VERTICAL);
+            option.setPadding(dp(10), 0, dp(10), 0);
+            GradientDrawable swatch = makeShape(colors[i], 0x55808080, 8, false);
+            option.setBackgroundDrawable(swatch);
+            LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(-1, dp(38));
+            op.topMargin = dp(4);
+            content.addView(option, op);
+            option.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    new android.app.AlertDialog.Builder(QinsLauncherActivity.this)
+                            .setTitle(roles[roleIndex])
+                            .setItems(names, new android.content.DialogInterface.OnClickListener() {
+                                @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                                    colors[roleIndex] = which == 0
+                                            ? (roleIndex == 0 ? base.accent : roleIndex == 1 ? base.background :
+                                               roleIndex == 2 ? base.surface : base.text)
+                                            : choices[which];
+                                    preview.update(colors);
+                                }
+                            }).setNegativeButton("Cancel", null).show();
+                }
+            });
+        }
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Theme preview  ·  " + appearance().title)
+                .setView(content)
+                .setPositiveButton("Save", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int which) {
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "accent", colors[0]);
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "background", colors[1]);
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "surface", colors[2]);
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "text", colors[3]);
+                        if (quickPanelExpanded) showQuickPanel(false);
+                        else if (quickPanelVisible) showCompactQuickPanel(false);
+                        else showHome(false);
                     }
-                }).setNegativeButton("Cancel", null).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .create();
+        dialog.show();
     }
 
     private String[] getExpandedQuickTileKeys() {
@@ -1180,9 +1343,8 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showQuickPanel(boolean focusFirst) {
-        wifiState = null;
-        bluetoothState = null;
-        soundState = null;
+        wifiState = null; bluetoothState = null; soundState = null;
+        wifiTile = null; bluetoothTile = null; soundTile = null;
         quickPanelVisible = true;
         quickPanelExpanded = true;
         drawerVisible = false;
@@ -1343,10 +1505,8 @@ public class QinsLauncherActivity extends Activity {
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
-        styleSurface(tile, a.tile, a.border, a.tileActive, a.cornerDp);
-        if ("wifi".equals(symbol)) wifiState = state;
-        else if ("bluetooth".equals(symbol)) bluetoothState = state;
-        else if ("sound".equals(symbol)) soundState = state;
+        styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
+        registerQuickTile(symbol, tile, state);
         return tile;
     }
 
@@ -1408,26 +1568,47 @@ public class QinsLauncherActivity extends Activity {
         });
     }
 
+    private void registerQuickTile(String key, View tile, TextView state) {
+        if ("wifi".equals(key)) { wifiTile = tile; wifiState = state; }
+        else if ("bluetooth".equals(key)) { bluetoothTile = tile; bluetoothState = state; }
+        else if ("sound".equals(key)) { soundTile = tile; soundState = state; }
+    }
+
+    private void updateQuickTileVisual(String key, View tile, boolean active) {
+        if (tile == null) return;
+        ThemeManager.Appearance a = appearance();
+        int fill = active ? a.tileActive : a.tile;
+        int stroke = (active || tile.hasFocus()) ? a.accent : a.border;
+        tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, stroke, a.accent,
+                a.cornerDp, tile.hasFocus()));
+    }
+
+    private void setQuickState(String key, TextView state, View tile, String label, boolean active) {
+        if (state != null) {
+            state.setText(label);
+            state.setTextColor(active ? appearance().accent : appearance().muted);
+        }
+        updateQuickTileVisual(key, tile, active);
+    }
+
     private void updateQuickStates() {
-        if (wifiState != null) {
-            try {
-                WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-                wifiState.setText(wifi != null && wifi.isWifiEnabled() ? "On" : "Off");
-            } catch (RuntimeException ignored) { wifiState.setText("—"); }
-        }
-        if (bluetoothState != null) {
-            try {
-                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-                bluetoothState.setText(adapter != null && adapter.isEnabled() ? "On" : "Off");
-            } catch (RuntimeException ignored) { bluetoothState.setText("—"); }
-        }
-        if (soundState != null) {
-            try {
-                AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                soundState.setText(audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT
-                        ? "Silent" : "On");
-            } catch (RuntimeException ignored) { soundState.setText("—"); }
-        }
+        try {
+            WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            boolean on = wifi != null && wifi.isWifiEnabled();
+            setQuickState("wifi", wifiState, wifiTile, on ? "ON" : "OFF", on);
+        } catch (RuntimeException ignored) { setQuickState("wifi", wifiState, wifiTile, "N/A", false); }
+        try {
+            BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+            boolean on = adapter != null && adapter.isEnabled();
+            setQuickState("bluetooth", bluetoothState, bluetoothTile, on ? "ON" : "OFF", on);
+        } catch (RuntimeException ignored) { setQuickState("bluetooth", bluetoothState, bluetoothTile, "N/A", false); }
+        try {
+            AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+            int mode = audio == null ? AudioManager.RINGER_MODE_NORMAL : audio.getRingerMode();
+            String label = mode == AudioManager.RINGER_MODE_SILENT ? "SILENT" :
+                    (mode == AudioManager.RINGER_MODE_VIBRATE ? "VIBRATE" : "ON");
+            setQuickState("sound", soundState, soundTile, label, mode != AudioManager.RINGER_MODE_SILENT);
+        } catch (RuntimeException ignored) { setQuickState("sound", soundState, soundTile, "N/A", false); }
     }
 
     private void toggleWifi() {
@@ -1564,12 +1745,12 @@ public class QinsLauncherActivity extends Activity {
                     }
                     int slot = index % APPS_PER_PAGE;
                     if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && slot == 0 && page > 0) {
-                        changePage(-1);
+                        changePage(-1, APPS_PER_PAGE - 1);
                         return true;
                     }
                     if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && slot == APPS_PER_PAGE - 1 &&
                             page + 1 < pageCount()) {
-                        changePage(1);
+                        changePage(1, 0);
                         return true;
                     }
                 } catch (NumberFormatException ignored) { }
