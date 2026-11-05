@@ -83,5 +83,10 @@
     <string name="launcher_folder">Folder</string>
     <string name="launcher_choose_folder_app">Choose another app</string>
     <string name="launcher_folder_empty">This folder has no apps</string>
-    <string name="launcher_softkey_config_hint">Long-press a physical softkey to change its shortcut. You can also select a side below.</string>
+    <string name="launcher_softkey_config_hint">Choose an action for each side, or use Learn to capture the actual physical key reported by this device.</string>
+    <string name="launcher_softkey_learn">Learn physical key</string>
+    <string name="launcher_softkey_learning">Press the physical key you want to assign now. The key code and scan code will be saved.</string>
+    <string name="launcher_softkey_detected">Key detected and saved</string>
+    <string name="launcher_softkey_reset">Reset physical key mapping</string>
+    <string name="launcher_softkey_reset_done">Physical key mapping reset.</string>
 </resources>
