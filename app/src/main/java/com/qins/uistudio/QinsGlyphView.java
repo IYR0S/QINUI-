@@ -41,6 +41,7 @@ public final class QinsGlyphView extends View {
         paint.setStyle(Paint.Style.STROKE);
 
         if ("apps".equals(glyph)) drawApps(canvas);
+        else if ("settings".equals(glyph)) drawSettings(canvas);
         else if ("wifi".equals(glyph)) drawWifi(canvas);
         else if ("bluetooth".equals(glyph)) drawBluetooth(canvas);
         else if ("sound".equals(glyph) || "volume".equals(glyph)) drawSound(canvas);
@@ -53,6 +54,19 @@ public final class QinsGlyphView extends View {
         else if ("right".equals(glyph)) drawArrow(canvas, true);
 
         canvas.restore();
+    }
+
+    private void drawSettings(Canvas c) {
+        c.drawCircle(0, 0, 4.2f, paint);
+        for (int i = 0; i < 8; i++) {
+            double angle = Math.PI * i / 4.0;
+            float x1 = (float) Math.cos(angle) * 6.5f;
+            float y1 = (float) Math.sin(angle) * 6.5f;
+            float x2 = (float) Math.cos(angle) * 10.5f;
+            float y2 = (float) Math.sin(angle) * 10.5f;
+            c.drawLine(x1, y1, x2, y2, paint);
+        }
+        c.drawCircle(0, 0, 2.0f, paint);
     }
 
     private void drawApps(Canvas c) {
