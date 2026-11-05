@@ -594,16 +594,16 @@ public class QinsLauncherActivity extends Activity {
 
     private void addStyleButton(LinearLayout parent, final String label, final String id,
                                 ThemeManager.Appearance current) {
-        final ThemeManager.Appearance a = current;
+        final ThemeManager.Appearance style = ThemeManager.getAppearanceById(id);
         TextView button = new TextView(this);
         button.setText(label);
         button.setTextSize(9);
         button.setGravity(Gravity.CENTER);
-        button.setTextColor(a.text);
+        button.setTextColor(style.text);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
-        styleSurface(button, id.equals(a.id) ? a.tileActive : a.surface,
-                a.border, a.focus, a.cornerDp);
+        styleSurface(button, id.equals(current.id) ? style.tileActive : style.surface,
+                style.border, style.focus, style.cornerDp);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1);
         if (parent.getChildCount() > 0) params.leftMargin = dp(6);
         parent.addView(button, params);
