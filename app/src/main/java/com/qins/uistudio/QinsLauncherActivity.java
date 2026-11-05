@@ -501,8 +501,8 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout pages = new LinearLayout(this);
         pages.setGravity(Gravity.CENTER);
         pages.setOrientation(LinearLayout.HORIZONTAL);
-        TextView previous = pageArrow("‹", a);
-        TextView next = pageArrow("›", a);
+        QinsGlyphView previous = pageArrow("left", a);
+        QinsGlyphView next = pageArrow("right", a);
         pageDots = new TextView(this);
         pageDots.setTextColor(a.muted);
         pageDots.setTextSize(14);
@@ -534,12 +534,8 @@ public class QinsLauncherActivity extends Activity {
         else appsNavButton.requestFocus();
     }
 
-    private TextView pageArrow(String symbol, ThemeManager.Appearance a) {
-        TextView button = new TextView(this);
-        button.setText(symbol);
-        button.setTextSize(screenHeightDp() < 280 ? 21 : 25);
-        button.setGravity(Gravity.CENTER);
-        button.setTextColor(a.muted);
+    private QinsGlyphView pageArrow(String symbol, ThemeManager.Appearance a) {
+        QinsGlyphView button = new QinsGlyphView(this, symbol, a.muted);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
         styleSurface(button, a.backgroundAlt, a.border, a.focus, a.cornerDp);
@@ -684,19 +680,19 @@ public class QinsLauncherActivity extends Activity {
         barParams.topMargin = dp(7);
         pageContent.addView(editBar, barParams);
 
-        addEditAction("←", a, new View.OnClickListener() {
+        addEditAction("left", a, "Move app left", new View.OnClickListener() {
             @Override public void onClick(View v) { moveSelectedApp(-1); }
         });
-        addEditAction("→", a, new View.OnClickListener() {
+        addEditAction("right", a, "Move app right", new View.OnClickListener() {
             @Override public void onClick(View v) { moveSelectedApp(1); }
         });
-        addEditAction("+", a, new View.OnClickListener() {
+        addEditAction("add", a, "Add applications", new View.OnClickListener() {
             @Override public void onClick(View v) { showDrawer(true); }
         });
-        addEditAction("×", a, new View.OnClickListener() {
+        addEditAction("remove", a, "Remove app from Home", new View.OnClickListener() {
             @Override public void onClick(View v) { removeSelectedApp(); }
         });
-        addEditAction("✓", a, new View.OnClickListener() {
+        addEditAction("done", a, "Finish editing", new View.OnClickListener() {
             @Override public void onClick(View v) {
                 editMode = false;
                 selectedHomeIndex = -1;
@@ -705,13 +701,10 @@ public class QinsLauncherActivity extends Activity {
         });
     }
 
-    private void addEditAction(String label, ThemeManager.Appearance a,
+    private void addEditAction(String glyph, ThemeManager.Appearance a, String description,
                                View.OnClickListener listener) {
-        TextView button = new TextView(this);
-        button.setText(label);
-        button.setTextSize(19);
-        button.setTextColor(a.text);
-        button.setGravity(Gravity.CENTER);
+        QinsGlyphView button = new QinsGlyphView(this, glyph, a.text);
+        button.setContentDescription(description);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
         styleSurface(button, a.surface, a.border, a.focus, a.cornerDp);
@@ -885,9 +878,9 @@ public class QinsLauncherActivity extends Activity {
         firstRow.setOrientation(LinearLayout.HORIZONTAL);
         int quickTileHeight = clamp((int) (screenHeightDp() * 0.27f), 64, 78);
         panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
-        View wifi = quickTile("◉", "Wi-Fi", a);
+        View wifi = quickTile("wifi", "Wi-Fi", a);
         firstRow.addView(wifi, new LinearLayout.LayoutParams(0, -1, 1));
-        View bluetooth = quickTile("ᛒ", "Bluetooth", a);
+        View bluetooth = quickTile("bluetooth", "Bluetooth", a);
         LinearLayout.LayoutParams btParams = new LinearLayout.LayoutParams(0, -1, 1);
         btParams.leftMargin = dp(7);
         firstRow.addView(bluetooth, btParams);
@@ -903,9 +896,9 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams secondParams = new LinearLayout.LayoutParams(-1, dp(quickTileHeight));
         secondParams.topMargin = dp(7);
         panel.addView(secondRow, secondParams);
-        View sound = quickTile("♪", "Sound", a);
+        View sound = quickTile("sound", "Sound", a);
         secondRow.addView(sound, new LinearLayout.LayoutParams(0, -1, 1));
-        View media = quickTile("−  +", "Volume", a);
+        View media = quickTile("volume", "Volume", a);
         LinearLayout.LayoutParams mediaParams = new LinearLayout.LayoutParams(0, -1, 1);
         mediaParams.leftMargin = dp(7);
         secondRow.addView(media, mediaParams);
@@ -971,12 +964,8 @@ public class QinsLauncherActivity extends Activity {
         tile.setOrientation(LinearLayout.VERTICAL);
         tile.setGravity(Gravity.CENTER);
         tile.setPadding(dp(3), dp(3), dp(3), dp(3));
-        TextView icon = new TextView(this);
-        icon.setText(symbol);
-        icon.setTextColor(a.accent);
-        icon.setTextSize(21);
-        icon.setGravity(Gravity.CENTER);
-        tile.addView(icon, new LinearLayout.LayoutParams(-1, dp(27)));
+        QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
+        tile.addView(icon, new LinearLayout.LayoutParams(-1, dp(31)));
 
         LinearLayout textBlock = new LinearLayout(this);
         textBlock.setOrientation(LinearLayout.VERTICAL);
