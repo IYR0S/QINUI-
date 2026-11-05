@@ -38,4 +38,14 @@
     <string name="launcher_empty">הוסף את היישומים המועדפים</string>
     <string name="launcher_added">נוסף למסך הבית</string>
     <string name="launcher_already_pinned">כבר נמצא במסך הבית</string>
+    <string name="launcher_quick_controls">הגדרות מהירות</string>
+    <string name="launcher_edit_shortcuts">עריכה</string>
+    <string name="launcher_edit_compact_controls">עריכת קיצורי הדרך</string>
+    <string name="launcher_choose_shortcut">בחר קיצור %1$d</string>
+    <string name="launcher_sound">צליל</string>
+    <string name="launcher_bluetooth">בלוטות׳</string>
+    <string name="launcher_settings">הגדרות</string>
+    <string name="launcher_wifi">Wi-Fi</string>
+    <string name="launcher_brightness">בהירות</string>
+    <string name="launcher_volume">עוצמת קול</string>
 </resources>
