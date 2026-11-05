@@ -26,15 +26,6 @@ public class MainActivity extends Activity {
         showDashboard();
     }
 
-    @Override protected void onResume() {
-        super.onResume();
-        refreshDashboardTheme();
-    }
-
-    private void refreshDashboardTheme() {
-        if (findViewById(android.R.id.content) != null) showDashboard();
-    }
-
     private void showDashboard() {
         palette = ThemeManager.getPalette(this);
         ScrollView scroll = new ScrollView(this);
