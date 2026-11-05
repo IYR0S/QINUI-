@@ -6,8 +6,18 @@
         <activity android:name=".AppMenuActivity" android:label="@string/app_menu_title" />
         <activity android:name=".HomeStudioActivity" android:label="@string/home_studio" />
         <activity android:name=".ThemeStudioActivity" android:label="@string/theme_studio" />
+        <activity android:name=".QinsLauncherActivity" android:label="@string/qins_home" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity android:name=".MainActivity" android:label="QINS UI Studio" android:exported="true">
-            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
