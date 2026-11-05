@@ -1,15 +1,15 @@
 package com.qins.uistudio;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-/** Dashboard shell with keyboard-first navigation and touch support. */
-public class MainActivity extends Activity {
+/** Keyboard-only dashboard for devices without a touch screen. */
+public class MainActivity extends StudioActivity {
     private ThemeManager.Palette palette;
     private boolean firstDisplay = true;
     private int dp(float value) { return (int) (value * getResources().getDisplayMetrics().density + 0.5f); }
@@ -38,6 +38,20 @@ public class MainActivity extends Activity {
 
         TextView title = new TextView(this);
         title.setText(R.string.app_name); title.setTextSize(28); title.setTextColor(palette.text); page.addView(title);
+
+        Button menu = new Button(this);
+        menu.setText(R.string.open_app_menu);
+        KeyboardSupport.makeFocusable(menu);
+        menu.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, AppMenuActivity.class));
+            }
+        });
+        LinearLayout.LayoutParams menuParams = new LinearLayout.LayoutParams(-1, -2);
+        menuParams.topMargin = dp(8);
+        menuParams.bottomMargin = dp(12);
+        page.addView(menu, menuParams);
+
         TextView subtitle = new TextView(this);
         subtitle.setText(R.string.dashboard_subtitle); subtitle.setTextSize(14); subtitle.setTextColor(palette.muted);
         LinearLayout.LayoutParams subParams = new LinearLayout.LayoutParams(-1, -2);
