@@ -27,6 +27,11 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.telephony.PhoneStateListener;
+import android.telephony.ServiceState;
+import android.telephony.SignalStrength;
+import android.telephony.TelephonyManager;
+import android.widget.EditText;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -60,6 +65,8 @@ public class QinsLauncherActivity extends Activity {
     private static final int REQUEST_PICK_WALLPAPER = 7301;
     private static final String LAUNCHER_PREFS = "qins_launcher";
     private static final String PINS_KEY = "home_pins";
+    private static final String FOLDER_PREFS = "qins_folders";
+    private static final String SOFTKEY_PREFS = "qins_softkeys";
 
     private int page = 0;
     private int homeAppRowHeightDp = 86;
@@ -75,6 +82,17 @@ public class QinsLauncherActivity extends Activity {
     private boolean pinSelectionMode = false;
     private View pendingSelectView;
     private boolean longPressPerformed = false;
+    private int pendingSoftKeyCode = 0;
+    private boolean softKeyLongPressPerformed = false;
+    private String drawerSearchQuery = "";
+    private TextView drawerSearchStatus;
+    private SignalStrengthIndicatorView signalIndicator;
+    private TextView phoneButton;
+    private TelephonyManager telephonyManager;
+    private PhoneStateListener phoneStateListener;
+    private int cellularSignalLevel = -1;
+    private boolean cellularServiceKnown = false;
+    private boolean cellularServiceAvailable = false;
 
     private LinearLayout root;
     private FrameLayout pageContainer;
@@ -148,16 +166,19 @@ public class QinsLauncherActivity extends Activity {
         super.onResume();
         loadApps();
         registerSystemReceiver();
+        registerTelephonyMonitor();
         if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
         else if (quickPanelVisible) showCompactQuickPanel(false);
         else if (drawerVisible) showDrawer(pinSelectionMode);
         else showHome(false);
         updateClockAndBattery();
         updateQuickStates();
+        updateSignalIndicator();
     }
 
     @Override protected void onPause() {
         unregisterSystemReceiver();
+        unregisterTelephonyMonitor();
         super.onPause();
     }
 
@@ -182,6 +203,87 @@ public class QinsLauncherActivity extends Activity {
         receiversRegistered = false;
     }
 
+    private void registerTelephonyMonitor() {
+        try {
+            if (telephonyManager == null) {
+                telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            }
+            if (telephonyManager == null) {
+                updateSignalIndicator();
+                return;
+            }
+            if (phoneStateListener == null) {
+                phoneStateListener = new PhoneStateListener() {
+                    @Override public void onSignalStrengthsChanged(SignalStrength signal) {
+                        super.onSignalStrengthsChanged(signal);
+                        cellularSignalLevel = signalLevel(signal);
+                        if (cellularSignalLevel >= 0 && !cellularServiceKnown) {
+                            cellularServiceKnown = true;
+                            cellularServiceAvailable = true;
+                        }
+                        updateSignalIndicator();
+                    }
+
+                    @Override public void onServiceStateChanged(ServiceState state) {
+                        super.onServiceStateChanged(state);
+                        cellularServiceKnown = true;
+                        cellularServiceAvailable = state != null &&
+                                state.getState() == ServiceState.STATE_IN_SERVICE;
+                        if (!cellularServiceAvailable) cellularSignalLevel = 0;
+                        updateSignalIndicator();
+                    }
+                };
+            }
+            telephonyManager.listen(phoneStateListener,
+                    PhoneStateListener.LISTEN_SIGNAL_STRENGTHS |
+                            PhoneStateListener.LISTEN_SERVICE_STATE);
+        } catch (SecurityException denied) {
+            cellularSignalLevel = -1;
+            cellularServiceKnown = false;
+            updateSignalIndicator();
+        } catch (RuntimeException unavailable) {
+            cellularSignalLevel = -1;
+            cellularServiceKnown = false;
+            updateSignalIndicator();
+        }
+    }
+
+    private void unregisterTelephonyMonitor() {
+        try {
+            if (telephonyManager != null && phoneStateListener != null) {
+                telephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
+            }
+        } catch (RuntimeException ignored) { }
+    }
+
+    private int signalLevel(SignalStrength signal) {
+        if (signal == null) return -1;
+        try {
+            if (signal.isGsm()) {
+                int asu = signal.getGsmSignalStrength();
+                if (asu < 0 || asu == 99) return -1;
+                if (asu <= 2) return 0;
+                if (asu <= 7) return 1;
+                if (asu <= 12) return 2;
+                if (asu <= 17) return 3;
+                return 4;
+            }
+            int dbm = signal.getCdmaDbm();
+            if (dbm >= -85) return 4;
+            if (dbm >= -95) return 3;
+            if (dbm >= -105) return 2;
+            if (dbm >= -115) return 1;
+            return 0;
+        } catch (RuntimeException ignored) { return -1; }
+    }
+
+    private void updateSignalIndicator() {
+        if (signalIndicator == null) return;
+        ThemeManager.Appearance a = appearance();
+        boolean noService = cellularServiceKnown && !cellularServiceAvailable;
+        signalIndicator.setSignal(cellularSignalLevel, noService, a.accent, a.muted);
+    }
+
     private void buildShell() {
         ThemeManager.Appearance a = appearance();
         root = new LinearLayout(this);
@@ -201,6 +303,34 @@ public class QinsLauncherActivity extends Activity {
         wordmark.setTypeface(a.useMonoType ? Typeface.MONOSPACE : Typeface.DEFAULT_BOLD,
                 Typeface.BOLD);
         topBar.addView(wordmark, new LinearLayout.LayoutParams(0, dp(42), 1));
+
+        signalIndicator = new SignalStrengthIndicatorView(this);
+        signalIndicator.setSignal(cellularSignalLevel,
+                cellularServiceKnown && !cellularServiceAvailable, a.accent, a.muted);
+        signalIndicator.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { openDialer(); }
+        });
+        signalIndicator.setContentDescription("Cellular signal strength. Press to open phone.");
+        topBar.addView(signalIndicator, new LinearLayout.LayoutParams(dp(23), dp(22)));
+
+        phoneButton = new TextView(this);
+        phoneButton.setText("☎");
+        phoneButton.setTextSize(18);
+        phoneButton.setTextColor(a.text);
+        phoneButton.setGravity(Gravity.CENTER);
+        phoneButton.setFocusable(true);
+        phoneButton.setFocusableInTouchMode(false);
+        phoneButton.setContentDescription(getString(R.string.launcher_phone));
+        styleSurface(phoneButton, a.surface, a.border, a.focus, a.cornerDp);
+        phoneButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { openDialer(); }
+        });
+        phoneButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) { showSoftkeySettings(); return true; }
+        });
+        LinearLayout.LayoutParams phoneParams = new LinearLayout.LayoutParams(dp(30), dp(36));
+        phoneParams.rightMargin = dp(5);
+        topBar.addView(phoneButton, phoneParams);
 
         themeButton = new TextView(this);
         themeButton.setText("◉");
@@ -228,7 +358,7 @@ public class QinsLauncherActivity extends Activity {
         appsNavButton.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (drawerVisible || quickPanelVisible) showHome(false);
-                else showDrawer(false);
+                else { drawerSearchQuery = ""; drawerPage = 0; showDrawer(false); }
             }
         });
         wallpaperButton = new TextView(this);
@@ -772,10 +902,43 @@ public class QinsLauncherActivity extends Activity {
         return null;
     }
 
+    private boolean isFolder(ResolveInfo info) {
+        if (info == null) return false;
+        String raw = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE)
+                .getString("apps:" + componentKey(info), "");
+        return raw.length() > 0 && raw.split("\\n").length > 1;
+    }
+
+    private String getFolderName(ResolveInfo info) {
+        if (info == null) return getString(R.string.launcher_folder);
+        return getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE)
+                .getString("name:" + componentKey(info), getString(R.string.launcher_folder));
+    }
+
+    private List<ResolveInfo> getFolderApps(ResolveInfo folder) {
+        List<ResolveInfo> result = new ArrayList<ResolveInfo>();
+        if (folder == null) return result;
+        String raw = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE)
+                .getString("apps:" + componentKey(folder), "");
+        if (raw.length() == 0) return result;
+        for (String key : raw.split("\\n")) {
+            ResolveInfo info = findApp(key);
+            if (info != null && !containsComponent(result, key)) result.add(info);
+        }
+        return result;
+    }
+
+    private boolean containsComponent(List<ResolveInfo> list, String key) {
+        for (ResolveInfo info : list) if (componentKey(info).equals(key)) return true;
+        return false;
+    }
+
     private boolean isPinned(ResolveInfo target) {
+        if (target == null) return false;
         String key = componentKey(target);
         for (ResolveInfo info : pinnedApps) {
             if (componentKey(info).equals(key)) return true;
+            if (isFolder(info) && containsComponent(getFolderApps(info), key)) return true;
         }
         return false;
     }
@@ -1208,14 +1371,6 @@ public class QinsLauncherActivity extends Activity {
             tile.setLongClickable(true);
             tile.setTag("home:" + absoluteIndex);
 
-            ImageView icon = new ImageView(this);
-            icon.setImageDrawable(info.loadIcon(getPackageManager()));
-            icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            if (a.monochrome) {
-                ColorMatrix matrix = new ColorMatrix();
-                matrix.setSaturation(0f);
-                icon.setColorFilter(new ColorMatrixColorFilter(matrix));
-            }
             int iconFrameSize = clamp(screenWidthDp() / 4 - 12, 36, 54);
             int iconSize = iconFrameSize - 11;
             FrameLayout iconFrame = new FrameLayout(this);
@@ -1230,9 +1385,23 @@ public class QinsLauncherActivity extends Activity {
             iconBackground.setColor(a.tile);
             iconBackground.setStroke(dp(1), a.monochrome ? a.border : a.surfaceAlt);
             iconFrame.setBackgroundDrawable(iconBackground);
-            FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
-                    dp(iconSize), dp(iconSize), Gravity.CENTER);
-            iconFrame.addView(icon, iconParams);
+            if (isFolder(info)) {
+                QinsGlyphView folderGlyph = new QinsGlyphView(this, "folder", a.accent);
+                iconFrame.addView(folderGlyph, new FrameLayout.LayoutParams(
+                        dp(iconSize), dp(iconSize), Gravity.CENTER));
+            } else {
+                ImageView icon = new ImageView(this);
+                icon.setImageDrawable(info.loadIcon(getPackageManager()));
+                icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                if (a.monochrome) {
+                    ColorMatrix matrix = new ColorMatrix();
+                    matrix.setSaturation(0f);
+                    icon.setColorFilter(new ColorMatrixColorFilter(matrix));
+                }
+                FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
+                        dp(iconSize), dp(iconSize), Gravity.CENTER);
+                iconFrame.addView(icon, iconParams);
+            }
             LinearLayout.LayoutParams frameParams = new LinearLayout.LayoutParams(
                     dp(iconFrameSize), dp(iconFrameSize));
             frameParams.gravity = Gravity.CENTER_HORIZONTAL;
@@ -1240,7 +1409,7 @@ public class QinsLauncherActivity extends Activity {
             tile.addView(iconFrame, frameParams);
 
             TextView label = new TextView(this);
-            label.setText(info.loadLabel(getPackageManager()));
+            label.setText(isFolder(info) ? getFolderName(info) : info.loadLabel(getPackageManager()));
             tile.setContentDescription(label.getText() + ". Long press to edit.");
             label.setTextColor(a.text);
             label.setTextSize(screenWidthDp() < 210 ? 8 : 10);
@@ -1259,7 +1428,8 @@ public class QinsLauncherActivity extends Activity {
                         selectedHomeIndex = absoluteIndex;
                         showHome(false);
                     } else {
-                        launchApp(info);
+                        if (isFolder(info)) openHomeFolder(info);
+                        else launchApp(info);
                     }
                 }
             });
@@ -1415,6 +1585,15 @@ public class QinsLauncherActivity extends Activity {
         addEditAction("add", a, "Add applications", new View.OnClickListener() {
             @Override public void onClick(View v) { showDrawer(true); }
         });
+        addEditAction("folder", a, "Create or manage folder", new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                if (selectedHomeIndex >= 0 && selectedHomeIndex < pinnedApps.size()) {
+                    ResolveInfo selected = pinnedApps.get(selectedHomeIndex);
+                    if (isFolder(selected)) showFolderActions(selected);
+                    else showCreateFolderPicker();
+                }
+            }
+        });
         addEditAction("remove", a, "Remove app from Home", new View.OnClickListener() {
             @Override public void onClick(View v) { removeSelectedApp(); }
         });
@@ -1451,8 +1630,203 @@ public class QinsLauncherActivity extends Activity {
         focusHomeIndex(target);
     }
 
+    private void showCreateFolderPicker() {
+        if (selectedHomeIndex < 0 || selectedHomeIndex >= pinnedApps.size()) return;
+        final ResolveInfo first = pinnedApps.get(selectedHomeIndex);
+        if (isFolder(first)) { showFolderActions(first); return; }
+        final List<ResolveInfo> candidates = new ArrayList<ResolveInfo>();
+        for (int i = 0; i < pinnedApps.size(); i++) {
+            ResolveInfo candidate = pinnedApps.get(i);
+            if (i != selectedHomeIndex && !isFolder(candidate)) candidates.add(candidate);
+        }
+        if (candidates.isEmpty()) {
+            android.widget.Toast.makeText(this, R.string.launcher_folder_empty,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] labels = new String[candidates.size()];
+        for (int i = 0; i < candidates.size(); i++) {
+            labels[i] = candidates.get(i).loadLabel(getPackageManager()).toString();
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_choose_folder_app)
+                .setItems(labels, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        createHomeFolder(candidates.get(which));
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void createHomeFolder(ResolveInfo second) {
+        if (selectedHomeIndex < 0 || selectedHomeIndex >= pinnedApps.size() || second == null) return;
+        ResolveInfo first = pinnedApps.get(selectedHomeIndex);
+        if (isFolder(first) || isFolder(second)) return;
+        String firstKey = componentKey(first);
+        String secondKey = componentKey(second);
+        if (firstKey.equals(secondKey)) return;
+        int secondIndex = pinnedApps.indexOf(second);
+        SharedPreferences.Editor editor = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit();
+        editor.putString("apps:" + firstKey, firstKey + "\\n" + secondKey);
+        editor.putString("name:" + firstKey, getString(R.string.launcher_folder));
+        editor.commit();
+        pinnedApps.remove(secondIndex);
+        if (secondIndex < selectedHomeIndex) selectedHomeIndex--;
+        page = selectedHomeIndex / APPS_PER_PAGE;
+        savePinnedApps();
+        showHome(false);
+        focusHomeIndex(selectedHomeIndex);
+    }
+
+    private void openHomeFolder(final ResolveInfo folder) {
+        final List<ResolveInfo> apps = getFolderApps(folder);
+        if (apps.isEmpty()) return;
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        grid.setPadding(dp(8), dp(8), dp(8), dp(8));
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle(getFolderName(folder))
+                .setView(grid)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        int columns = 3;
+        int rows = (apps.size() + columns - 1) / columns;
+        View first = null;
+        for (int rowIndex = 0; rowIndex < rows; rowIndex++) {
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER);
+            for (int col = 0; col < columns; col++) {
+                final int index = rowIndex * columns + col;
+                if (index >= apps.size()) {
+                    row.addView(new View(this), new LinearLayout.LayoutParams(0, dp(68), 1));
+                    continue;
+                }
+                final ResolveInfo child = apps.get(index);
+                LinearLayout item = new LinearLayout(this);
+                item.setOrientation(LinearLayout.VERTICAL);
+                item.setGravity(Gravity.CENTER);
+                item.setFocusable(true);
+                item.setFocusableInTouchMode(false);
+                ImageView icon = new ImageView(this);
+                icon.setImageDrawable(child.loadIcon(getPackageManager()));
+                icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                item.addView(icon, new LinearLayout.LayoutParams(dp(34), dp(34)));
+                TextView label = new TextView(this);
+                label.setText(child.loadLabel(getPackageManager()));
+                label.setTextColor(appearance().text);
+                label.setTextSize(9);
+                label.setGravity(Gravity.CENTER);
+                label.setSingleLine(true);
+                label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                item.addView(label, new LinearLayout.LayoutParams(-1, dp(22)));
+                styleSurface(item, appearance().surface, appearance().border,
+                        appearance().focus, appearance().cornerDp);
+                item.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) {
+                        dialog.dismiss();
+                        launchApp(child);
+                    }
+                });
+                LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(0, dp(68), 1);
+                itemParams.setMargins(dp(2), dp(2), dp(2), dp(2));
+                row.addView(item, itemParams);
+                if (first == null) first = item;
+            }
+            grid.addView(row, new LinearLayout.LayoutParams(-1, dp(72)));
+        }
+        dialog.show();
+        if (first != null) first.requestFocus();
+    }
+
+    private void showFolderActions(final ResolveInfo folder) {
+        final String[] actions = new String[] {
+                "Open folder", "Add app", "Rename folder", "Ungroup apps"
+        };
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(getFolderName(folder))
+                .setItems(actions, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (which == 0) openHomeFolder(folder);
+                        else if (which == 1) showFolderAddPicker(folder);
+                        else if (which == 2) renameHomeFolder(folder);
+                        else unpackHomeFolder(folder);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showFolderAddPicker(final ResolveInfo folder) {
+        final List<ResolveInfo> candidates = new ArrayList<ResolveInfo>();
+        for (ResolveInfo info : installedApps) {
+            if (!isPinned(info) && !isFolder(info)) candidates.add(info);
+        }
+        if (candidates.isEmpty()) {
+            android.widget.Toast.makeText(this, R.string.launcher_no_results,
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String[] labels = new String[candidates.size()];
+        for (int i = 0; i < candidates.size(); i++) labels[i] = candidates.get(i).loadLabel(getPackageManager()).toString();
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_choose_folder_app)
+                .setItems(labels, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        String key = componentKey(folder);
+                        SharedPreferences prefs = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE);
+                        String raw = prefs.getString("apps:" + key, key);
+                        String addKey = componentKey(candidates.get(which));
+                        if (!containsComponent(getFolderApps(folder), addKey)) {
+                            prefs.edit().putString("apps:" + key, raw + "\\n" + addKey).commit();
+                        }
+                        showHome(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void renameHomeFolder(final ResolveInfo folder) {
+        final EditText name = new EditText(this);
+        name.setSingleLine(true);
+        name.setText(getFolderName(folder));
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_folder)
+                .setView(name)
+                .setPositiveButton(android.R.string.ok, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        String value = name.getText().toString().trim();
+                        if (value.length() == 0) value = getString(R.string.launcher_folder);
+                        getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit()
+                                .putString("name:" + componentKey(folder), value).commit();
+                        showHome(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void unpackHomeFolder(ResolveInfo folder) {
+        List<ResolveInfo> apps = getFolderApps(folder);
+        int position = pinnedApps.indexOf(folder);
+        if (position < 0) return;
+        pinnedApps.remove(position);
+        for (ResolveInfo info : apps) {
+            if (!componentKey(info).equals(componentKey(folder)) && !isPinned(info)) {
+                pinnedApps.add(Math.min(position++, pinnedApps.size()), info);
+            }
+        }
+        getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit()
+                .remove("apps:" + componentKey(folder))
+                .remove("name:" + componentKey(folder)).commit();
+        savePinnedApps();
+        selectedHomeIndex = -1;
+        editMode = false;
+        page = Math.min(page, Math.max(0, pageCount() - 1));
+        showHome(false);
+    }
+
     private void removeSelectedApp() {
         if (selectedHomeIndex < 0 || selectedHomeIndex >= pinnedApps.size()) return;
+        ResolveInfo removed = pinnedApps.get(selectedHomeIndex);
+        if (isFolder(removed)) {
+            SharedPreferences folders = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE);
+            folders.edit().remove("apps:" + componentKey(removed))
+                    .remove("name:" + componentKey(removed)).commit();
+        }
         pinnedApps.remove(selectedHomeIndex);
         savePinnedApps();
         if (selectedHomeIndex >= pinnedApps.size()) selectedHomeIndex = pinnedApps.size() - 1;
@@ -1552,7 +1926,34 @@ public class QinsLauncherActivity extends Activity {
         scroll.addView(list, new ScrollView.LayoutParams(-1, -2));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
 
-        List<ResolveInfo> frequentApps = getFrequentlyUsedApps(4);
+        List<ResolveInfo> drawerApps = getDrawerApps();
+        LinearLayout searchRow = new LinearLayout(this);
+        searchRow.setGravity(Gravity.CENTER_VERTICAL);
+        TextView searchText = new TextView(this);
+        searchText.setText(drawerSearchQuery.length() == 0
+                ? getString(R.string.launcher_search_hint) : "T9  ·  " + drawerSearchQuery);
+        searchText.setTextColor(drawerSearchQuery.length() == 0 ? a.muted : a.text);
+        searchText.setTextSize(10);
+        searchText.setPadding(dp(8), 0, dp(4), 0);
+        searchRow.addView(searchText, new LinearLayout.LayoutParams(0, dp(30), 1));
+        TextView clearSearch = new TextView(this);
+        clearSearch.setText(getString(R.string.launcher_search_clear));
+        clearSearch.setTextColor(a.accent);
+        clearSearch.setTextSize(9);
+        clearSearch.setGravity(Gravity.CENTER);
+        clearSearch.setFocusable(true);
+        clearSearch.setFocusableInTouchMode(false);
+        clearSearch.setTag("drawer-search-clear");
+        clearSearch.setPadding(dp(7), 0, dp(7), 0);
+        styleSurface(clearSearch, a.surface, a.border, a.focus, a.cornerDp);
+        clearSearch.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { drawerSearchQuery = ""; drawerPage = 0; showDrawer(pinSelectionMode); }
+        });
+        searchRow.addView(clearSearch, new LinearLayout.LayoutParams(-2, dp(28)));
+        list.addView(searchRow, new LinearLayout.LayoutParams(-1, dp(34)));
+
+        List<ResolveInfo> frequentApps = drawerSearchQuery.length() == 0
+                ? getFrequentlyUsedApps(4) : Collections.<ResolveInfo>emptyList();
         if (!frequentApps.isEmpty()) {
             TextView frequentTitle = new TextView(this);
             frequentTitle.setText(getString(R.string.launcher_frequent));
@@ -1598,10 +1999,10 @@ public class QinsLauncherActivity extends Activity {
         final int columns = drawerColumns();
         final int rows = drawerRows();
         int pageSize = columns * rows;
-        int pageCount = Math.max(1, (installedApps.size() + pageSize - 1) / pageSize);
+        int pageCount = Math.max(1, (drawerApps.size() + pageSize - 1) / pageSize);
         drawerPage = Math.max(0, Math.min(drawerPage, pageCount - 1));
         int first = drawerPage * pageSize;
-        int last = Math.min(installedApps.size(), first + pageSize);
+        int last = Math.min(drawerApps.size(), first + pageSize);
         int cellHeight = clamp((screenHeightDp() - 100) / rows, 48, 75);
         int firstGridChild = list.getChildCount();
         for (int rowIndex = 0; rowIndex < rows; rowIndex++) {
@@ -1611,7 +2012,7 @@ public class QinsLauncherActivity extends Activity {
             for (int col = 0; col < columns; col++) {
                 int appIndex = first + rowIndex * columns + col;
                 View cell;
-                if (appIndex < last) cell = createDrawerAppTile(installedApps.get(appIndex), a);
+                if (appIndex < last) cell = createDrawerAppTile(drawerApps.get(appIndex), a);
                 else cell = new View(this);
                 LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, dp(cellHeight), 1);
                 cellParams.setMargins(dp(2), dp(2), dp(2), dp(2));
@@ -1658,7 +2059,7 @@ public class QinsLauncherActivity extends Activity {
         if (last > first) {
             int focusIndex = first;
             for (int i = first; i < last; i++) {
-                if (isPinned(installedApps.get(i))) { focusIndex = i; break; }
+                if (isPinned(drawerApps.get(i))) { focusIndex = i; break; }
             }
             int rowIndex = (focusIndex - first) / columns;
             int colIndex = (focusIndex - first) % columns;
@@ -1667,7 +2068,33 @@ public class QinsLauncherActivity extends Activity {
                 LinearLayout row = (LinearLayout) focusRow;
                 if (colIndex < row.getChildCount()) row.getChildAt(colIndex).requestFocus();
             }
+        } else if (drawerApps.isEmpty()) {
+            TextView noResults = new TextView(this);
+            noResults.setText(R.string.launcher_no_results);
+            noResults.setTextColor(a.muted);
+            noResults.setGravity(Gravity.CENTER);
+            noResults.setTextSize(11);
+            list.addView(noResults, new LinearLayout.LayoutParams(-1, dp(52)));
+            clearSearch.requestFocus();
         } else editGrid.requestFocus();
+    }
+
+    private List<ResolveInfo> getDrawerApps() {
+        List<ResolveInfo> result = new ArrayList<ResolveInfo>();
+        String query = drawerSearchQuery;
+        for (ResolveInfo info : installedApps) {
+            String label = info.loadLabel(getPackageManager()).toString();
+            String searchText = label + " " + info.activityInfo.packageName;
+            if (T9Matcher.matches(searchText, query)) result.add(info);
+        }
+        return result;
+    }
+
+    private int digitFromKeyCode(int keyCode) {
+        if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
+            return keyCode - KeyEvent.KEYCODE_0;
+        }
+        return -1;
     }
 
     private void pinApp(ResolveInfo info, boolean returnHome) {
@@ -2330,6 +2757,97 @@ public class QinsLauncherActivity extends Activity {
         }
     }
 
+    private boolean isSoftKey(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_SOFT_LEFT || keyCode == KeyEvent.KEYCODE_SOFT_RIGHT;
+    }
+
+    private String softKeyPreference(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_SOFT_LEFT ? "left" : "right";
+    }
+
+    private String softKeyAction(int keyCode) {
+        String side = softKeyPreference(keyCode);
+        return getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE)
+                .getString(side, "left".equals(side) ? "phone" : "apps");
+    }
+
+    private void showSoftkeySettings() {
+        final String[] sides = new String[] {
+                getString(R.string.launcher_softkey_left),
+                getString(R.string.launcher_softkey_right)
+        };
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_softkey_settings)
+                .setMessage(R.string.launcher_softkey_config_hint)
+                .setItems(sides, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        showSoftkeyActionPicker(which == 0
+                                ? KeyEvent.KEYCODE_SOFT_LEFT : KeyEvent.KEYCODE_SOFT_RIGHT);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showSoftkeyActionPicker(final int keyCode) {
+        final String[] ids = new String[] {
+                "phone", "apps", "quick", "theme", "wallpaper", "settings", "studio", "home"
+        };
+        final String[] labels = new String[] {
+                getString(R.string.launcher_softkey_phone),
+                getString(R.string.launcher_softkey_apps),
+                getString(R.string.launcher_softkey_quick),
+                getString(R.string.launcher_softkey_theme),
+                getString(R.string.launcher_softkey_wallpaper),
+                getString(R.string.launcher_softkey_settings_action),
+                getString(R.string.launcher_softkey_studio),
+                getString(R.string.launcher_softkey_home)
+        };
+        String current = softKeyAction(keyCode);
+        int selected = 0;
+        for (int i = 0; i < ids.length; i++) if (ids[i].equals(current)) selected = i;
+        new android.app.AlertDialog.Builder(this)
+                .setTitle(keyCode == KeyEvent.KEYCODE_SOFT_LEFT
+                        ? R.string.launcher_softkey_left : R.string.launcher_softkey_right)
+                .setSingleChoiceItems(labels, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
+                                .putString(softKeyPreference(keyCode), ids[which]).commit();
+                        dialog.dismiss();
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void performSoftkeyAction(String action) {
+        if ("phone".equals(action)) openDialer();
+        else if ("apps".equals(action)) { drawerSearchQuery = ""; drawerPage = 0; showDrawer(false); }
+        else if ("quick".equals(action)) showCompactQuickPanel(true);
+        else if ("theme".equals(action)) showThemePicker();
+        else if ("wallpaper".equals(action)) showWallpaperOptions();
+        else if ("settings".equals(action)) openSystemSettings();
+        else if ("studio".equals(action)) openStudio();
+        else if ("home".equals(action)) showHome(false);
+    }
+
+    private void openDialer() {
+        try {
+            Intent dial = new Intent(Intent.ACTION_DIAL);
+            startActivity(dial);
+        } catch (RuntimeException unavailable) {
+            ResolveInfo phone = null;
+            for (ResolveInfo info : installedApps) {
+                String label = info.loadLabel(getPackageManager()).toString().toLowerCase(Locale.ROOT);
+                String packageName = info.activityInfo.packageName.toLowerCase(Locale.ROOT);
+                if (label.contains("phone") || label.contains("dialer") ||
+                        label.contains("טלפון") || packageName.contains("dialer")) {
+                    phone = info;
+                    break;
+                }
+            }
+            if (phone != null) launchApp(phone);
+            else android.widget.Toast.makeText(this, R.string.launcher_settings_unavailable,
+                    android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private boolean isSelectKey(int keyCode) {
         return keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER ||
                 keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
@@ -2352,6 +2870,11 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean onKeyLongPress(int keyCode, KeyEvent event) {
+        if (isSoftKey(keyCode) && pendingSoftKeyCode == keyCode) {
+            softKeyLongPressPerformed = true;
+            showSoftkeyActionPicker(keyCode);
+            return true;
+        }
         if (isSelectKey(keyCode) && performLongPressAction(
                 pendingSelectView != null ? pendingSelectView : getCurrentFocus())) {
             longPressPerformed = true;
@@ -2361,6 +2884,31 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (isSoftKey(keyCode)) {
+            if (event.getRepeatCount() == 0) {
+                pendingSoftKeyCode = keyCode;
+                softKeyLongPressPerformed = false;
+                event.startTracking();
+            }
+            return true;
+        }
+        if (drawerVisible && !quickPanelVisible) {
+            int digit = digitFromKeyCode(keyCode);
+            if (digit >= 0) {
+                drawerSearchQuery += String.valueOf(digit);
+                drawerPage = 0;
+                showDrawer(pinSelectionMode);
+                return true;
+            }
+            if (keyCode == KeyEvent.KEYCODE_DEL || keyCode == KeyEvent.KEYCODE_FORWARD_DEL) {
+                if (drawerSearchQuery.length() > 0) {
+                    drawerSearchQuery = drawerSearchQuery.substring(0, drawerSearchQuery.length() - 1);
+                    drawerPage = 0;
+                    showDrawer(pinSelectionMode);
+                } else showDrawer(pinSelectionMode);
+                return true;
+            }
+        }
         if (isSelectKey(keyCode)) {
             View focused = getCurrentFocus();
             if (focused != null && "home:drawer-trigger".equals(focused.getTag())) {
@@ -2408,6 +2956,12 @@ public class QinsLauncherActivity extends Activity {
             }
         }
         if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (drawerVisible && drawerSearchQuery.length() > 0) {
+                drawerSearchQuery = drawerSearchQuery.substring(0, drawerSearchQuery.length() - 1);
+                drawerPage = 0;
+                showDrawer(pinSelectionMode);
+                return true;
+            }
             if (editMode) {
                 editMode = false;
                 selectedHomeIndex = -1;
@@ -2478,6 +3032,12 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (isSoftKey(keyCode) && pendingSoftKeyCode == keyCode) {
+            pendingSoftKeyCode = 0;
+            if (!softKeyLongPressPerformed) performSoftkeyAction(softKeyAction(keyCode));
+            softKeyLongPressPerformed = false;
+            return true;
+        }
         if (isSelectKey(keyCode) && pendingSelectView != null) {
             View target = pendingSelectView;
             pendingSelectView = null;
