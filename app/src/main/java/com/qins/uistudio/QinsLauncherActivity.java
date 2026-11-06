@@ -762,12 +762,39 @@ public class QinsLauncherActivity extends Activity {
             canvas.drawRect(bounds, paint);
             paint.setShader(null);
 
+            int wallpaperVariant = "theme_2".equals(backgroundStyle) ? 2 :
+                    ("theme_3".equals(backgroundStyle) ? 3 : 1);
+            drawThemeWallpaper(canvas, w, h, wallpaperVariant);
+        }
+
+        private void drawThemeWallpaper(Canvas canvas, float w, float h, int variant) {
+            canvas.save();
+            if (variant == 2) canvas.rotate(-9f, w * 0.5f, h * 0.5f);
+            if (variant == 3) canvas.scale(1.16f, 1.16f, w * 0.5f, h * 0.5f);
+            if (style.monochrome) drawNothingWallpaper(canvas, w, h);
+            else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id)) drawPixelWallpaper(canvas, w, h);
+            else drawGalaxyWallpaper(canvas, w, h);
+            canvas.restore();
+
             if (style.monochrome) {
-                drawNothingWallpaper(canvas, w, h);
-            } else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id)) {
-                drawPixelWallpaper(canvas, w, h);
-            } else {
-                drawGalaxyWallpaper(canvas, w, h);
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(dp(variant == 2 ? 5 : 2));
+                paint.setColor(variant == 2 ? 0x99E3343A : 0x44FFFFFF);
+                if (variant == 2) {
+                    canvas.drawLine(-w * 0.1f, h * 0.78f, w * 0.72f, h * 0.12f, paint);
+                    canvas.drawLine(w * 0.20f, h * 1.08f, w * 1.05f, h * 0.40f, paint);
+                } else if (variant == 3) {
+                    canvas.drawCircle(w * 0.50f, h * 0.48f, Math.min(w, h) * 0.31f, paint);
+                    canvas.drawCircle(w * 0.50f, h * 0.48f, Math.min(w, h) * 0.23f, paint);
+                }
+                paint.setStyle(Paint.Style.FILL);
+            } else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id) && variant == 2) {
+                paint.setColor(0x337B61B5);
+                canvas.drawCircle(w * 0.82f, h * 0.78f, Math.min(w, h) * 0.28f, paint);
+            } else if (!ThemeManager.APPEARANCE_PIXEL.equals(style.id) && variant == 3) {
+                paint.setColor(0x33FFFFFF);
+                canvas.drawRect(w * 0.08f, h * 0.12f, w * 0.92f, h * 0.15f, paint);
+                canvas.drawRect(w * 0.08f, h * 0.84f, w * 0.72f, h * 0.87f, paint);
             }
         }
 
@@ -1117,6 +1144,7 @@ public class QinsLauncherActivity extends Activity {
         clockView.setTextDirection(View.TEXT_DIRECTION_LTR);
         styleSurface(clockView, 0x00000000, 0x00000000, a.focus, a.cornerDp);
         clockView.setPadding(dp(7), dp(4), dp(7), dp(4));
+        clockView.setTag("home:clock");
         clockView.setContentDescription("Clock style. Press to customize.");
         clockView.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showClockStylePicker(); }
@@ -2333,13 +2361,13 @@ public class QinsLauncherActivity extends Activity {
         return "oneui";
     }
     private String[] clockStyleOptions(ThemeManager.Appearance a) {
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"dot", "mono", "compact"};
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"material", "bold", "compact"};
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"dot", "mono", "digital", "stacked", "compact"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"material", "bold", "stacked", "compact"};
         return new String[] {"oneui", "stacked", "compact"};
     }
     private String[] clockStyleLabels(ThemeManager.Appearance a) {
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Dot matrix", "Mono terminal", "Compact"};
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Compact"};
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Nothing dot matrix", "Geist-style mono", "Digital bold", "Stacked clock", "Compact"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Stacked clock", "Compact"};
         return new String[] {"One UI large", "Stacked digital", "Compact"};
     }
     private void showClockStylePicker() {
@@ -2358,13 +2386,14 @@ public class QinsLauncherActivity extends Activity {
         String style = clockStyle(a);
         if ("compact".equals(style)) return small ? 23 : 31;
         if ("stacked".equals(style)) return small ? 27 : 37;
-        if ("bold".equals(style)) return small ? 30 : 43;
+        if ("bold".equals(style) || "digital".equals(style)) return small ? 30 : 43;
         if ("mono".equals(style)) return small ? 27 : 38;
         return small ? 29 : 42;
     }
     private Typeface clockTypefaceForTheme(ThemeManager.Appearance a) {
         String style = clockStyle(a);
         if ("mono".equals(style) || "dot".equals(style) || a.useMonoType) return Typeface.MONOSPACE;
+        if ("digital".equals(style)) return Typeface.create("monospace", Typeface.BOLD);
         if ("bold".equals(style) || "material".equals(style)) return Typeface.create("sans-serif-medium", Typeface.NORMAL);
         return Typeface.create("sans-serif-light", Typeface.NORMAL);
     }
@@ -2428,6 +2457,8 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private String backgroundStyleTitle(String value) {
+        if ("theme_2".equals(value)) return "Theme artwork 02";
+        if ("theme_3".equals(value)) return "Theme artwork 03";
         if ("gradient".equals(value)) return "Soft gradient";
         if ("minimal".equals(value)) return "Minimal";
         if ("dots".equals(value)) return "Dot pattern";
@@ -2458,9 +2489,12 @@ public class QinsLauncherActivity extends Activity {
                 if (colors[i] == choices[j]) selectedChoices[i] = j;
             }
         }
-        final String[] backgroundStyles = new String[] {"theme", "gradient", "minimal", "dots", "photo"};
+        final String[] backgroundStyles = new String[] {"theme", "theme_2", "theme_3", "gradient", "minimal", "dots", "photo"};
+        final String themeName = appearance().id.equals(ThemeManager.APPEARANCE_NOTHING) ? "Nothing" :
+                (appearance().id.equals(ThemeManager.APPEARANCE_PIXEL) ? "Google Pixel" : "Samsung One UI");
         final String[] backgroundLabels = new String[] {
-                "Theme artwork", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"
+                themeName + " · Original", themeName + " · Artwork 02", themeName + " · Artwork 03",
+                "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"
         };
         final String[] selectedBackground = new String[] {
                 getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).getString(BACKGROUND_STYLE_KEY, "theme")
@@ -3015,6 +3049,7 @@ public class QinsLauncherActivity extends Activity {
     private boolean performLongPressAction(View target) {
         if (target == null || !(target.getTag() instanceof String)) return false;
         String tag = (String) target.getTag();
+        if ("home:clock".equals(tag)) { showClockStylePicker(); return true; }
         if ("pages".equals(tag) || tag.startsWith("page-dot:")) { showAddPageDialog(); return true; }
         if (tag.startsWith("home:")) {
             try { enterEditMode(Integer.parseInt(tag.substring(5))); return true; }
@@ -3118,8 +3153,12 @@ public class QinsLauncherActivity extends Activity {
             openDialer();
             return true;
         }
-        if (keyCode == KeyEvent.KEYCODE_MENU) {
-            openStudio();
+        if (keyCode == KeyEvent.KEYCODE_MENU && event.getRepeatCount() == 0) {
+            // QINS firmware reports the left upper hardware key as MENU.
+            // Never launch the developer Studio from a physical soft key.
+            drawerSearchQuery = "";
+            drawerPage = 0;
+            showDrawer(false);
             return true;
         }
         // First DOWN opens the compact controls; a second, distinct press expands them.
