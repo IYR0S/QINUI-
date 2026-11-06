@@ -75,9 +75,9 @@ public final class ThemeManager {
             0xFFD7DDE8, 0xFF9DBAF4, 26f, false, false),
         // Pixel-inspired Material 3 Expressive: tonal lavender surfaces and a vivid violet accent.
         new Appearance(APPEARANCE_PIXEL, "Pixel / Material",
-            0xFFF4F0F8, 0xFFEAE3F2, 0xFFFFFBFF, 0xFFEDE6F5,
-            0xFFEAE3F2, 0xFFDCD0F0, 0xFF6750A4, 0xFF211B2B, 0xFF6E6578,
-            0xFFD8CDE3, 0xFFBDA9E8, 30f, false, false),
+            0xFFEEF3EC, 0xFFDCE7DD, 0xFFF8FBF6, 0xFFE5EEE4,
+            0xFFE0EAE0, 0xFFCFE0D0, 0xFF3C8060, 0xFF17231D, 0xFF617267,
+            0xFFD3DED4, 0xFF9BC8A8, 30f, false, false),
         // Nothing-inspired: monochrome, high contrast and tight geometry with restrained red detail.
         new Appearance(APPEARANCE_NOTHING, "Nothing",
             0xFF101112, 0xFF191B1D, 0xFF202224, 0xFF292C2E,
