@@ -309,6 +309,8 @@ public class QinsLauncherActivity extends Activity {
         int sidePadding = clamp(screenWidthDp() / 14, 8, 14);
         int footerHeight = clamp((int) (screenHeightDp() * 0.17f), 30, 42);
         root.setPadding(dp(sidePadding), dp(4), dp(sidePadding), dp(3));
+        root.setClipChildren(false);
+        root.setClipToPadding(false);
         root.setBackground(new QinsWallpaperDrawable(a));
 
         LinearLayout topBar = new LinearLayout(this);
@@ -376,7 +378,11 @@ public class QinsLauncherActivity extends Activity {
         root.addView(topBar, new LinearLayout.LayoutParams(-1, dp(44)));
 
         pageContainer = new FrameLayout(this);
+        pageContainer.setClipChildren(false);
+        pageContainer.setClipToPadding(false);
         pageContent = new LinearLayout(this);
+        pageContent.setClipChildren(false);
+        pageContent.setClipToPadding(false);
         pageContent.setOrientation(LinearLayout.VERTICAL);
         pageContainer.addView(pageContent, new FrameLayout.LayoutParams(-1, -1));
         root.addView(pageContainer, new LinearLayout.LayoutParams(-1, 0, 1));
@@ -854,41 +860,85 @@ public class QinsLauncherActivity extends Activity {
 
             int wallpaperVariant = "theme_2".equals(backgroundStyle) ? 2 :
                     ("theme_3".equals(backgroundStyle) ? 3 : 1);
-            drawThemeWallpaper(canvas, w, h, wallpaperVariant);
+            // Overscan beyond the visible edges to prevent abrupt art cut-offs.
+            float bleed = Math.max(dp(22), Math.min(w, h) * 0.055f);
+            canvas.save();
+            canvas.translate(-bleed, -bleed);
+            drawThemeWallpaper(canvas, w + bleed * 2f, h + bleed * 2f, wallpaperVariant);
+            canvas.restore();
         }
 
         private void drawThemeWallpaper(Canvas canvas, float w, float h, int variant) {
-            canvas.save();
-            if (variant == 2) canvas.rotate(-9f, w * 0.5f, h * 0.5f);
-            if (variant == 3) canvas.scale(1.16f, 1.16f, w * 0.5f, h * 0.5f);
-            if (style.monochrome) drawNothingWallpaper(canvas, w, h);
-            else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id)) drawPixelWallpaper(canvas, w, h);
-            else drawGalaxyWallpaper(canvas, w, h);
-            canvas.restore();
-
-            if (style.monochrome) {
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(dp(variant == 2 ? 5 : 2));
-                paint.setColor(variant == 2 ? 0x99E3343A : 0x44FFFFFF);
-                if (variant == 2) {
-                    canvas.drawLine(-w * 0.1f, h * 0.78f, w * 0.72f, h * 0.12f, paint);
-                    canvas.drawLine(w * 0.20f, h * 1.08f, w * 1.05f, h * 0.40f, paint);
-                } else if (variant == 3) {
-                    canvas.drawCircle(w * 0.50f, h * 0.48f, Math.min(w, h) * 0.31f, paint);
-                    canvas.drawCircle(w * 0.50f, h * 0.48f, Math.min(w, h) * 0.23f, paint);
-                }
-                paint.setStyle(Paint.Style.FILL);
-            } else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id) && variant == 2) {
-                paint.setColor(0x337B61B5);
-                canvas.drawCircle(w * 0.82f, h * 0.78f, Math.min(w, h) * 0.28f, paint);
-            } else if (!ThemeManager.APPEARANCE_PIXEL.equals(style.id) && variant == 3) {
-                paint.setColor(0x33FFFFFF);
-                canvas.drawRect(w * 0.08f, h * 0.12f, w * 0.92f, h * 0.15f, paint);
-                canvas.drawRect(w * 0.08f, h * 0.84f, w * 0.72f, h * 0.87f, paint);
-            }
+            if (style.monochrome) drawNothingWallpaper(canvas, w, h, variant);
+            else if (ThemeManager.APPEARANCE_PIXEL.equals(style.id)) drawPixelWallpaper(canvas, w, h, variant);
+            else drawGalaxyWallpaper(canvas, w, h, variant);
         }
 
-        private void drawNothingWallpaper(Canvas canvas, float w, float h) {
+        private void drawNothingWallpaper(Canvas canvas, float w, float h, int variant) {
+            if (variant == 2) {
+                paint.setShader(new LinearGradient(0, 0, w, h,
+                        new int[] {0xFF050607, 0xFF17191B, 0xFF08090A},
+                        new float[] {0f, 0.52f, 1f}, Shader.TileMode.CLAMP));
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawRect(0, 0, w, h, paint);
+                paint.setShader(null);
+                Path slash = new Path();
+                slash.moveTo(-w * 0.18f, h * 0.78f);
+                slash.cubicTo(w * 0.05f, h * 0.55f, w * 0.27f, h * 0.56f, w * 0.47f, h * 0.36f);
+                slash.cubicTo(w * 0.66f, h * 0.17f, w * 0.82f, h * 0.15f, w * 1.12f, -h * 0.02f);
+                slash.lineTo(w * 1.12f, h * 0.24f);
+                slash.cubicTo(w * 0.88f, h * 0.39f, w * 0.73f, h * 0.39f, w * 0.57f, h * 0.56f);
+                slash.cubicTo(w * 0.33f, h * 0.81f, w * 0.10f, h * 0.86f, -w * 0.18f, h * 1.04f);
+                slash.close();
+                Paint red = new Paint(Paint.ANTI_ALIAS_FLAG);
+                red.setShader(new LinearGradient(0, h * 0.15f, w, h * 0.9f,
+                        new int[] {0xFF8E1017, 0xFFE3343A, 0xFF5E080E},
+                        new float[] {0f, 0.48f, 1f}, Shader.TileMode.CLAMP));
+                canvas.drawPath(slash, red);
+                red.setShader(null);
+                red.setStyle(Paint.Style.STROKE);
+                red.setStrokeWidth(dp(1.2f));
+                red.setColor(0x88FF7378);
+                canvas.drawPath(slash, red);
+                paint.setColor(0x24FFFFFF);
+                for (float y = h * 0.70f; y < h * 1.02f; y += dp(12)) {
+                    for (float x = dp(8); x < w * 0.42f; x += dp(12)) canvas.drawCircle(x, y, dp(0.8f), paint);
+                }
+                return;
+            }
+            if (variant == 3) {
+                paint.setShader(new LinearGradient(0, 0, w, h,
+                        new int[] {0xFF070809, 0xFF1D2022, 0xFF050607},
+                        new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawRect(0, 0, w, h, paint);
+                paint.setShader(null);
+                float unit = Math.min(w, h);
+                Paint orbit = new Paint(Paint.ANTI_ALIAS_FLAG);
+                orbit.setStyle(Paint.Style.STROKE);
+                orbit.setStrokeWidth(dp(2));
+                orbit.setColor(0x44FFFFFF);
+                canvas.drawCircle(w * 0.72f, h * 0.47f, unit * 0.37f, orbit);
+                orbit.setStrokeWidth(dp(8));
+                orbit.setColor(0x66E3343A);
+                canvas.drawArc(new android.graphics.RectF(w * 0.72f - unit * 0.31f,
+                        h * 0.47f - unit * 0.31f, w * 0.72f + unit * 0.31f,
+                        h * 0.47f + unit * 0.31f), 215, 115, false, orbit);
+                orbit.setStrokeWidth(dp(1));
+                orbit.setColor(0x33FFFFFF);
+                canvas.drawCircle(w * 0.72f, h * 0.47f, unit * 0.23f, orbit);
+                paint.setColor(0xFFE3343A);
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawCircle(w * 0.72f, h * 0.16f, dp(4), paint);
+                float step = dp(11);
+                for (float y = dp(10); y < h; y += step) {
+                    for (float x = dp(8); x < w * 0.30f; x += step) {
+                        paint.setColor(((int)(x / step) + (int)(y / step)) % 5 == 0 ? 0xFFE3343A : 0x30FFFFFF);
+                        canvas.drawCircle(x, y, dp(0.75f), paint);
+                    }
+                }
+                return;
+            }
             paint.setShader(new LinearGradient(0, 0, w, h,
                     style.backgroundAlt, style.background, Shader.TileMode.CLAMP));
             paint.setStyle(Paint.Style.FILL);
@@ -911,7 +961,64 @@ public class QinsLauncherActivity extends Activity {
             paint.setStyle(Paint.Style.FILL);
         }
 
-        private void drawPixelWallpaper(Canvas canvas, float w, float h) {
+        private void drawPixelWallpaper(Canvas canvas, float w, float h, int variant) {
+            if (variant == 2) {
+                paint.setShader(new LinearGradient(0, 0, w, h,
+                        new int[] {0xFF10191B, 0xFF1C352E, 0xFF111C27},
+                        new float[] {0f, 0.6f, 1f}, Shader.TileMode.CLAMP));
+                canvas.drawRect(0, 0, w, h, paint);
+                paint.setShader(null);
+                Path capsule = new Path();
+                capsule.moveTo(-w * 0.12f, h * 0.29f);
+                capsule.cubicTo(-w * 0.02f, h * 0.04f, w * 0.35f, -h * 0.06f, w * 0.59f, h * 0.12f);
+                capsule.cubicTo(w * 0.82f, h * 0.30f, w * 0.63f, h * 0.55f, w * 0.38f, h * 0.64f);
+                capsule.cubicTo(w * 0.12f, h * 0.75f, -w * 0.18f, h * 0.59f, -w * 0.12f, h * 0.29f);
+                capsule.close();
+                drawPixelLayer(canvas, capsule, 0xFFE1F7A8, 0xFF50C38A, 0xFF145E58);
+                Path lowerPill = new Path();
+                lowerPill.moveTo(w * 0.26f, h * 0.77f);
+                lowerPill.cubicTo(w * 0.45f, h * 0.60f, w * 0.79f, h * 0.67f, w * 1.07f, h * 0.82f);
+                lowerPill.cubicTo(w * 1.17f, h * 0.91f, w * 1.02f, h * 1.10f, w * 0.80f, h * 1.09f);
+                lowerPill.cubicTo(w * 0.55f, h * 1.09f, w * 0.18f, h * 0.98f, w * 0.26f, h * 0.77f);
+                lowerPill.close();
+                drawPixelLayer(canvas, lowerPill, 0xFF58E2D3, 0xFF257FAD, 0xFF29366F);
+                Paint highlight = new Paint(Paint.ANTI_ALIAS_FLAG);
+                highlight.setStyle(Paint.Style.STROKE);
+                highlight.setStrokeWidth(dp(1.5f));
+                highlight.setColor(0x99E6FFE8);
+                Path sheen = new Path();
+                sheen.moveTo(w * 0.02f, h * 0.27f);
+                sheen.cubicTo(w * 0.18f, h * 0.02f, w * 0.45f, h * 0.02f, w * 0.58f, h * 0.20f);
+                canvas.drawPath(sheen, highlight);
+                return;
+            }
+            if (variant == 3) {
+                paint.setShader(new LinearGradient(0, 0, w, h,
+                        new int[] {0xFFDDE9D8, 0xFFF0F3E9, 0xFFB8D5C7},
+                        new float[] {0f, 0.56f, 1f}, Shader.TileMode.CLAMP));
+                canvas.drawRect(0, 0, w, h, paint);
+                paint.setShader(null);
+                Path leftPetal = new Path();
+                leftPetal.moveTo(-w * 0.12f, h * 0.10f);
+                leftPetal.cubicTo(w * 0.08f, -h * 0.08f, w * 0.40f, h * 0.05f, w * 0.42f, h * 0.32f);
+                leftPetal.cubicTo(w * 0.44f, h * 0.59f, w * 0.13f, h * 0.67f, -w * 0.12f, h * 0.49f);
+                leftPetal.close();
+                drawPixelLayer(canvas, leftPetal, 0xFFE7F9B5, 0xFF8DCB70, 0xFF447D55);
+                Path rightPetal = new Path();
+                rightPetal.moveTo(w * 0.44f, h * 0.18f);
+                rightPetal.cubicTo(w * 0.62f, -h * 0.02f, w * 0.99f, h * 0.07f, w * 1.10f, h * 0.37f);
+                rightPetal.cubicTo(w * 1.16f, h * 0.61f, w * 0.83f, h * 0.72f, w * 0.61f, h * 0.56f);
+                rightPetal.cubicTo(w * 0.46f, h * 0.46f, w * 0.34f, h * 0.33f, w * 0.44f, h * 0.18f);
+                rightPetal.close();
+                drawPixelLayer(canvas, rightPetal, 0xFFC1F7E8, 0xFF49B7A4, 0xFF1D6672);
+                Path bottomPetal = new Path();
+                bottomPetal.moveTo(w * 0.10f, h * 0.76f);
+                bottomPetal.cubicTo(w * 0.29f, h * 0.53f, w * 0.67f, h * 0.64f, w * 0.87f, h * 0.91f);
+                bottomPetal.cubicTo(w * 0.98f, h * 1.08f, w * 0.34f, h * 1.12f, w * 0.10f, h * 0.76f);
+                bottomPetal.close();
+                drawPixelLayer(canvas, bottomPetal, 0xFF9ED8C0, 0xFF4C8F85, 0xFF244C59);
+                return;
+            }
             paint.setStyle(Paint.Style.FILL);
             paint.setShader(new LinearGradient(0, 0, w, h,
                     new int[] {0xFF142820, 0xFF263F32, 0xFF101B1C},
@@ -971,7 +1078,56 @@ public class QinsLauncherActivity extends Activity {
             layer.setShader(null);
         }
 
-        private void drawGalaxyWallpaper(Canvas canvas, float w, float h) {
+        private void drawGalaxyWallpaper(Canvas canvas, float w, float h, int variant) {
+            if (variant == 2) {
+                paint.setShader(new LinearGradient(0, 0, w, h,
+                        new int[] {0xFF3D4652, 0xFFBFC8D1, 0xFF737E8C},
+                        new float[] {0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawRect(0, 0, w, h, paint);
+                paint.setShader(null);
+                Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
+                halo.setStyle(Paint.Style.STROKE);
+                halo.setStrokeWidth(w * 0.20f);
+                halo.setShader(new LinearGradient(0, 0, w, h,
+                        new int[] {0xFF596574, 0xFFF5F7FA, 0xFF8F9AA7},
+                        new float[] {0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
+                canvas.drawCircle(w * 0.70f, h * 0.43f, Math.min(w, h) * 0.38f, halo);
+                halo.setShader(null);
+                halo.setStrokeWidth(w * 0.075f);
+                halo.setColor(0x66717D8B);
+                float unit = Math.min(w, h);
+                canvas.drawArc(new android.graphics.RectF(w * 0.70f - unit * 0.32f,
+                        h * 0.43f - unit * 0.32f, w * 0.70f + unit * 0.32f,
+                        h * 0.43f + unit * 0.32f), 200, 185, false, halo);
+                Paint glint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                glint.setColor(0xCCFFFFFF);
+                canvas.drawCircle(w * 0.43f, h * 0.10f, dp(2), glint);
+                return;
+            }
+            if (variant == 3) {
+                paint.setShader(new LinearGradient(0, 0, w, h,
+                        new int[] {0xFFE8EDF2, 0xFFADB7C4, 0xFF596371},
+                        new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
+                canvas.drawRect(0, 0, w, h, paint);
+                paint.setShader(null);
+                Path foldA = new Path();
+                foldA.moveTo(-w * 0.12f, h * 0.18f);
+                foldA.cubicTo(w * 0.18f, -h * 0.04f, w * 0.47f, h * 0.10f, w * 0.62f, h * 0.31f);
+                foldA.cubicTo(w * 0.80f, h * 0.55f, w * 0.53f, h * 0.73f, w * 0.25f, h * 1.08f);
+                foldA.lineTo(-w * 0.12f, h * 1.08f);
+                foldA.close();
+                drawPixelLayer(canvas, foldA, 0xFFF7FAFC, 0xFFAEB9C6, 0xFF626E7B);
+                Path foldB = new Path();
+                foldB.moveTo(w * 0.69f, -h * 0.08f);
+                foldB.cubicTo(w * 0.92f, h * 0.15f, w * 0.78f, h * 0.39f, w * 1.12f, h * 0.57f);
+                foldB.lineTo(w * 1.12f, h * 1.08f);
+                foldB.cubicTo(w * 0.72f, h * 0.91f, w * 0.59f, h * 0.73f, w * 0.71f, h * 0.55f);
+                foldB.cubicTo(w * 0.86f, h * 0.35f, w * 0.56f, h * 0.14f, w * 0.69f, -h * 0.08f);
+                foldB.close();
+                drawPixelLayer(canvas, foldB, 0xFFFFFFFF, 0xFFC4CCD5, 0xFF737E8A);
+                return;
+            }
             paint.setStyle(Paint.Style.FILL);
             paint.setShader(new LinearGradient(0, 0, w, h,
                     new int[] {0xFF333943, 0xFFBFC5CD, 0xFF777F89},
@@ -1211,6 +1367,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showHome(boolean focusHandle) {
+        quickPanelPage = 0;
         closeHomeFolder();
         removeCompactPanelOverlay();
         quickPanelVisible = false;
@@ -1336,6 +1493,7 @@ public class QinsLauncherActivity extends Activity {
 
     /** Compact quick controls stay on top of the home page and leave most of it visible. */
     private void showCompactQuickPanel(boolean focusFirst) {
+        quickPanelPage = 0;
         wifiState = null; bluetoothState = null; soundState = null;
         wifiTile = null; bluetoothTile = null; soundTile = null;
         showHome(false);
@@ -1594,12 +1752,11 @@ public class QinsLauncherActivity extends Activity {
             int iconSize = iconFrameSize - 11;
             FrameLayout iconFrame = new FrameLayout(this);
             GradientDrawable iconBackground = new GradientDrawable();
-            if (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ||
-                    ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
                 iconBackground.setShape(GradientDrawable.OVAL);
             } else {
                 iconBackground.setShape(GradientDrawable.RECTANGLE);
-                iconBackground.setCornerRadius(dp(14));
+                iconBackground.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 18 : 14));
             }
             iconBackground.setColor(isFolder(info) ? 0x55000000 : a.tile);
             iconBackground.setStroke(dp(1), a.monochrome ? a.border : a.surfaceAlt);
@@ -1965,7 +2122,7 @@ public class QinsLauncherActivity extends Activity {
         panel.setPadding(dp(12), dp(10), dp(12), dp(10));
         GradientDrawable panelBackground = new GradientDrawable();
         panelBackground.setColor(0x99151A21);
-        panelBackground.setCornerRadius(dp(23));
+        panelBackground.setCornerRadius(dp(a.cornerDp + 2f));
         panelBackground.setStroke(dp(1), 0x66FFFFFF);
         panel.setBackgroundDrawable(panelBackground);
         panel.setClickable(true);
@@ -2808,10 +2965,11 @@ public class QinsLauncherActivity extends Activity {
         final String[] backgroundStyles = new String[] {"theme", "theme_2", "theme_3", "gradient", "minimal", "dots", "photo"};
         final String themeName = appearance().id.equals(ThemeManager.APPEARANCE_NOTHING) ? "Nothing" :
                 (appearance().id.equals(ThemeManager.APPEARANCE_PIXEL) ? "Google Pixel" : "Samsung One UI");
-        final String[] backgroundLabels = new String[] {
-                themeName + " · Original", themeName + " · Artwork 02", themeName + " · Artwork 03",
-                "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"
-        };
+        final String[] backgroundLabels = ThemeManager.APPEARANCE_NOTHING.equals(appearance().id)
+                ? new String[] {"Glyph field", "Signal red slash", "Red orbit", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"}
+                : (ThemeManager.APPEARANCE_PIXEL.equals(appearance().id)
+                    ? new String[] {"Green / teal flow", "Floating capsules", "Sage petals", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"}
+                    : new String[] {"Silver S ribbon", "Metal halo", "Brushed folds", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"});
         final String[] selectedBackground = new String[] {
                 getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).getString(BACKGROUND_STYLE_KEY, "theme")
         };
@@ -3566,6 +3724,40 @@ public class QinsLauncherActivity extends Activity {
         return super.onKeyLongPress(keyCode, event);
     }
 
+    private boolean isBoundRightSoftKey(KeyEvent event) {
+        SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
+        int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
+        int boundScan = keys.getInt("right_key_scan", 0);
+        return boundCode != Integer.MIN_VALUE && event.getKeyCode() == boundCode &&
+                (boundScan > 0 ? event.getScanCode() == boundScan : true);
+    }
+
+    private boolean isLeftSoftKey(KeyEvent event) {
+        int code = event.getKeyCode();
+        return code == KeyEvent.KEYCODE_SOFT_LEFT || code == KeyEvent.KEYCODE_MENU ||
+                code == KeyEvent.KEYCODE_F1;
+    }
+
+    private boolean handleExpandedQuickPanelSoftKey(KeyEvent event) {
+        if (!quickPanelVisible || !quickPanelExpanded) return false;
+        boolean rightKey = isBoundRightSoftKey(event);
+        boolean leftKey = !rightKey && isLeftSoftKey(event);
+        if (!rightKey && !leftKey) return false;
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            if (rightKey) {
+                // Controls -> Home; Notifications -> Controls.
+                if (quickPanelPage == 0) showHome(false);
+                else switchQuickPanelPage(0);
+            } else {
+                // Controls -> Notifications; Notifications -> Home.
+                if (quickPanelPage == 0) switchQuickPanelPage(1);
+                else showHome(false);
+            }
+        }
+        // Consume DOWN and UP so MENU/BACK soft keys cannot fall through to Android.
+        return true;
+    }
+
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
                 awaitingRightKeyBind) {
@@ -3581,19 +3773,7 @@ public class QinsLauncherActivity extends Activity {
                 return true;
             }
         }
-        if (quickPanelVisible && quickPanelExpanded) {
-            SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
-            int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
-            int boundScan = keys.getInt("right_key_scan", 0);
-            if (boundCode != Integer.MIN_VALUE && event.getKeyCode() == boundCode &&
-                    (boundScan == 0 || event.getScanCode() == boundScan)) {
-                if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                    switchQuickPanelPage(1);
-                }
-                // Consume both DOWN and UP, including a BACK-coded soft key.
-                return true;
-            }
-        }
+        if (handleExpandedQuickPanelSoftKey(event)) return true;
         return super.dispatchKeyEvent(event);
     }
 
@@ -3657,18 +3837,6 @@ public class QinsLauncherActivity extends Activity {
                 if (!longPressPerformed && (event.isLongPress() || event.getRepeatCount() >= 1)) {
                     longPressPerformed = performLongPressAction(pendingSelectView);
                 }
-                return true;
-            }
-        }
-        if (quickPanelVisible && quickPanelExpanded && event.getRepeatCount() == 0) {
-            if (keyCode == KeyEvent.KEYCODE_SOFT_LEFT || keyCode == KeyEvent.KEYCODE_MENU ||
-                    keyCode == KeyEvent.KEYCODE_F1) {
-                switchQuickPanelPage(0);
-                return true;
-            }
-            if (keyCode == KeyEvent.KEYCODE_SOFT_RIGHT || keyCode == KeyEvent.KEYCODE_F2 ||
-                    keyCode == KeyEvent.KEYCODE_SEARCH) {
-                switchQuickPanelPage(1);
                 return true;
             }
         }
