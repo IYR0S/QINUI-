@@ -10,6 +10,7 @@ import android.view.View;
 /** Small original vector glyphs for QINS controls; drawn at runtime for API 19. */
 public final class QinsGlyphView extends View {
     private String glyph;
+    private String visualStyle = "galaxy";
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int tint;
 
@@ -22,6 +23,11 @@ public final class QinsGlyphView extends View {
     }
 
     public void setGlyph(String value) { glyph = value == null ? "" : value; invalidate(); }
+
+    public void setVisualStyle(String style) {
+        visualStyle = style == null ? "galaxy" : style;
+        invalidate();
+    }
 
     public void setTint(int color) {
         tint = color;
@@ -37,8 +43,9 @@ public final class QinsGlyphView extends View {
         canvas.scale(unit, unit);
 
         paint.setColor(tint);
-        paint.setStrokeWidth(1.9f);
-        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeWidth("nothing".equals(visualStyle) ? 2.2f :
+                ("galaxy".equals(visualStyle) ? 2.35f : 1.85f));
+        paint.setStrokeCap("nothing".equals(visualStyle) ? Paint.Cap.SQUARE : Paint.Cap.ROUND);
         paint.setStrokeJoin(Paint.Join.ROUND);
         paint.setStyle(Paint.Style.STROKE);
 
@@ -137,6 +144,12 @@ public final class QinsGlyphView extends View {
         p.lineTo(7, 5);
         p.lineTo(-6, -6);
         c.drawPath(p, paint);
+        if ("nothing".equals(visualStyle)) {
+            paint.setStyle(Paint.Style.FILL);
+            c.drawCircle(0, -11, 1.7f, paint);
+            c.drawCircle(0, 11, 1.7f, paint);
+            paint.setStyle(Paint.Style.STROKE);
+        }
     }
 
     private void drawSound(Canvas c) {
