@@ -102,4 +102,8 @@
     <string name="launcher_upper_right_key_saved">Upper-right key saved</string>
     <string name="launcher_controls_tab">Controls</string>
     <string name="launcher_notifications_tab">Notifications</string>
+    <string name="launcher_missed_call">MISSED CALL</string>
+    <string name="launcher_now_playing">NOW PLAYING</string>
+    <string name="launcher_smart_colors">Smart colors from wallpaper</string>
+    <string name="launcher_smart_colors_applied">Smart accent color applied</string>
 </resources>
