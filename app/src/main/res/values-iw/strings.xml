@@ -106,4 +106,7 @@
     <string name="launcher_now_playing">מתנגן כעת</string>
     <string name="launcher_smart_colors">צבעים חכמים מהרקע</string>
     <string name="launcher_smart_colors_applied">צבע ההדגשה החכם הוחל</string>
+    <string name="launcher_clock_background">רקע השעון</string>
+    <string name="launcher_clock_background_transparent">שקוף (נוכחי)</string>
+    <string name="launcher_clock_background_solid">צבע מלא</string>
 </resources>

@@ -106,4 +106,7 @@
     <string name="launcher_now_playing">NOW PLAYING</string>
     <string name="launcher_smart_colors">Smart colors from wallpaper</string>
     <string name="launcher_smart_colors_applied">Smart accent color applied</string>
+    <string name="launcher_clock_background">Clock background</string>
+    <string name="launcher_clock_background_transparent">Transparent (current)</string>
+    <string name="launcher_clock_background_solid">Solid color</string>
 </resources>
