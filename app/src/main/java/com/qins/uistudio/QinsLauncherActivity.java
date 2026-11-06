@@ -1097,6 +1097,7 @@ public class QinsLauncherActivity extends Activity {
                 paint.setStyle(Paint.Style.FILL);
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
+                float unit = Math.min(w, h);
                 Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
                 halo.setStyle(Paint.Style.STROKE);
                 halo.setStrokeWidth(unit * 0.12f);
@@ -1107,7 +1108,6 @@ public class QinsLauncherActivity extends Activity {
                 halo.setShader(null);
                 halo.setStrokeWidth(unit * 0.06f);
                 halo.setColor(0x887B8793);
-                float unit = Math.min(w, h);
                 canvas.drawArc(new android.graphics.RectF(w * 0.65f - unit * 0.18f,
                         h * 0.48f - unit * 0.18f, w * 0.65f + unit * 0.18f,
                         h * 0.48f + unit * 0.18f), 200, 185, false, halo);
