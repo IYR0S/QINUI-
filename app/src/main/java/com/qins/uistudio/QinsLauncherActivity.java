@@ -77,6 +77,9 @@ public class QinsLauncherActivity extends Activity {
     private boolean quickPanelExpanded = false;
     private int quickPanelPage = 0;
     private boolean awaitingRightKeyBind = false;
+    // Keep the physical right-softkey gesture latched through ACTION_UP.
+    // Some QINS firmware reports a different scan code on key-up (notably BACK).
+    private boolean rightSoftKeyGestureActive = false;
     private static final String SOFTKEY_PREFS = "qins_softkeys";
     private int homePageCount = 1;
     private static final String QUICK_PREFS = "qins_quick_tiles";
@@ -162,8 +165,9 @@ public class QinsLauncherActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         setTheme(R.style.AppTheme);
         super.onCreate(state);
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        // Keep the Android status bar visible so Wi-Fi, cellular and battery
+        // indicators are not hidden by the launcher.
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         loadApps();
         buildShell();
         if (getIntent().getBooleanExtra("open_quick_panel", false)) showQuickPanel(false);
@@ -964,7 +968,7 @@ public class QinsLauncherActivity extends Activity {
         private void drawPixelWallpaper(Canvas canvas, float w, float h, int variant) {
             if (variant == 2) {
                 paint.setShader(new LinearGradient(0, 0, w, h,
-                        new int[] {0xFF10191B, 0xFF1C352E, 0xFF111C27},
+                        new int[] {0xFF082A29, 0xFF145B48, 0xFF092D49},
                         new float[] {0f, 0.6f, 1f}, Shader.TileMode.CLAMP));
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
@@ -974,14 +978,14 @@ public class QinsLauncherActivity extends Activity {
                 capsule.cubicTo(w * 0.82f, h * 0.30f, w * 0.63f, h * 0.55f, w * 0.38f, h * 0.64f);
                 capsule.cubicTo(w * 0.12f, h * 0.75f, -w * 0.18f, h * 0.59f, -w * 0.12f, h * 0.29f);
                 capsule.close();
-                drawPixelLayer(canvas, capsule, 0xFFE1F7A8, 0xFF50C38A, 0xFF145E58);
+                drawPixelLayer(canvas, capsule, 0xFFF4FF9A, 0xFF48E7A0, 0xFF087B73);
                 Path lowerPill = new Path();
                 lowerPill.moveTo(w * 0.26f, h * 0.77f);
                 lowerPill.cubicTo(w * 0.45f, h * 0.60f, w * 0.79f, h * 0.67f, w * 1.07f, h * 0.82f);
                 lowerPill.cubicTo(w * 1.17f, h * 0.91f, w * 1.02f, h * 1.10f, w * 0.80f, h * 1.09f);
                 lowerPill.cubicTo(w * 0.55f, h * 1.09f, w * 0.18f, h * 0.98f, w * 0.26f, h * 0.77f);
                 lowerPill.close();
-                drawPixelLayer(canvas, lowerPill, 0xFF58E2D3, 0xFF257FAD, 0xFF29366F);
+                drawPixelLayer(canvas, lowerPill, 0xFF69FFF0, 0xFF168FD0, 0xFF263D9B);
                 Paint highlight = new Paint(Paint.ANTI_ALIAS_FLAG);
                 highlight.setStyle(Paint.Style.STROKE);
                 highlight.setStrokeWidth(dp(1.5f));
@@ -994,7 +998,7 @@ public class QinsLauncherActivity extends Activity {
             }
             if (variant == 3) {
                 paint.setShader(new LinearGradient(0, 0, w, h,
-                        new int[] {0xFFDDE9D8, 0xFFF0F3E9, 0xFFB8D5C7},
+                        new int[] {0xFFDDFB9A, 0xFFF1FFE3, 0xFF81DCCB},
                         new float[] {0f, 0.56f, 1f}, Shader.TileMode.CLAMP));
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
@@ -1003,25 +1007,25 @@ public class QinsLauncherActivity extends Activity {
                 leftPetal.cubicTo(w * 0.08f, -h * 0.08f, w * 0.40f, h * 0.05f, w * 0.42f, h * 0.32f);
                 leftPetal.cubicTo(w * 0.44f, h * 0.59f, w * 0.13f, h * 0.67f, -w * 0.12f, h * 0.49f);
                 leftPetal.close();
-                drawPixelLayer(canvas, leftPetal, 0xFFE7F9B5, 0xFF8DCB70, 0xFF447D55);
+                drawPixelLayer(canvas, leftPetal, 0xFFF2FF9A, 0xFF8CEB65, 0xFF187C55);
                 Path rightPetal = new Path();
                 rightPetal.moveTo(w * 0.44f, h * 0.18f);
                 rightPetal.cubicTo(w * 0.62f, -h * 0.02f, w * 0.99f, h * 0.07f, w * 1.10f, h * 0.37f);
                 rightPetal.cubicTo(w * 1.16f, h * 0.61f, w * 0.83f, h * 0.72f, w * 0.61f, h * 0.56f);
                 rightPetal.cubicTo(w * 0.46f, h * 0.46f, w * 0.34f, h * 0.33f, w * 0.44f, h * 0.18f);
                 rightPetal.close();
-                drawPixelLayer(canvas, rightPetal, 0xFFC1F7E8, 0xFF49B7A4, 0xFF1D6672);
+                drawPixelLayer(canvas, rightPetal, 0xFF9AFFF0, 0xFF23D8C4, 0xFF086A8C);
                 Path bottomPetal = new Path();
                 bottomPetal.moveTo(w * 0.10f, h * 0.76f);
                 bottomPetal.cubicTo(w * 0.29f, h * 0.53f, w * 0.67f, h * 0.64f, w * 0.87f, h * 0.91f);
                 bottomPetal.cubicTo(w * 0.98f, h * 1.08f, w * 0.34f, h * 1.12f, w * 0.10f, h * 0.76f);
                 bottomPetal.close();
-                drawPixelLayer(canvas, bottomPetal, 0xFF9ED8C0, 0xFF4C8F85, 0xFF244C59);
+                drawPixelLayer(canvas, bottomPetal, 0xFFC7FF9B, 0xFF36C99B, 0xFF145B65);
                 return;
             }
             paint.setStyle(Paint.Style.FILL);
             paint.setShader(new LinearGradient(0, 0, w, h,
-                    new int[] {0xFF142820, 0xFF263F32, 0xFF101B1C},
+                    new int[] {0xFF092D24, 0xFF175B3E, 0xFF0D2633},
                     new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, h, paint);
             paint.setShader(null);
@@ -1033,7 +1037,7 @@ public class QinsLauncherActivity extends Activity {
             upperLeaf.cubicTo(w * 0.83f, h * 0.31f, w * 0.57f, h * 0.47f, w * 0.31f, h * 0.43f);
             upperLeaf.cubicTo(w * 0.10f, h * 0.40f, -w * 0.05f, h * 0.35f, -w * 0.12f, h * 0.17f);
             upperLeaf.close();
-            drawPixelLayer(canvas, upperLeaf, 0xFFE1F8B7, 0xFF6DCB83, 0xFF176C59);
+            drawPixelLayer(canvas, upperLeaf, 0xFFF3FF9B, 0xFF72EA82, 0xFF087D5C);
 
             Path tealForm = new Path();
             tealForm.moveTo(w * 0.40f, -h * 0.10f);
@@ -1041,7 +1045,7 @@ public class QinsLauncherActivity extends Activity {
             tealForm.cubicTo(w * 1.18f, h * 0.64f, w * 0.89f, h * 0.72f, w * 0.68f, h * 0.59f);
             tealForm.cubicTo(w * 0.46f, h * 0.46f, w * 0.25f, h * 0.18f, w * 0.40f, -h * 0.10f);
             tealForm.close();
-            drawPixelLayer(canvas, tealForm, 0xFFB7F2E7, 0xFF37B7A0, 0xFF155E68);
+            drawPixelLayer(canvas, tealForm, 0xFFB7FFF1, 0xFF24D7B8, 0xFF075C86);
 
             Path lowerForm = new Path();
             lowerForm.moveTo(-w * 0.10f, h * 0.75f);
@@ -1050,7 +1054,7 @@ public class QinsLauncherActivity extends Activity {
             lowerForm.lineTo(w * 1.12f, h * 1.12f);
             lowerForm.lineTo(-w * 0.10f, h * 1.12f);
             lowerForm.close();
-            drawPixelLayer(canvas, lowerForm, 0xFFC7F38A, 0xFF5DAD56, 0xFF244E3B);
+            drawPixelLayer(canvas, lowerForm, 0xFFE5FF72, 0xFF6DDC48, 0xFF155F45);
 
             Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
             sheen.setStyle(Paint.Style.STROKE);
@@ -1081,7 +1085,7 @@ public class QinsLauncherActivity extends Activity {
         private void drawGalaxyWallpaper(Canvas canvas, float w, float h, int variant) {
             if (variant == 2) {
                 paint.setShader(new LinearGradient(0, 0, w, h,
-                        new int[] {0xFF3D4652, 0xFFBFC8D1, 0xFF737E8C},
+                        new int[] {0xFF123B70, 0xFF2858A8, 0xFF302B69},
                         new float[] {0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
                 paint.setStyle(Paint.Style.FILL);
                 canvas.drawRect(0, 0, w, h, paint);
@@ -1090,12 +1094,12 @@ public class QinsLauncherActivity extends Activity {
                 halo.setStyle(Paint.Style.STROKE);
                 halo.setStrokeWidth(w * 0.20f);
                 halo.setShader(new LinearGradient(0, 0, w, h,
-                        new int[] {0xFF596574, 0xFFF5F7FA, 0xFF8F9AA7},
+                        new int[] {0xFF42B8D7, 0xFFF6FCFF, 0xFF7889E8},
                         new float[] {0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
                 canvas.drawCircle(w * 0.70f, h * 0.43f, Math.min(w, h) * 0.38f, halo);
                 halo.setShader(null);
                 halo.setStrokeWidth(w * 0.075f);
-                halo.setColor(0x66717D8B);
+                halo.setColor(0x886FE6F4);
                 float unit = Math.min(w, h);
                 canvas.drawArc(new android.graphics.RectF(w * 0.70f - unit * 0.32f,
                         h * 0.43f - unit * 0.32f, w * 0.70f + unit * 0.32f,
@@ -1107,7 +1111,7 @@ public class QinsLauncherActivity extends Activity {
             }
             if (variant == 3) {
                 paint.setShader(new LinearGradient(0, 0, w, h,
-                        new int[] {0xFFE8EDF2, 0xFFADB7C4, 0xFF596371},
+                        new int[] {0xFF132B58, 0xFF276FAD, 0xFF332B6D},
                         new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
@@ -1117,7 +1121,7 @@ public class QinsLauncherActivity extends Activity {
                 foldA.cubicTo(w * 0.80f, h * 0.55f, w * 0.53f, h * 0.73f, w * 0.25f, h * 1.08f);
                 foldA.lineTo(-w * 0.12f, h * 1.08f);
                 foldA.close();
-                drawPixelLayer(canvas, foldA, 0xFFF7FAFC, 0xFFAEB9C6, 0xFF626E7B);
+                drawPixelLayer(canvas, foldA, 0xFFEAFBFF, 0xFF72BCE8, 0xFF273F83);
                 Path foldB = new Path();
                 foldB.moveTo(w * 0.69f, -h * 0.08f);
                 foldB.cubicTo(w * 0.92f, h * 0.15f, w * 0.78f, h * 0.39f, w * 1.12f, h * 0.57f);
@@ -1125,12 +1129,12 @@ public class QinsLauncherActivity extends Activity {
                 foldB.cubicTo(w * 0.72f, h * 0.91f, w * 0.59f, h * 0.73f, w * 0.71f, h * 0.55f);
                 foldB.cubicTo(w * 0.86f, h * 0.35f, w * 0.56f, h * 0.14f, w * 0.69f, -h * 0.08f);
                 foldB.close();
-                drawPixelLayer(canvas, foldB, 0xFFFFFFFF, 0xFFC4CCD5, 0xFF737E8A);
+                drawPixelLayer(canvas, foldB, 0xFFFFFFFF, 0xFF86E6F0, 0xFF5263B9);
                 return;
             }
             paint.setStyle(Paint.Style.FILL);
             paint.setShader(new LinearGradient(0, 0, w, h,
-                    new int[] {0xFF333943, 0xFFBFC5CD, 0xFF777F89},
+                    new int[] {0xFF102A50, 0xFF236A9C, 0xFF312F70},
                     new float[] {0f, 0.48f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, h, paint);
             paint.setShader(null);
@@ -1145,7 +1149,7 @@ public class QinsLauncherActivity extends Activity {
             shadow.setStrokeCap(Paint.Cap.ROUND);
             shadow.setStrokeJoin(Paint.Join.ROUND);
             shadow.setStrokeWidth(w * 0.30f);
-            shadow.setColor(0x55323A46);
+            shadow.setColor(0x66405D86);
             canvas.save();
             canvas.translate(dp(4), dp(7));
             canvas.drawPath(ribbon, shadow);
@@ -1157,7 +1161,7 @@ public class QinsLauncherActivity extends Activity {
             metal.setStrokeJoin(Paint.Join.ROUND);
             metal.setStrokeWidth(w * 0.28f);
             metal.setShader(new LinearGradient(0, 0, w, h,
-                    new int[] {0xFFF9FBFD, 0xFFADB6C1, 0xFFE7EBF0, 0xFF586271},
+                    new int[] {0xFFFFFFFF, 0xFF76D8EF, 0xFFADBFF8, 0xFF354D91},
                     new float[] {0f, 0.34f, 0.68f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawPath(ribbon, metal);
             metal.setShader(null);
@@ -1168,7 +1172,7 @@ public class QinsLauncherActivity extends Activity {
             Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
             glow.setShader(new android.graphics.RadialGradient(w * 0.48f, h * 0.43f,
                     Math.max(w, h) * 0.75f,
-                    new int[] {0x33FFFFFF, 0x00FFFFFF}, null, Shader.TileMode.CLAMP));
+                    new int[] {0x44B6EFFF, 0x001B56FF}, null, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, h, glow);
         }
 
@@ -3728,8 +3732,10 @@ public class QinsLauncherActivity extends Activity {
         SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
         int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
         int boundScan = keys.getInt("right_key_scan", 0);
-        return boundCode != Integer.MIN_VALUE && event.getKeyCode() == boundCode &&
-                (boundScan > 0 ? event.getScanCode() == boundScan : true);
+        if (boundCode == Integer.MIN_VALUE || event.getKeyCode() != boundCode) return false;
+        // Prefer scan-code matching when available, but accept a missing scan code.
+        // Firmware may omit it on ACTION_UP; the gesture latch below consumes that UP.
+        return boundScan <= 0 || event.getScanCode() <= 0 || event.getScanCode() == boundScan;
     }
 
     private boolean isLeftSoftKey(KeyEvent event) {
@@ -3740,11 +3746,24 @@ public class QinsLauncherActivity extends Activity {
 
     private boolean handleExpandedQuickPanelSoftKey(KeyEvent event) {
         if (!quickPanelVisible || !quickPanelExpanded) return false;
+        SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
+        int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
+
+        // Once the right key has been recognized on DOWN, consume its matching UP
+        // even if QINS firmware changes/omits the scan code. Otherwise BACK can
+        // escape to Activity.onBackPressed() and skip the Controls page.
+        if (rightSoftKeyGestureActive && event.getAction() == KeyEvent.ACTION_UP &&
+                (event.getKeyCode() == boundCode || isBoundRightSoftKey(event))) {
+            rightSoftKeyGestureActive = false;
+            return true;
+        }
+
         boolean rightKey = isBoundRightSoftKey(event);
         boolean leftKey = !rightKey && isLeftSoftKey(event);
         if (!rightKey && !leftKey) return false;
         if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
             if (rightKey) {
+                rightSoftKeyGestureActive = true;
                 // Controls -> Home; Notifications -> Controls.
                 if (quickPanelPage == 0) showHome(false);
                 else switchQuickPanelPage(0);
