@@ -1,6 +1,7 @@
 package com.qins.uistudio;
 
 import android.app.Notification;
+import android.app.PendingIntent;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.content.Context;
@@ -30,13 +31,14 @@ public final class NotificationBridgeService extends NotificationListenerService
         public final String title;
         public final String text;
         public final long postedAt;
-
-        NotificationItem(String key, String packageName, String title, String text, long postedAt) {
-            this.key = key;
-            this.packageName = packageName;
-            this.title = title;
-            this.text = text;
-            this.postedAt = postedAt;
+        public final boolean missedCall, media;
+        public final String[] actionTitles;
+        public final PendingIntent[] actions;
+        NotificationItem(String key, String packageName, String title, String text, long postedAt,
+                         boolean missedCall, boolean media, String[] actionTitles, PendingIntent[] actions) {
+            this.key = key; this.packageName = packageName; this.title = title; this.text = text;
+            this.postedAt = postedAt; this.missedCall = missedCall; this.media = media;
+            this.actionTitles = actionTitles; this.actions = actions;
         }
     }
 
@@ -118,7 +120,21 @@ public final class NotificationBridgeService extends NotificationListenerService
         String titleValue = title == null ? "" : title.toString().trim();
         String textValue = text == null ? "" : text.toString().trim();
         if (titleValue.length() == 0) titleValue = packageName;
-        return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime());
+        String searchable = (titleValue + " " + textValue).toLowerCase(java.util.Locale.US);
+        String pkg = packageName.toLowerCase(java.util.Locale.US);
+        boolean missed = searchable.contains("missed call") || searchable.contains("שיחה שלא נענתה") || searchable.contains("שיחות שלא נענו");
+        Notification.Action[] raw = notification == null ? null : notification.actions;
+        int count = raw == null ? 0 : Math.min(3, raw.length);
+        String[] actionTitles = new String[count]; PendingIntent[] actions = new PendingIntent[count];
+        for (int i = 0; i < count; i++) { Notification.Action action = raw[i]; actionTitles[i] = action == null || action.title == null ? "" : action.title.toString(); actions[i] = action == null ? null : action.actionIntent; }
+        boolean media = !missed && count >= 2 && (pkg.contains("music") || pkg.contains("spotify") || pkg.contains("media") || pkg.contains("youtube") || pkg.contains("vlc") || pkg.contains("audio"));
+        return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, actionTitles, actions);
+    }
+
+    public static void sendAction(NotificationItem item, int index) {
+        if (item == null || item.actions == null || index < 0 || index >= item.actions.length) return;
+        PendingIntent action = item.actions[index];
+        if (action != null) try { action.send(); } catch (PendingIntent.CanceledException ignored) { }
     }
 
     private static String makeKey(StatusBarNotification sbn) {

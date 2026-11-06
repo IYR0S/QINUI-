@@ -2,6 +2,8 @@ package com.qins.uistudio;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 
 /** Shared color palette and launcher appearance presets; API 19 compatible. */
 public final class ThemeManager {
@@ -109,6 +111,13 @@ public final class ThemeManager {
     public static Appearance getAppearanceById(String id) {
         for (Appearance appearance : APPEARANCES) if (appearance.id.equals(id)) return appearance;
         return APPEARANCES[0];
+    }
+
+    public static int smartAccent(Bitmap bitmap, int fallback) {
+        if(bitmap==null||bitmap.isRecycled())return fallback;
+        int best=fallback;float bestScore=0f;float[] hsv=new float[3];int sx=Math.max(1,bitmap.getWidth()/32),sy=Math.max(1,bitmap.getHeight()/32);
+        for(int y=0;y<bitmap.getHeight();y+=sy)for(int x=0;x<bitmap.getWidth();x+=sx){Color.colorToHSV(bitmap.getPixel(x,y),hsv);if(hsv[1]<0.28f||hsv[2]<0.24f||hsv[2]>0.92f)continue;float score=hsv[1]*(1f-Math.abs(hsv[2]-0.58f));if(score>bestScore){bestScore=score;best=Color.HSVToColor(new float[]{hsv[0],Math.min(0.82f,hsv[1]),0.78f});}}
+        return best;
     }
 
     public static boolean setCustomColor(Context context, String appearanceId, String role, int color) {
