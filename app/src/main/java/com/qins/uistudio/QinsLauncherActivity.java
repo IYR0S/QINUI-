@@ -32,6 +32,7 @@ import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.widget.EditText;
+import android.widget.Button;
 import android.provider.Settings;
 import android.view.Gravity;
 import android.view.KeyEvent;
