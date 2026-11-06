@@ -874,7 +874,10 @@ public class QinsLauncherActivity extends Activity {
             // artwork cropped its upper edge on short displays and shifted
             // the wallpaper away from the custom top bar.
             canvas.save(); canvas.clipRect(0, 0, w, h);
-            drawThemeWallpaper(canvas, w, h, wallpaperVariant); canvas.restore();
+            canvas.save();
+            canvas.clipRect(0, 0, w, h);
+            drawThemeWallpaper(canvas, w, h, wallpaperVariant);
+            canvas.restore(); canvas.restore();
         }
 
         private void drawThemeWallpaper(Canvas canvas, float w, float h, int variant) {
@@ -3830,6 +3833,15 @@ public class QinsLauncherActivity extends Activity {
         if (quickPanelVisible && quickPanelExpanded && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) { rightSoftKeyGestureActive=true; if(quickPanelPage==1)switchQuickPanelPage(0);else showHome(false); }
             else if(event.getAction()==KeyEvent.ACTION_UP) rightSoftKeyGestureActive=false;
+            return true;
+        }
+        // On this firmware the upper-right hardware softkey is also reported as BACK.
+        // While Notifications is open, BACK must return to Controls before Home.
+        if (quickPanelVisible && quickPanelExpanded && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                rightSoftKeyGestureActive = true;
+                if (quickPanelPage == 1) switchQuickPanelPage(0); else showHome(false);
+            } else if (event.getAction() == KeyEvent.ACTION_UP) rightSoftKeyGestureActive = false;
             return true;
         }
         if (handleExpandedQuickPanelSoftKey(event)) return true;
