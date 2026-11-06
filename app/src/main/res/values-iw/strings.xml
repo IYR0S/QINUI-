@@ -102,4 +102,8 @@
     <string name="launcher_upper_right_key_saved">המקש הימני העליון נשמר</string>
     <string name="launcher_controls_tab">פקדים</string>
     <string name="launcher_notifications_tab">התראות</string>
+    <string name="launcher_missed_call">שיחה שלא נענתה</string>
+    <string name="launcher_now_playing">מתנגן כעת</string>
+    <string name="launcher_smart_colors">צבעים חכמים מהרקע</string>
+    <string name="launcher_smart_colors_applied">צבע ההדגשה החכם הוחל</string>
 </resources>
