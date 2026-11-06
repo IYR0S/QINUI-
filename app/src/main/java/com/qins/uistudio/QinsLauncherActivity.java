@@ -3108,7 +3108,7 @@ public class QinsLauncherActivity extends Activity {
         try {
             android.content.pm.ApplicationInfo info = getPackageManager().getApplicationInfo(packageName, 0);
             return getPackageManager().getApplicationLabel(info).toString();
-        } catch (RuntimeException ignored) { return packageName; }
+        } catch (Exception ignored) { return packageName; }
     }
 
     private void showQuickPanel(boolean focusFirst) {
