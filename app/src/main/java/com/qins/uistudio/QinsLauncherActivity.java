@@ -74,6 +74,9 @@ public class QinsLauncherActivity extends Activity {
     private int selectedHomeIndex = -1;
     private boolean quickPanelVisible = false;
     private boolean quickPanelExpanded = false;
+    private int quickPanelPage = 0;
+    private boolean awaitingRightKeyBind = false;
+    private static final String SOFTKEY_PREFS = "qins_softkeys";
     private int homePageCount = 1;
     private static final String QUICK_PREFS = "qins_quick_tiles";
     private static final String[] QUICK_OPTIONS = new String[] {"sound", "bluetooth", "settings", "theme", "wifi", "brightness", "volume"};
@@ -104,6 +107,11 @@ public class QinsLauncherActivity extends Activity {
     private TextView themeButton;
     private Bitmap wallpaperBitmap;
     private TextView clockView;
+    private android.content.BroadcastReceiver notificationReceiver = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (quickPanelVisible && quickPanelExpanded && quickPanelPage == 1) showQuickPanel(false);
+        }
+    };
     private TextView dateView;
     private TextView batteryView;
     private TextView panelClock;
@@ -165,6 +173,8 @@ public class QinsLauncherActivity extends Activity {
         super.onResume();
         loadApps();
         registerSystemReceiver();
+        try { registerReceiver(notificationReceiver, new IntentFilter(NotificationBridgeService.ACTION_CHANGED)); }
+        catch (RuntimeException ignored) { }
         registerTelephonyMonitor();
         if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
         else if (quickPanelVisible) showCompactQuickPanel(false);
@@ -177,6 +187,7 @@ public class QinsLauncherActivity extends Activity {
 
     @Override protected void onPause() {
         unregisterSystemReceiver();
+        try { unregisterReceiver(notificationReceiver); } catch (RuntimeException ignored) { }
         unregisterTelephonyMonitor();
         super.onPause();
     }
@@ -832,49 +843,50 @@ public class QinsLauncherActivity extends Activity {
         private void drawPixelWallpaper(Canvas canvas, float w, float h) {
             paint.setStyle(Paint.Style.FILL);
             paint.setShader(new LinearGradient(0, 0, w, h,
-                    new int[] {style.backgroundAlt, style.background, style.backgroundAlt},
-                    new float[] {0f, 0.52f, 1f}, Shader.TileMode.CLAMP));
+                    new int[] {0xFF142820, 0xFF263F32, 0xFF101B1C},
+                    new float[] {0f, 0.55f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, h, paint);
             paint.setShader(null);
 
-            Path blueFold = new Path();
-            blueFold.moveTo(-w * 0.18f, h * 0.12f);
-            blueFold.cubicTo(w * 0.04f, -h * 0.08f, w * 0.30f, h * 0.02f, w * 0.48f, h * 0.19f);
-            blueFold.cubicTo(w * 0.66f, h * 0.36f, w * 0.57f, h * 0.55f, w * 0.35f, h * 0.66f);
-            blueFold.cubicTo(w * 0.16f, h * 0.76f, -w * 0.02f, h * 0.56f, -w * 0.18f, h * 0.72f);
-            blueFold.close();
-            drawPixelLayer(canvas, blueFold, 0xFF4D6BC0, 0xFF303B86, 0xFF171B43);
+            // Current Pixel-inspired green/teal organic forms: soft, sculpted and luminous.
+            Path upperLeaf = new Path();
+            upperLeaf.moveTo(-w * 0.12f, h * 0.17f);
+            upperLeaf.cubicTo(w * 0.02f, -h * 0.13f, w * 0.42f, -h * 0.12f, w * 0.61f, h * 0.08f);
+            upperLeaf.cubicTo(w * 0.83f, h * 0.31f, w * 0.57f, h * 0.47f, w * 0.31f, h * 0.43f);
+            upperLeaf.cubicTo(w * 0.10f, h * 0.40f, -w * 0.05f, h * 0.35f, -w * 0.12f, h * 0.17f);
+            upperLeaf.close();
+            drawPixelLayer(canvas, upperLeaf, 0xFFE1F8B7, 0xFF6DCB83, 0xFF176C59);
 
-            Path violetFold = new Path();
-            violetFold.moveTo(w * 0.34f, -h * 0.12f);
-            violetFold.cubicTo(w * 0.48f, h * 0.02f, w * 0.76f, h * 0.01f, w * 1.12f, h * 0.17f);
-            violetFold.lineTo(w * 1.12f, h * 0.72f);
-            violetFold.cubicTo(w * 0.84f, h * 0.68f, w * 0.78f, h * 0.50f, w * 0.63f, h * 0.42f);
-            violetFold.cubicTo(w * 0.48f, h * 0.32f, w * 0.28f, h * 0.21f, w * 0.34f, -h * 0.12f);
-            violetFold.close();
-            drawPixelLayer(canvas, violetFold, 0xFF7865C7, 0xFF4B438E, 0xFF202044);
+            Path tealForm = new Path();
+            tealForm.moveTo(w * 0.40f, -h * 0.10f);
+            tealForm.cubicTo(w * 0.66f, -h * 0.02f, w * 1.04f, h * 0.12f, w * 1.12f, h * 0.40f);
+            tealForm.cubicTo(w * 1.18f, h * 0.64f, w * 0.89f, h * 0.72f, w * 0.68f, h * 0.59f);
+            tealForm.cubicTo(w * 0.46f, h * 0.46f, w * 0.25f, h * 0.18f, w * 0.40f, -h * 0.10f);
+            tealForm.close();
+            drawPixelLayer(canvas, tealForm, 0xFFB7F2E7, 0xFF37B7A0, 0xFF155E68);
 
-            Path lowerFold = new Path();
-            lowerFold.moveTo(-w * 0.10f, h * 0.78f);
-            lowerFold.cubicTo(w * 0.10f, h * 0.54f, w * 0.37f, h * 0.73f, w * 0.56f, h * 0.86f);
-            lowerFold.cubicTo(w * 0.76f, h * 1.00f, w * 0.92f, h * 0.77f, w * 1.12f, h * 0.70f);
-            lowerFold.lineTo(w * 1.12f, h * 1.12f);
-            lowerFold.lineTo(-w * 0.10f, h * 1.12f);
-            lowerFold.close();
-            drawPixelLayer(canvas, lowerFold, 0xFF355E9C, 0xFF283C78, 0xFF111A39);
+            Path lowerForm = new Path();
+            lowerForm.moveTo(-w * 0.10f, h * 0.75f);
+            lowerForm.cubicTo(w * 0.11f, h * 0.54f, w * 0.41f, h * 0.62f, w * 0.57f, h * 0.82f);
+            lowerForm.cubicTo(w * 0.75f, h * 1.06f, w * 0.99f, h * 0.89f, w * 1.12f, h * 0.78f);
+            lowerForm.lineTo(w * 1.12f, h * 1.12f);
+            lowerForm.lineTo(-w * 0.10f, h * 1.12f);
+            lowerForm.close();
+            drawPixelLayer(canvas, lowerForm, 0xFFC7F38A, 0xFF5DAD56, 0xFF244E3B);
 
             Paint sheen = new Paint(Paint.ANTI_ALIAS_FLAG);
             sheen.setStyle(Paint.Style.STROKE);
-            sheen.setStrokeWidth(dp(1.1f));
-            sheen.setColor(0x35DCE2FF);
+            sheen.setStrokeCap(Paint.Cap.ROUND);
+            sheen.setStrokeWidth(dp(1.2f));
+            sheen.setColor(0x66E9FFE6);
             Path highlight = new Path();
-            highlight.moveTo(w * 0.02f, h * 0.15f);
-            highlight.cubicTo(w * 0.20f, h * 0.02f, w * 0.43f, h * 0.14f, w * 0.55f, h * 0.29f);
+            highlight.moveTo(w * 0.04f, h * 0.19f);
+            highlight.cubicTo(w * 0.19f, h * 0.03f, w * 0.41f, h * 0.06f, w * 0.53f, h * 0.20f);
             canvas.drawPath(highlight, sheen);
-            sheen.setColor(0x27FFFFFF);
+            sheen.setColor(0x557AF0D0);
             Path highlight2 = new Path();
-            highlight2.moveTo(w * 0.42f, h * 0.89f);
-            highlight2.cubicTo(w * 0.61f, h * 0.96f, w * 0.79f, h * 0.78f, w * 0.98f, h * 0.73f);
+            highlight2.moveTo(w * 0.59f, h * 0.18f);
+            highlight2.cubicTo(w * 0.84f, h * 0.26f, w * 0.91f, h * 0.48f, w * 0.78f, h * 0.59f);
             canvas.drawPath(highlight2, sheen);
         }
 
@@ -890,33 +902,47 @@ public class QinsLauncherActivity extends Activity {
 
         private void drawGalaxyWallpaper(Canvas canvas, float w, float h) {
             paint.setStyle(Paint.Style.FILL);
-            paint.setShader(new LinearGradient(0, 0, w * 0.85f, h,
-                    new int[] {style.backgroundAlt, style.background, style.backgroundAlt},
-                    new float[] {0f, 0.56f, 1f}, Shader.TileMode.CLAMP));
+            paint.setShader(new LinearGradient(0, 0, w, h,
+                    new int[] {0xFF333943, 0xFFBFC5CD, 0xFF777F89},
+                    new float[] {0f, 0.48f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, h, paint);
             paint.setShader(null);
 
-            float unit = Math.min(w, h);
-            // Samsung / One UI variant: cool brushed-silver spheres and soft graphite shadows.
-            drawGalaxyOrb(canvas, w * 0.82f, h * 0.02f, unit * 0.39f,
-                    0xFFF8FAFC, 0xFFBEC5CE, 0xFF707985);
-            drawGalaxyOrb(canvas, w * 0.51f, h * 0.54f, unit * 0.43f,
-                    0xFFE9EDF2, 0xFFADB6C1, 0xFF626C78);
-            drawGalaxyOrb(canvas, w * 0.13f, h * 1.02f, unit * 0.30f,
-                    0xFFE0E5EB, 0xFFA0AAB5, 0xFF59636F);
+            // Galaxy S-series-inspired metallic S ribbon on a soft silver/graphite canvas.
+            Path ribbon = new Path();
+            ribbon.moveTo(w * 0.70f, -h * 0.10f);
+            ribbon.cubicTo(w * 0.35f, h * 0.02f, w * 0.24f, h * 0.23f, w * 0.50f, h * 0.42f);
+            ribbon.cubicTo(w * 0.79f, h * 0.62f, w * 0.75f, h * 0.80f, w * 0.28f, h * 1.08f);
+            Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
+            shadow.setStyle(Paint.Style.STROKE);
+            shadow.setStrokeCap(Paint.Cap.ROUND);
+            shadow.setStrokeJoin(Paint.Join.ROUND);
+            shadow.setStrokeWidth(w * 0.30f);
+            shadow.setColor(0x55323A46);
+            canvas.save();
+            canvas.translate(dp(4), dp(7));
+            canvas.drawPath(ribbon, shadow);
+            canvas.restore();
 
-            Paint grain = new Paint(Paint.ANTI_ALIAS_FLAG);
-            grain.setColor(0x22FFFFFF);
-            for (int y = 0; y < 24; y++) {
-                for (int x = 0; x < 18; x++) {
-                    int seed = (x * 37 + y * 71 + x * y * 13) % 17;
-                    if (seed < 5) {
-                        float px = (x + 0.35f + (seed * 0.03f)) * w / 18f;
-                        float py = (y + 0.25f) * h / 24f;
-                        canvas.drawCircle(px, py, dp(0.45f), grain);
-                    }
-                }
-            }
+            Paint metal = new Paint(Paint.ANTI_ALIAS_FLAG);
+            metal.setStyle(Paint.Style.STROKE);
+            metal.setStrokeCap(Paint.Cap.ROUND);
+            metal.setStrokeJoin(Paint.Join.ROUND);
+            metal.setStrokeWidth(w * 0.28f);
+            metal.setShader(new LinearGradient(0, 0, w, h,
+                    new int[] {0xFFF9FBFD, 0xFFADB6C1, 0xFFE7EBF0, 0xFF586271},
+                    new float[] {0f, 0.34f, 0.68f, 1f}, Shader.TileMode.CLAMP));
+            canvas.drawPath(ribbon, metal);
+            metal.setShader(null);
+            metal.setStrokeWidth(dp(1.6f));
+            metal.setColor(0x99FFFFFF);
+            canvas.drawPath(ribbon, metal);
+
+            Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
+            glow.setShader(new android.graphics.RadialGradient(w * 0.48f, h * 0.43f,
+                    Math.max(w, h) * 0.75f,
+                    new int[] {0x33FFFFFF, 0x00FFFFFF}, null, Shader.TileMode.CLAMP));
+            canvas.drawRect(0, 0, w, h, glow);
         }
 
         private void drawGalaxyOrb(Canvas canvas, float cx, float cy, float radius,
@@ -1124,11 +1150,13 @@ public class QinsLauncherActivity extends Activity {
         ThemeManager.Appearance a = appearance();
         updateNavigationButton();
 
-        final boolean nothingDotClock = ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
-                "dot".equals(clockStyle(a));
+        final String selectedClockStyle = clockStyle(a);
+        final boolean nothingMatrixClock = ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
+                ("dot".equals(selectedClockStyle) || "stacked".equals(selectedClockStyle));
+        final boolean analogClock = "analog".equals(selectedClockStyle);
         LinearLayout top = new LinearLayout(this);
-        top.setOrientation(nothingDotClock ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        top.setGravity(nothingDotClock ? Gravity.CENTER_HORIZONTAL : Gravity.CENTER_VERTICAL);
+        top.setOrientation(nothingMatrixClock ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        top.setGravity(nothingMatrixClock ? Gravity.CENTER_HORIZONTAL : Gravity.CENTER_VERTICAL);
         int smallScreen = screenWidthDp() < 210 || screenHeightDp() < 280 ? 1 : 0;
         int topSide = smallScreen == 1 ? 10 : 18;
         int topVertical = smallScreen == 1 ? 6 : 12;
@@ -1137,14 +1165,22 @@ public class QinsLauncherActivity extends Activity {
 
         LinearLayout timeBlock = new LinearLayout(this);
         timeBlock.setOrientation(LinearLayout.VERTICAL);
-        timeBlock.setGravity(nothingDotClock ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
-        clockView = nothingDotClock ? new NothingDotMatrixClockView(this) : new TextView(this);
-        if (nothingDotClock) {
+        timeBlock.setGravity(nothingMatrixClock ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
+        clockView = nothingMatrixClock ? new NothingDotMatrixClockView(this, "stacked".equals(selectedClockStyle)) :
+                (analogClock ? new AnalogClockTextView(this, a) : new TextView(this));
+        if (nothingMatrixClock) {
             clockView.setGravity(Gravity.CENTER);
-            clockView.setMinHeight(dp(smallScreen == 1 ? 58 : 70));
+            clockView.setMinHeight(dp("stacked".equals(selectedClockStyle) ? (smallScreen == 1 ? 78 : 92) : (smallScreen == 1 ? 58 : 70)));
             clockView.setMinWidth(dp(154));
+        } else if (analogClock) {
+            clockView.setGravity(Gravity.CENTER);
+            clockView.setMinWidth(dp(68));
+            clockView.setMinHeight(dp(68));
+            clockView.setPadding(0, 0, 0, 0);
+            clockView.setTextSize(1);
         }
-        clockView.setTextColor(nothingDotClock ? 0xFFF7F7F5 : a.text);
+        clockView.setTextColor(nothingMatrixClock ? ("stacked".equals(selectedClockStyle) ? a.accent : 0xFFF7F7F5) :
+                (analogClock ? 0x00000000 : a.text));
         clockView.setTextSize(clockSizeForTheme(a, smallScreen == 1));
         clockView.setIncludeFontPadding(false);
         clockView.setTypeface(clockTypefaceForTheme(a), clockTypefaceStyle());
@@ -1161,7 +1197,8 @@ public class QinsLauncherActivity extends Activity {
         clockView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override public boolean onLongClick(View v) { showClockStylePicker(); return true; }
         });
-        timeBlock.addView(clockView, new LinearLayout.LayoutParams(-1, -2));
+        if (analogClock) timeBlock.addView(clockView, new LinearLayout.LayoutParams(dp(68), dp(68)));
+        else timeBlock.addView(clockView, new LinearLayout.LayoutParams(-1, -2));
 
         dateView = new TextView(this);
         dateView.setTextColor(a.muted);
@@ -1178,7 +1215,7 @@ public class QinsLauncherActivity extends Activity {
         batteryView.setTextColor(a.muted);
         batteryView.setTextSize(12);
         batteryView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        top.addView(batteryView, nothingDotClock
+        top.addView(batteryView, nothingMatrixClock
                 ? new LinearLayout.LayoutParams(-1, dp(17))
                 : new LinearLayout.LayoutParams(-2, -1));
         LinearLayout.LayoutParams topParams = new LinearLayout.LayoutParams(-1, -2);
@@ -1449,7 +1486,8 @@ public class QinsLauncherActivity extends Activity {
             final int absoluteIndex = start + slot;
             if (absoluteIndex >= pinnedApps.size()) {
                 TextView add = new TextView(this);
-                add.setText("+");
+                add.setText("");
+                add.setContentDescription("Empty home slot");
                 add.setTextSize(27);
                 add.setGravity(Gravity.CENTER);
                 add.setTextColor(a.muted);
@@ -1476,7 +1514,9 @@ public class QinsLauncherActivity extends Activity {
             tile.setLongClickable(true);
             tile.setTag("home:" + absoluteIndex);
 
-            int iconFrameSize = clamp(screenWidthDp() / 4 - 12, 36, 54);
+            float iconScale = getSharedPreferences("qins_home_layout", MODE_PRIVATE)
+                    .getFloat("icon_scale", 1.0f);
+            int iconFrameSize = clamp(Math.round((screenWidthDp() / 4 - 12) * iconScale), 36, 72);
             int iconSize = iconFrameSize - 11;
             FrameLayout iconFrame = new FrameLayout(this);
             GradientDrawable iconBackground = new GradientDrawable();
@@ -1708,6 +1748,9 @@ public class QinsLauncherActivity extends Activity {
         addEditAction("add", a, "Add applications", new View.OnClickListener() {
             @Override public void onClick(View v) { showDrawer(true); }
         });
+        addEditAction("scale", a, "Home icon size", new View.OnClickListener() {
+            @Override public void onClick(View v) { showHomeIconSizePicker(); }
+        });
         addEditAction("folder", a, "Create or manage folder", new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (selectedHomeIndex >= 0 && selectedHomeIndex < pinnedApps.size()) {
@@ -1740,6 +1783,23 @@ public class QinsLauncherActivity extends Activity {
         params.setMargins(dp(3), 0, dp(3), 0);
         editBar.addView(button, params);
         button.setOnClickListener(listener);
+    }
+
+    private void showHomeIconSizePicker() {
+        final String[] labels = new String[] {"Default", "Large · 115%", "Larger · 130%", "Maximum · 145%"};
+        final float[] scales = new float[] {1.0f, 1.15f, 1.30f, 1.45f};
+        float current = getSharedPreferences("qins_home_layout", MODE_PRIVATE).getFloat("icon_scale", 1.0f);
+        int selected = 0;
+        for (int i = 0; i < scales.length; i++) if (Math.abs(scales[i] - current) < 0.02f) selected = i;
+        new android.app.AlertDialog.Builder(this).setTitle("Home icon size")
+                .setSingleChoiceItems(labels, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        getSharedPreferences("qins_home_layout", MODE_PRIVATE).edit()
+                                .putFloat("icon_scale", scales[which]).commit();
+                        dialog.dismiss();
+                        showHome(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void moveSelectedApp(int delta) {
@@ -2370,14 +2430,14 @@ public class QinsLauncherActivity extends Activity {
         return "oneui";
     }
     private String[] clockStyleOptions(ThemeManager.Appearance a) {
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"dot", "mono", "digital", "stacked", "compact"};
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"material", "bold", "stacked", "compact"};
-        return new String[] {"oneui", "stacked", "compact"};
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"dot", "mono", "digital", "stacked", "compact", "analog"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"material", "bold", "stacked", "compact", "analog"};
+        return new String[] {"oneui", "stacked", "compact", "analog"};
     }
     private String[] clockStyleLabels(ThemeManager.Appearance a) {
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Nothing dot matrix", "Geist-style mono", "Digital bold", "Stacked clock", "Compact"};
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Stacked clock", "Compact"};
-        return new String[] {"One UI large", "Stacked digital", "Compact"};
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Nothing dot matrix", "Geist-style mono", "Digital bold", "Stacked red dots", "Compact", "Analog"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Stacked clock", "Compact", "Analog"};
+        return new String[] {"One UI large", "Stacked digital", "Compact", "Analog"};
     }
     private void showClockStylePicker() {
         final ThemeManager.Appearance a = appearance();
