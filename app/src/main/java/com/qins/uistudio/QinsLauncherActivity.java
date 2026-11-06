@@ -3567,30 +3567,31 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
-        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-            if (awaitingRightKeyBind) {
-                int keyCode = event.getKeyCode();
-                if (keyCode != KeyEvent.KEYCODE_VOLUME_UP &&
-                        keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) {
-                    getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
-                            .putInt("right_key_code", keyCode)
-                            .putInt("right_key_scan", event.getScanCode()).commit();
-                    awaitingRightKeyBind = false;
-                    android.widget.Toast.makeText(this, "Upper-right key saved", android.widget.Toast.LENGTH_SHORT).show();
-                    quickPanelPage = 1;
-                    showQuickPanel(false);
-                    return true;
-                }
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
+                awaitingRightKeyBind) {
+            int keyCode = event.getKeyCode();
+            if (keyCode != KeyEvent.KEYCODE_VOLUME_UP && keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) {
+                getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
+                        .putInt("right_key_code", keyCode)
+                        .putInt("right_key_scan", event.getScanCode()).commit();
+                awaitingRightKeyBind = false;
+                android.widget.Toast.makeText(this, "Upper-right key saved", android.widget.Toast.LENGTH_SHORT).show();
+                quickPanelPage = 1;
+                showQuickPanel(false);
+                return true;
             }
-            if (quickPanelVisible && quickPanelExpanded) {
-                SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
-                int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
-                int boundScan = keys.getInt("right_key_scan", 0);
-                if (boundCode != Integer.MIN_VALUE && event.getKeyCode() == boundCode &&
-                        (boundScan == 0 || event.getScanCode() == boundScan)) {
+        }
+        if (quickPanelVisible && quickPanelExpanded) {
+            SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
+            int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
+            int boundScan = keys.getInt("right_key_scan", 0);
+            if (boundCode != Integer.MIN_VALUE && event.getKeyCode() == boundCode &&
+                    (boundScan == 0 || event.getScanCode() == boundScan)) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
                     switchQuickPanelPage(1);
-                    return true;
                 }
+                // Consume both DOWN and UP, including a BACK-coded soft key.
+                return true;
             }
         }
         return super.dispatchKeyEvent(event);
