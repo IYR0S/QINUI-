@@ -90,7 +90,7 @@
     <string name="launcher_softkey_reset">איפוס זיהוי המקשים</string>
     <string name="launcher_softkey_reset_done">מיפוי המקשים אופס.</string>
 
-    <string name="launcher_compact_shortcut">קיצור מקוצר %1$d</string>
+    <string name="launcher_compact_shortcut">קיצור דרך %1$d</string>
     <string name="launcher_expanded_tile">אריח מורחב %1$d</string>
     <string name="launcher_theme_colors">צבעי ערכת הנושא</string>
     <string name="launcher_clock_design">עיצוב השעון</string>
