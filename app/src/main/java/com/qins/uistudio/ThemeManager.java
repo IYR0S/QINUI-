@@ -72,17 +72,17 @@ public final class ThemeManager {
         new Appearance(APPEARANCE_GALAXY, "Galaxy / One UI",
             0xFFF1F3F8, 0xFFE8ECF4, 0xFFFCFCFE, 0xFFE9EDF5,
             0xFFE6EAF2, 0xFFDCE7FB, 0xFF356FE5, 0xFF171A22, 0xFF697386,
-            0xFFD7DDE8, 0xFF9DBAF4, 22f, false, false),
+            0xFFD7DDE8, 0xFF9DBAF4, 24f, false, false),
         // Pixel-inspired Material 3 Expressive: tonal lavender surfaces and a vivid violet accent.
         new Appearance(APPEARANCE_PIXEL, "Pixel / Material",
             0xFFEEF3EC, 0xFFDCE7DD, 0xFFF8FBF6, 0xFFE5EEE4,
             0xFFE0EAE0, 0xFFCFE0D0, 0xFF3C8060, 0xFF17231D, 0xFF617267,
-            0xFFD3DED4, 0xFF9BC8A8, 26f, false, false),
+            0xFFD3DED4, 0xFF9BC8A8, 28f, false, false),
         // Nothing-inspired: monochrome, high contrast and tight geometry with restrained red detail.
         new Appearance(APPEARANCE_NOTHING, "Nothing",
             0xFF101112, 0xFF191B1D, 0xFF202224, 0xFF292C2E,
             0xFF242729, 0xFF383B3D, 0xFFE3343A, 0xFFF4F4F2, 0xFFA4A7A8,
-            0xFF3C4042, 0xFF777B7D, 10f, true, true)
+            0xFF3C4042, 0xFF777B7D, 12f, true, true)
     };
 
     public static Palette[] getPalettes() { return PALETTES.clone(); }
