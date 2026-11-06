@@ -1434,6 +1434,7 @@ public class QinsLauncherActivity extends Activity {
         tile.setGravity(Gravity.CENTER);
         tile.setPadding(dp(2), dp(2), dp(2), dp(2));
         QinsGlyphView icon = new QinsGlyphView(this, glyph, a.accent);
+        icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
         tile.addView(icon, new LinearLayout.LayoutParams(dp(23), dp(23)));
         TextView text = new TextView(this);
@@ -1545,6 +1546,7 @@ public class QinsLauncherActivity extends Activity {
 
     private QinsGlyphView pageArrow(String symbol, ThemeManager.Appearance a) {
         QinsGlyphView button = new QinsGlyphView(this, symbol, a.muted);
+        button.setVisualStyle(a.id);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
         styleSurface(button, a.backgroundAlt, a.border, a.focus, a.cornerDp);
@@ -1847,6 +1849,7 @@ public class QinsLauncherActivity extends Activity {
     private void addEditAction(String glyph, ThemeManager.Appearance a, String description,
                                View.OnClickListener listener) {
         QinsGlyphView button = new QinsGlyphView(this, glyph, a.text);
+        button.setVisualStyle(a.id);
         button.setContentDescription(description);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
@@ -3563,7 +3566,7 @@ public class QinsLauncherActivity extends Activity {
         if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
             if (awaitingRightKeyBind) {
                 int keyCode = event.getKeyCode();
-                if (keyCode != KeyEvent.KEYCODE_BACK && keyCode != KeyEvent.KEYCODE_VOLUME_UP &&
+                if (keyCode != KeyEvent.KEYCODE_VOLUME_UP &&
                         keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) {
                     getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
                             .putInt("right_key_code", keyCode)
