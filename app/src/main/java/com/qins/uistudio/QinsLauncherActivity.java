@@ -2976,9 +2976,24 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void openNotificationAccessSettings() {
-        try { startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
-        catch (RuntimeException error) {
-            android.widget.Toast.makeText(this, "Notification access settings unavailable", android.widget.Toast.LENGTH_LONG).show();
+        Intent listenerSettings = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+        try {
+            if (getPackageManager().resolveActivity(listenerSettings, 0) != null) {
+                startActivity(listenerSettings);
+            } else {
+                // Android 4.4 keeps Notification access under Security settings.
+                startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+                android.widget.Toast.makeText(this,
+                        "Open Notification access in the Security settings", android.widget.Toast.LENGTH_LONG).show();
+            }
+        } catch (RuntimeException error) {
+            try {
+                startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+                android.widget.Toast.makeText(this,
+                        "Open Notification access in the Security settings", android.widget.Toast.LENGTH_LONG).show();
+            } catch (RuntimeException unavailable) {
+                android.widget.Toast.makeText(this, "Notification access settings unavailable", android.widget.Toast.LENGTH_LONG).show();
+            }
         }
     }
 
