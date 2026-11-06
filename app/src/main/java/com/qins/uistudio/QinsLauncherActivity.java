@@ -1277,7 +1277,7 @@ public class QinsLauncherActivity extends Activity {
         dateView.setTextSize(smallScreen == 1 ? 9 : 11);
         dateView.setSingleLine(true);
         timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
-        if (nothingDotClock) {
+        if (nothingMatrixClock) {
             top.addView(timeBlock, new LinearLayout.LayoutParams(-1, -2));
         } else {
             top.addView(timeBlock, new LinearLayout.LayoutParams(0, -2, 1));
