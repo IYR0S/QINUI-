@@ -89,4 +89,17 @@
     <string name="launcher_softkey_detected">המקש זוהה ונשמר</string>
     <string name="launcher_softkey_reset">איפוס זיהוי המקשים</string>
     <string name="launcher_softkey_reset_done">מיפוי המקשים אופס.</string>
+
+    <string name="launcher_compact_shortcut">קיצור מקוצר %1$d</string>
+    <string name="launcher_expanded_tile">אריח מורחב %1$d</string>
+    <string name="launcher_theme_colors">צבעי ערכת הנושא</string>
+    <string name="launcher_clock_design">עיצוב השעון</string>
+    <string name="launcher_upper_right_key">המקש הפיזי הימני העליון</string>
+    <string name="launcher_notification_access_explanation">יש לאפשר ל־QINS UI Studio לקרוא התראות דרך הגדרות Android. תוכן ההתראות נשאר במכשיר.</string>
+    <string name="launcher_enable_notification_access">הפעלת גישה להתראות</string>
+    <string name="launcher_no_active_notifications">אין התראות פעילות</string>
+    <string name="launcher_press_upper_right_key">לחץ פעם אחת על המקש הפיזי הימני העליון</string>
+    <string name="launcher_upper_right_key_saved">המקש הימני העליון נשמר</string>
+    <string name="launcher_controls_tab">פקדים</string>
+    <string name="launcher_notifications_tab">התראות</string>
 </resources>

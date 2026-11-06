@@ -3125,7 +3125,19 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showQuickSettingsEditor() {
-        final String[] slots = new String[] {"Compact shortcut 1", "Compact shortcut 2", "Compact shortcut 3", "Compact shortcut 4", "Expanded tile 1", "Expanded tile 2", "Expanded tile 3", "Expanded tile 4", "Theme colors", "Clock design", "Upper-right hardware key"};
+        final String[] slots = new String[] {
+                getString(R.string.launcher_compact_shortcut, 1),
+                getString(R.string.launcher_compact_shortcut, 2),
+                getString(R.string.launcher_compact_shortcut, 3),
+                getString(R.string.launcher_compact_shortcut, 4),
+                getString(R.string.launcher_expanded_tile, 1),
+                getString(R.string.launcher_expanded_tile, 2),
+                getString(R.string.launcher_expanded_tile, 3),
+                getString(R.string.launcher_expanded_tile, 4),
+                getString(R.string.launcher_theme_colors),
+                getString(R.string.launcher_clock_design),
+                getString(R.string.launcher_upper_right_key)
+        };
         new android.app.AlertDialog.Builder(this).setTitle("Customize quick settings")
                 .setItems(slots, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
@@ -3170,21 +3182,21 @@ public class QinsLauncherActivity extends Activity {
 
     private void requestRightKeyBinding() {
         awaitingRightKeyBind = true;
-        android.widget.Toast.makeText(this, "Press the physical upper-right key once", android.widget.Toast.LENGTH_LONG).show();
+        android.widget.Toast.makeText(this, R.string.launcher_press_upper_right_key, android.widget.Toast.LENGTH_LONG).show();
     }
 
     private void showNotificationPage(LinearLayout panel, ThemeManager.Appearance a) {
         boolean enabled = NotificationBridgeService.isAccessEnabled(this);
         if (!enabled) {
             TextView explanation = new TextView(this);
-            explanation.setText("Allow QINS UI Studio to read notifications once in Android Settings. Notification text stays on this device.");
+            explanation.setText(R.string.launcher_notification_access_explanation);
             explanation.setTextColor(a.muted);
             explanation.setTextSize(10);
             explanation.setPadding(dp(4), dp(10), dp(4), dp(8));
             panel.addView(explanation);
 
             Button access = new Button(this);
-            access.setText("Enable notification access");
+            access.setText(R.string.launcher_enable_notification_access);
             access.setTextSize(10);
             access.setFocusable(true);
             access.setFocusableInTouchMode(false);
@@ -3201,7 +3213,7 @@ public class QinsLauncherActivity extends Activity {
         List<NotificationBridgeService.NotificationItem> items = NotificationBridgeService.snapshot();
         if (items.isEmpty()) {
             TextView empty = new TextView(this);
-            empty.setText("No active notifications");
+            empty.setText(R.string.launcher_no_active_notifications);
             empty.setTextColor(a.muted);
             empty.setGravity(Gravity.CENTER);
             empty.setTextSize(13);
@@ -3320,7 +3332,7 @@ public class QinsLauncherActivity extends Activity {
         tabsParams.bottomMargin = dp(9);
         panel.addView(tabs, tabsParams);
         final TextView controlsTab = new TextView(this);
-        controlsTab.setText("CONTROLS");
+        controlsTab.setText(R.string.launcher_controls_tab);
         controlsTab.setTextSize(10);
         controlsTab.setGravity(Gravity.CENTER);
         controlsTab.setTextColor(quickPanelPage == 0 ? a.text : a.muted);
@@ -3333,7 +3345,7 @@ public class QinsLauncherActivity extends Activity {
         });
         final TextView notificationsTab = new TextView(this);
         int notificationCount = NotificationBridgeService.snapshot().size();
-        notificationsTab.setText("NOTIFICATIONS  " + (notificationCount > 0 ? "(" + notificationCount + ")" : ""));
+        notificationsTab.setText(getString(R.string.launcher_notifications_tab) + "  " + (notificationCount > 0 ? "(" + notificationCount + ")" : ""));
         notificationsTab.setTextSize(10);
         notificationsTab.setGravity(Gravity.CENTER);
         notificationsTab.setTextColor(quickPanelPage == 1 ? a.text : a.muted);
@@ -3350,7 +3362,7 @@ public class QinsLauncherActivity extends Activity {
         if (quickPanelPage == 1) {
             showNotificationPage(panel, a);
             updateClockAndBattery();
-            if (focusFirst) notificationsTab.requestFocus();
+            notificationsTab.requestFocus();
             return;
         }
 
@@ -3781,7 +3793,7 @@ public class QinsLauncherActivity extends Activity {
                         .putInt("right_key_code", keyCode)
                         .putInt("right_key_scan", event.getScanCode()).commit();
                 awaitingRightKeyBind = false;
-                android.widget.Toast.makeText(this, "Upper-right key saved", android.widget.Toast.LENGTH_SHORT).show();
+                android.widget.Toast.makeText(this, R.string.launcher_upper_right_key_saved, android.widget.Toast.LENGTH_SHORT).show();
                 quickPanelPage = 0;
                 showQuickPanel(true);
                 return true;
