@@ -111,9 +111,12 @@ public class QinsLauncherActivity extends Activity {
     private TextView themeButton;
     private Bitmap wallpaperBitmap;
     private TextView clockView;
+    private LinearLayout homeWidgetArea;
+    private int homeWidgetIndex = 0;
     private android.content.BroadcastReceiver notificationReceiver = new android.content.BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (quickPanelVisible && quickPanelExpanded && quickPanelPage == 1) showQuickPanel(false);
+            else if (!quickPanelVisible && !drawerVisible) showHome(false);
         }
     };
     private TextView dateView;
@@ -870,7 +873,8 @@ public class QinsLauncherActivity extends Activity {
             // Draw in the exact view bounds. Enlarging and translating the
             // artwork cropped its upper edge on short displays and shifted
             // the wallpaper away from the custom top bar.
-            drawThemeWallpaper(canvas, w, h, wallpaperVariant);
+            canvas.save(); canvas.clipRect(0, 0, w, h);
+            drawThemeWallpaper(canvas, w, h, wallpaperVariant); canvas.restore();
         }
 
         private void drawThemeWallpaper(Canvas canvas, float w, float h, int variant) {
@@ -888,12 +892,12 @@ public class QinsLauncherActivity extends Activity {
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
                 Path slash = new Path();
-                slash.moveTo(-w * 0.18f, h * 0.78f);
+                slash.moveTo(w * 0.035f, h * 0.78f);
                 slash.cubicTo(w * 0.05f, h * 0.55f, w * 0.27f, h * 0.56f, w * 0.47f, h * 0.36f);
-                slash.cubicTo(w * 0.66f, h * 0.17f, w * 0.82f, h * 0.15f, w * 1.12f, -h * 0.02f);
-                slash.lineTo(w * 1.12f, h * 0.24f);
+                slash.cubicTo(w * 0.66f, h * 0.17f, w * 0.82f, h * 0.15f, w * 0.96f, -h * 0.02f);
+                slash.lineTo(w * 0.96f, h * 0.24f);
                 slash.cubicTo(w * 0.88f, h * 0.39f, w * 0.73f, h * 0.39f, w * 0.57f, h * 0.56f);
-                slash.cubicTo(w * 0.33f, h * 0.81f, w * 0.10f, h * 0.86f, -w * 0.18f, h * 1.04f);
+                slash.cubicTo(w * 0.33f, h * 0.81f, w * 0.10f, h * 0.86f, w * 0.035f, h * 0.96f);
                 slash.close();
                 Paint red = new Paint(Paint.ANTI_ALIAS_FLAG);
                 red.setShader(new LinearGradient(0, h * 0.15f, w, h * 0.9f,
@@ -906,7 +910,7 @@ public class QinsLauncherActivity extends Activity {
                 red.setColor(0x88FF7378);
                 canvas.drawPath(slash, red);
                 paint.setColor(0x24FFFFFF);
-                for (float y = h * 0.70f; y < h * 1.02f; y += dp(12)) {
+                for (float y = h * 0.70f; y < h * 0.96f; y += dp(12)) {
                     for (float x = dp(8); x < w * 0.42f; x += dp(12)) canvas.drawCircle(x, y, dp(0.8f), paint);
                 }
                 return;
@@ -974,17 +978,17 @@ public class QinsLauncherActivity extends Activity {
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
                 Path capsule = new Path();
-                capsule.moveTo(-w * 0.12f, h * 0.29f);
-                capsule.cubicTo(-w * 0.02f, h * 0.04f, w * 0.35f, -h * 0.06f, w * 0.59f, h * 0.12f);
+                capsule.moveTo(w * 0.04f, h * 0.29f);
+                capsule.cubicTo(-w * 0.02f, h * 0.04f, w * 0.35f, h * 0.04f, w * 0.59f, h * 0.12f);
                 capsule.cubicTo(w * 0.82f, h * 0.30f, w * 0.63f, h * 0.55f, w * 0.38f, h * 0.64f);
-                capsule.cubicTo(w * 0.12f, h * 0.75f, -w * 0.18f, h * 0.59f, -w * 0.12f, h * 0.29f);
+                capsule.cubicTo(w * 0.12f, h * 0.75f, w * 0.035f, h * 0.59f, w * 0.04f, h * 0.29f);
                 capsule.close();
                 drawPixelLayer(canvas, capsule, 0xFFF4FF9A, 0xFF48E7A0, 0xFF087B73);
                 Path lowerPill = new Path();
                 lowerPill.moveTo(w * 0.26f, h * 0.77f);
-                lowerPill.cubicTo(w * 0.45f, h * 0.60f, w * 0.79f, h * 0.67f, w * 1.07f, h * 0.82f);
-                lowerPill.cubicTo(w * 1.17f, h * 0.91f, w * 1.02f, h * 1.10f, w * 0.80f, h * 1.09f);
-                lowerPill.cubicTo(w * 0.55f, h * 1.09f, w * 0.18f, h * 0.98f, w * 0.26f, h * 0.77f);
+                lowerPill.cubicTo(w * 0.45f, h * 0.60f, w * 0.79f, h * 0.67f, w * 0.96f, h * 0.82f);
+                lowerPill.cubicTo(w * 0.96f, h * 0.91f, w * 1.02f, h * 0.96f, w * 0.80f, h * 0.96f);
+                lowerPill.cubicTo(w * 0.55f, h * 0.96f, w * 0.18f, h * 0.98f, w * 0.26f, h * 0.77f);
                 lowerPill.close();
                 drawPixelLayer(canvas, lowerPill, 0xFF69FFF0, 0xFF168FD0, 0xFF263D9B);
                 Paint highlight = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1004,22 +1008,22 @@ public class QinsLauncherActivity extends Activity {
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
                 Path leftPetal = new Path();
-                leftPetal.moveTo(-w * 0.12f, h * 0.10f);
-                leftPetal.cubicTo(w * 0.08f, -h * 0.08f, w * 0.40f, h * 0.05f, w * 0.42f, h * 0.32f);
-                leftPetal.cubicTo(w * 0.44f, h * 0.59f, w * 0.13f, h * 0.67f, -w * 0.12f, h * 0.49f);
+                leftPetal.moveTo(w * 0.04f, h * 0.10f);
+                leftPetal.cubicTo(w * 0.08f, h * 0.04f, w * 0.40f, h * 0.05f, w * 0.42f, h * 0.32f);
+                leftPetal.cubicTo(w * 0.44f, h * 0.59f, w * 0.13f, h * 0.67f, w * 0.04f, h * 0.49f);
                 leftPetal.close();
                 drawPixelLayer(canvas, leftPetal, 0xFFF2FF9A, 0xFF8CEB65, 0xFF187C55);
                 Path rightPetal = new Path();
                 rightPetal.moveTo(w * 0.44f, h * 0.18f);
-                rightPetal.cubicTo(w * 0.62f, -h * 0.02f, w * 0.99f, h * 0.07f, w * 1.10f, h * 0.37f);
-                rightPetal.cubicTo(w * 1.16f, h * 0.61f, w * 0.83f, h * 0.72f, w * 0.61f, h * 0.56f);
+                rightPetal.cubicTo(w * 0.62f, -h * 0.02f, w * 0.99f, h * 0.07f, w * 0.96f, h * 0.37f);
+                rightPetal.cubicTo(w * 0.96f, h * 0.61f, w * 0.83f, h * 0.72f, w * 0.61f, h * 0.56f);
                 rightPetal.cubicTo(w * 0.46f, h * 0.46f, w * 0.34f, h * 0.33f, w * 0.44f, h * 0.18f);
                 rightPetal.close();
                 drawPixelLayer(canvas, rightPetal, 0xFF9AFFF0, 0xFF23D8C4, 0xFF086A8C);
                 Path bottomPetal = new Path();
                 bottomPetal.moveTo(w * 0.10f, h * 0.76f);
                 bottomPetal.cubicTo(w * 0.29f, h * 0.53f, w * 0.67f, h * 0.64f, w * 0.87f, h * 0.91f);
-                bottomPetal.cubicTo(w * 0.98f, h * 1.08f, w * 0.34f, h * 1.12f, w * 0.10f, h * 0.76f);
+                bottomPetal.cubicTo(w * 0.98f, h * 0.96f, w * 0.34f, h * 0.96f, w * 0.10f, h * 0.76f);
                 bottomPetal.close();
                 drawPixelLayer(canvas, bottomPetal, 0xFFC7FF9B, 0xFF36C99B, 0xFF145B65);
                 return;
@@ -1033,27 +1037,27 @@ public class QinsLauncherActivity extends Activity {
 
             // Current Pixel-inspired green/teal organic forms: soft, sculpted and luminous.
             Path upperLeaf = new Path();
-            upperLeaf.moveTo(-w * 0.12f, h * 0.17f);
-            upperLeaf.cubicTo(w * 0.02f, -h * 0.13f, w * 0.42f, -h * 0.12f, w * 0.61f, h * 0.08f);
+            upperLeaf.moveTo(w * 0.04f, h * 0.17f);
+            upperLeaf.cubicTo(w * 0.02f, h * 0.04f, w * 0.42f, h * 0.04f, w * 0.61f, h * 0.08f);
             upperLeaf.cubicTo(w * 0.83f, h * 0.31f, w * 0.57f, h * 0.47f, w * 0.31f, h * 0.43f);
-            upperLeaf.cubicTo(w * 0.10f, h * 0.40f, -w * 0.05f, h * 0.35f, -w * 0.12f, h * 0.17f);
+            upperLeaf.cubicTo(w * 0.10f, h * 0.40f, w * 0.04f, h * 0.35f, w * 0.04f, h * 0.17f);
             upperLeaf.close();
             drawPixelLayer(canvas, upperLeaf, 0xFFF3FF9B, 0xFF72EA82, 0xFF087D5C);
 
             Path tealForm = new Path();
-            tealForm.moveTo(w * 0.40f, -h * 0.10f);
-            tealForm.cubicTo(w * 0.66f, -h * 0.02f, w * 1.04f, h * 0.12f, w * 1.12f, h * 0.40f);
-            tealForm.cubicTo(w * 1.18f, h * 0.64f, w * 0.89f, h * 0.72f, w * 0.68f, h * 0.59f);
-            tealForm.cubicTo(w * 0.46f, h * 0.46f, w * 0.25f, h * 0.18f, w * 0.40f, -h * 0.10f);
+            tealForm.moveTo(w * 0.40f, h * 0.04f);
+            tealForm.cubicTo(w * 0.66f, -h * 0.02f, w * 1.04f, h * 0.12f, w * 0.96f, h * 0.40f);
+            tealForm.cubicTo(w * 0.96f, h * 0.64f, w * 0.89f, h * 0.72f, w * 0.68f, h * 0.59f);
+            tealForm.cubicTo(w * 0.46f, h * 0.46f, w * 0.25f, h * 0.18f, w * 0.40f, h * 0.04f);
             tealForm.close();
             drawPixelLayer(canvas, tealForm, 0xFFB7FFF1, 0xFF24D7B8, 0xFF075C86);
 
             Path lowerForm = new Path();
-            lowerForm.moveTo(-w * 0.10f, h * 0.75f);
+            lowerForm.moveTo(w * 0.04f, h * 0.75f);
             lowerForm.cubicTo(w * 0.11f, h * 0.54f, w * 0.41f, h * 0.62f, w * 0.57f, h * 0.82f);
-            lowerForm.cubicTo(w * 0.75f, h * 1.06f, w * 0.99f, h * 0.89f, w * 1.12f, h * 0.78f);
-            lowerForm.lineTo(w * 1.12f, h * 1.12f);
-            lowerForm.lineTo(-w * 0.10f, h * 1.12f);
+            lowerForm.cubicTo(w * 0.75f, h * 1.06f, w * 0.99f, h * 0.89f, w * 0.96f, h * 0.78f);
+            lowerForm.lineTo(w * 0.96f, h * 0.96f);
+            lowerForm.lineTo(w * 0.04f, h * 0.96f);
             lowerForm.close();
             drawPixelLayer(canvas, lowerForm, 0xFFE5FF72, 0xFF6DDC48, 0xFF155F45);
 
@@ -1117,18 +1121,18 @@ public class QinsLauncherActivity extends Activity {
                 canvas.drawRect(0, 0, w, h, paint);
                 paint.setShader(null);
                 Path foldA = new Path();
-                foldA.moveTo(-w * 0.12f, h * 0.18f);
-                foldA.cubicTo(w * 0.18f, -h * 0.04f, w * 0.47f, h * 0.10f, w * 0.62f, h * 0.31f);
-                foldA.cubicTo(w * 0.80f, h * 0.55f, w * 0.53f, h * 0.73f, w * 0.25f, h * 1.08f);
-                foldA.lineTo(-w * 0.12f, h * 1.08f);
+                foldA.moveTo(w * 0.04f, h * 0.18f);
+                foldA.cubicTo(w * 0.18f, h * 0.04f, w * 0.47f, h * 0.10f, w * 0.62f, h * 0.31f);
+                foldA.cubicTo(w * 0.80f, h * 0.55f, w * 0.53f, h * 0.73f, w * 0.25f, h * 0.96f);
+                foldA.lineTo(w * 0.04f, h * 0.96f);
                 foldA.close();
                 drawPixelLayer(canvas, foldA, 0xFFFFFFFF, 0xFFBFC7D0, 0xFF606A76);
                 Path foldB = new Path();
-                foldB.moveTo(w * 0.69f, -h * 0.08f);
-                foldB.cubicTo(w * 0.92f, h * 0.15f, w * 0.78f, h * 0.39f, w * 1.12f, h * 0.57f);
-                foldB.lineTo(w * 1.12f, h * 1.08f);
+                foldB.moveTo(w * 0.69f, h * 0.04f);
+                foldB.cubicTo(w * 0.92f, h * 0.15f, w * 0.78f, h * 0.39f, w * 0.96f, h * 0.57f);
+                foldB.lineTo(w * 0.96f, h * 0.96f);
                 foldB.cubicTo(w * 0.72f, h * 0.91f, w * 0.59f, h * 0.73f, w * 0.71f, h * 0.55f);
-                foldB.cubicTo(w * 0.86f, h * 0.35f, w * 0.56f, h * 0.14f, w * 0.69f, -h * 0.08f);
+                foldB.cubicTo(w * 0.86f, h * 0.35f, w * 0.56f, h * 0.14f, w * 0.69f, h * 0.04f);
                 foldB.close();
                 drawPixelLayer(canvas, foldB, 0xFFFFFFFF, 0xFFE4E8ED, 0xFF7A8591);
                 return;
@@ -1142,9 +1146,9 @@ public class QinsLauncherActivity extends Activity {
 
             // Galaxy S-series-inspired metallic S ribbon on a soft silver/graphite canvas.
             Path ribbon = new Path();
-            ribbon.moveTo(w * 0.70f, -h * 0.10f);
+            ribbon.moveTo(w * 0.70f, h * 0.04f);
             ribbon.cubicTo(w * 0.35f, h * 0.02f, w * 0.24f, h * 0.23f, w * 0.50f, h * 0.42f);
-            ribbon.cubicTo(w * 0.79f, h * 0.62f, w * 0.75f, h * 0.80f, w * 0.28f, h * 1.08f);
+            ribbon.cubicTo(w * 0.79f, h * 0.62f, w * 0.75f, h * 0.80f, w * 0.28f, h * 0.96f);
             Paint shadow = new Paint(Paint.ANTI_ALIAS_FLAG);
             shadow.setStyle(Paint.Style.STROKE);
             shadow.setStrokeCap(Paint.Cap.ROUND);
@@ -1394,7 +1398,8 @@ public class QinsLauncherActivity extends Activity {
         int topSide = smallScreen == 1 ? 10 : 18;
         int topVertical = smallScreen == 1 ? 6 : 12;
         top.setPadding(dp(topSide), dp(topVertical), dp(topSide), dp(topVertical));
-        top.setBackground(makeShape(a.surface, a.border, a.cornerDp + 4, false));
+        // Keep the clock area continuous with the wallpaper rather than masking it with a card.
+        top.setBackgroundColor(0x00000000);
 
         LinearLayout timeBlock = new LinearLayout(this);
         timeBlock.setOrientation(LinearLayout.VERTICAL);
@@ -1457,15 +1462,13 @@ public class QinsLauncherActivity extends Activity {
         topParams.bottomMargin = dp(smallScreen == 1 ? 5 : 10);
         pageContent.addView(top, topParams);
 
-        View spacer = new View(this);
-        spacer.setFocusable(true);
-        spacer.setFocusableInTouchMode(false);
-        spacer.setTag("home:drawer-trigger");
+        LinearLayout spacer = new LinearLayout(this); spacer.setOrientation(LinearLayout.VERTICAL); spacer.setGravity(Gravity.CENTER_HORIZONTAL);
+        spacer.setClipChildren(false); spacer.setClipToPadding(false); spacer.setTag("home:drawer-trigger");
         spacer.setContentDescription(getString(R.string.launcher_open_all_apps));
-        spacer.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { drawerPage = 0; showDrawer(false); }
-        });
-        pageContent.addView(spacer, new LinearLayout.LayoutParams(1, 0, 1));
+        spacer.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { drawerPage = 0; showDrawer(false); } });
+        homeWidgetArea = spacer; buildHomeWidget(a);
+        spacer.addView(new View(this), new LinearLayout.LayoutParams(-1, 0, 1));
+        pageContent.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1));
 
         appRow = new LinearLayout(this);
         appRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1494,6 +1497,27 @@ public class QinsLauncherActivity extends Activity {
 
         if (editMode && selectedHomeIndex >= 0) focusHomeIndex(selectedHomeIndex);
         else spacer.requestFocus();
+    }
+
+    private void buildHomeWidget(ThemeManager.Appearance a) {
+        if (homeWidgetArea == null) return;
+        List<NotificationBridgeService.NotificationItem> all = NotificationBridgeService.snapshot();
+        ArrayList<NotificationBridgeService.NotificationItem> items = new ArrayList<NotificationBridgeService.NotificationItem>();
+        for (NotificationBridgeService.NotificationItem item : all) if (item.missedCall || item.media) items.add(item);
+        if (items.isEmpty()) return;
+        homeWidgetIndex = Math.max(0, Math.min(homeWidgetIndex, items.size() - 1));
+        final NotificationBridgeService.NotificationItem item = items.get(homeWidgetIndex);
+        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(10), dp(5), dp(10), dp(5));
+        card.setFocusable(true); card.setFocusableInTouchMode(false); card.setClickable(true); card.setTag("home:widget-stack"); styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+        TextView label = new TextView(this); label.setText(item.missedCall ? getString(R.string.launcher_missed_call) : getString(R.string.launcher_now_playing)); label.setTextColor(a.accent); label.setTextSize(9); card.addView(label);
+        TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); card.addView(title);
+        if (item.text != null && item.text.length() > 0) { TextView detail = new TextView(this); detail.setText(item.text); detail.setTextColor(a.muted); detail.setTextSize(9); detail.setSingleLine(true); detail.setEllipsize(android.text.TextUtils.TruncateAt.END); card.addView(detail); }
+        if (item.media && item.actions != null) { LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER);
+            for (int i=0;i<item.actions.length;i++) { final int ix=i; TextView button=new TextView(this); String txt=item.actionTitles[i]; button.setText(txt.length()>0?txt:(i==0?"‹":(i==1?"Ⅱ / ▶":"›"))); button.setTextColor(a.accent); button.setGravity(Gravity.CENTER); button.setFocusable(true); button.setFocusableInTouchMode(false); controls.addView(button,new LinearLayout.LayoutParams(0,dp(24),1)); button.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){NotificationBridgeService.sendAction(item,ix);}}); }
+            card.addView(controls); }
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2); lp.leftMargin=dp(4); lp.rightMargin=dp(4); lp.topMargin=dp(4); homeWidgetArea.addView(card,lp);
+        card.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){try{Intent launch=getPackageManager().getLaunchIntentForPackage(item.packageName);if(launch!=null)startActivity(launch);}catch(RuntimeException ignored){}}});
+        card.setOnLongClickListener(new View.OnLongClickListener(){@Override public boolean onLongClick(View v){List<NotificationBridgeService.NotificationItem> now=NotificationBridgeService.snapshot();int count=0;for(NotificationBridgeService.NotificationItem x:now)if(x.missedCall||x.media)count++;if(count>1){homeWidgetIndex=(homeWidgetIndex+1)%count;showHome(false);if(homeWidgetArea.getChildCount()>0)homeWidgetArea.getChildAt(0).requestFocus();}return true;}});
     }
 
     /** Compact quick controls stay on top of the home page and leave most of it visible. */
@@ -2809,7 +2833,11 @@ public class QinsLauncherActivity extends Activity {
                         dialog.dismiss();
                         refreshLauncherSurface();
                     }
-                }).setNegativeButton(android.R.string.cancel, null).show();
+                }).setNeutralButton(R.string.launcher_smart_colors, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) { applySmartColors(); } }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void applySmartColors() {
+        ThemeManager.Appearance current=appearance();int accent=ThemeManager.smartAccent(loadWallpaperBitmap(),current.accent);ThemeManager.setCustomColor(this,current.id,"accent",accent);refreshLauncherSurface();android.widget.Toast.makeText(this,R.string.launcher_smart_colors_applied,android.widget.Toast.LENGTH_SHORT).show();
     }
 
     private void cycleAppearance() {
@@ -3799,6 +3827,11 @@ public class QinsLauncherActivity extends Activity {
                 return true;
             }
         }
+        if (quickPanelVisible && quickPanelExpanded && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) { rightSoftKeyGestureActive=true; if(quickPanelPage==1)switchQuickPanelPage(0);else showHome(false); }
+            else if(event.getAction()==KeyEvent.ACTION_UP) rightSoftKeyGestureActive=false;
+            return true;
+        }
         if (handleExpandedQuickPanelSoftKey(event)) return true;
         return super.dispatchKeyEvent(event);
     }
@@ -3918,10 +3951,7 @@ public class QinsLauncherActivity extends Activity {
                 showHome(false);
                 return true;
             }
-            if (quickPanelVisible && quickPanelExpanded) {
-                showCompactQuickPanel(true);
-                return true;
-            }
+            if (quickPanelVisible && quickPanelExpanded) { if(quickPanelPage==1)switchQuickPanelPage(0);else showCompactQuickPanel(true); return true; }
             if (drawerVisible || quickPanelVisible) {
                 showHome(false);
                 return true;
@@ -3958,6 +3988,12 @@ public class QinsLauncherActivity extends Activity {
                     focusPageDot(target);
                 }
                 return true;
+            }
+            if ("home:clock".equals(tag) && keyCode == KeyEvent.KEYCODE_DPAD_DOWN && homeWidgetArea != null && homeWidgetArea.getChildCount() > 0) { homeWidgetArea.getChildAt(0).requestFocus(); return true; }
+            if ("home:widget-stack".equals(tag)) {
+                List<NotificationBridgeService.NotificationItem> all=NotificationBridgeService.snapshot(); int count=0; for(NotificationBridgeService.NotificationItem x:all)if(x.missedCall||x.media)count++;
+                if(keyCode==KeyEvent.KEYCODE_DPAD_LEFT){clockView.requestFocus();return true;}
+                if(keyCode==KeyEvent.KEYCODE_DPAD_RIGHT&&count>1){homeWidgetIndex=(homeWidgetIndex+1)%count;showHome(false);if(homeWidgetArea!=null&&homeWidgetArea.getChildCount()>0)homeWidgetArea.getChildAt(0).requestFocus();return true;}
             }
             if (tag instanceof String && ((String) tag).startsWith("home:")) {
                 try {
@@ -4016,7 +4052,7 @@ public class QinsLauncherActivity extends Activity {
             selectedHomeIndex = -1;
             showHome(false);
         } else if (quickPanelVisible && quickPanelExpanded) {
-            showCompactQuickPanel(true);
+            if(quickPanelPage==1)switchQuickPanelPage(0);else showCompactQuickPanel(true);
         } else if (drawerVisible || quickPanelVisible) {
             showHome(false);
         }
