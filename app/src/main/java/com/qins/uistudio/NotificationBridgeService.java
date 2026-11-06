@@ -6,6 +6,9 @@ import android.service.notification.StatusBarNotification;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Looper;
 import android.provider.Settings;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,6 +56,16 @@ public final class NotificationBridgeService extends NotificationListenerService
         } catch (RuntimeException ignored) {
             return false;
         }
+    }
+
+    @Override public IBinder onBind(Intent intent) {
+        IBinder binder = super.onBind(intent);
+        // API 19 does not expose onListenerConnected(); wait briefly after bind
+        // before requesting the initial active-notification snapshot.
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override public void run() { refreshActiveNotifications(); }
+        }, 800L);
+        return binder;
     }
 
     @Override public void onListenerConnected() {
