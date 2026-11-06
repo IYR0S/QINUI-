@@ -2670,14 +2670,14 @@ public class QinsLauncherActivity extends Activity {
         return "oneui";
     }
     private String[] clockStyleOptions(ThemeManager.Appearance a) {
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"dot", "mono", "digital", "stacked", "compact", "analog"};
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"material", "bold", "stacked", "compact", "analog"};
-        return new String[] {"oneui", "stacked", "compact", "analog"};
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"dot", "mono", "digital", "stacked", "compact", "analog", "condensed", "serif"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"material", "bold", "stacked", "compact", "analog", "condensed", "serif"};
+        return new String[] {"oneui", "stacked", "compact", "analog", "condensed", "serif"};
     }
     private String[] clockStyleLabels(ThemeManager.Appearance a) {
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Nothing dot matrix", "Geist-style mono", "Digital bold", "Stacked red dots", "Compact", "Analog"};
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Stacked clock", "Compact", "Analog"};
-        return new String[] {"One UI large", "Stacked digital", "Compact", "Analog"};
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) return new String[] {"Nothing dot matrix", "Monospace", "Digital bold", "Stacked red dots", "Compact", "Analog", "Condensed", "Serif"};
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) return new String[] {"Material", "Bold digital", "Stacked clock", "Compact", "Analog", "Condensed", "Serif"};
+        return new String[] {"One UI large", "Stacked digital", "Compact", "Analog", "Condensed", "Serif"};
     }
     private void showClockStylePicker() {
         final ThemeManager.Appearance a = appearance();
@@ -2697,12 +2697,16 @@ public class QinsLauncherActivity extends Activity {
         if ("stacked".equals(style)) return small ? 27 : 37;
         if ("bold".equals(style) || "digital".equals(style)) return small ? 30 : 43;
         if ("mono".equals(style)) return small ? 27 : 38;
+        if ("condensed".equals(style)) return small ? 30 : 42;
+        if ("serif".equals(style)) return small ? 28 : 39;
         return small ? 29 : 42;
     }
     private Typeface clockTypefaceForTheme(ThemeManager.Appearance a) {
         String style = clockStyle(a);
         if ("mono".equals(style) || "dot".equals(style) || a.useMonoType) return Typeface.MONOSPACE;
         if ("digital".equals(style)) return Typeface.create("monospace", Typeface.BOLD);
+        if ("condensed".equals(style)) return Typeface.create("sans-serif-condensed", Typeface.NORMAL);
+        if ("serif".equals(style)) return Typeface.SERIF;
         if ("bold".equals(style) || "material".equals(style)) return Typeface.create("sans-serif-medium", Typeface.NORMAL);
         return Typeface.create("sans-serif-light", Typeface.NORMAL);
     }
