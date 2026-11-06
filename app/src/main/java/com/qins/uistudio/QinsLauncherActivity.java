@@ -625,6 +625,7 @@ public class QinsLauncherActivity extends Activity {
     /** Nothing-inspired 5x7 dot-matrix digits; text remains available to accessibility services. */
     private final class NothingDotMatrixClockView extends TextView {
         private final Paint dots = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final boolean stacked;
         private final String[][] digits = new String[][] {
                 {"01110","10001","10011","10101","11001","10001","01110"},
                 {"00100","01100","00100","00100","00100","00100","01110"},
@@ -638,17 +639,18 @@ public class QinsLauncherActivity extends Activity {
                 {"01110","10001","10001","01111","00001","00010","11100"}
         };
 
-        NothingDotMatrixClockView(Context context) {
+        NothingDotMatrixClockView(Context context, boolean stacked) {
             super(context);
+            this.stacked = stacked;
             setIncludeFontPadding(false);
-            setSingleLine(true);
+            setSingleLine(false);
             setGravity(Gravity.CENTER);
             setWillNotDraw(false);
         }
 
         @Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             int width = resolveSize(dp(220), widthMeasureSpec);
-            int height = resolveSize(dp(76), heightMeasureSpec);
+            int height = resolveSize(dp(stacked ? 94 : 76), heightMeasureSpec);
             setMeasuredDimension(width, height);
         }
 
@@ -659,54 +661,122 @@ public class QinsLauncherActivity extends Activity {
                 char ch = raw.charAt(i);
                 int digit = Character.digit(ch, 10);
                 if (digit >= 0) normalized.append((char) ('0' + digit));
-                else if (ch == ':') normalized.append(':');
+                else if (ch == ':' || ch == '\\n') normalized.append(ch);
             }
-            String value = normalized.toString();
-            if (value.length() == 0) {
-                super.onDraw(canvas);
-                return;
-            }
+            String[] lines = normalized.toString().split("\\n");
+            if (lines.length == 0 || lines[0].length() == 0) return;
 
-            // A digit occupies five dot columns; the colon occupies one.
-            // One column of spacing follows every character except the last.
-            float units = 0f;
-            for (int i = 0; i < value.length(); i++) {
-                units += value.charAt(i) == ':' ? 1f : 5f;
-                if (i + 1 < value.length()) units += 1f;
+            float maxUnits = 1f;
+            for (String line : lines) {
+                float lineUnits = 0f;
+                for (int i = 0; i < line.length(); i++) {
+                    lineUnits += line.charAt(i) == ':' ? 1f : 5f;
+                    if (i + 1 < line.length()) lineUnits += 1f;
+                }
+                maxUnits = Math.max(maxUnits, lineUnits);
             }
+            float verticalUnits = lines.length * 7f + (lines.length - 1) * 1.5f;
             float available = Math.max(1f, getWidth() - getPaddingLeft() - getPaddingRight());
             float verticalRoom = Math.max(dp(7), getHeight() - getPaddingTop() - getPaddingBottom());
-            float pitch = Math.min(dp(6.2f), Math.min(available / units, verticalRoom / 7f));
-            pitch = Math.max(dp(2.0f), pitch);
-            float totalWidth = units * pitch;
-            float startX = getPaddingLeft() + Math.max(0f, (available - totalWidth) / 2f);
-            float startY = getPaddingTop() + Math.max(0f, (verticalRoom - 7f * pitch) / 2f);
-            float radius = pitch * 0.27f;
+            float pitch = Math.min(dp(6.2f), Math.min(available / maxUnits, verticalRoom / verticalUnits));
+            pitch = Math.max(dp(1.4f), pitch);
+            float lineHeight = 7f * pitch;
+            float startY = getPaddingTop() + Math.max(0f,
+                    (verticalRoom - (lineHeight * lines.length + dp(1.5f) * (lines.length - 1))) / 2f);
+            float radius = pitch * 0.28f;
             dots.setStyle(Paint.Style.FILL);
-            dots.setColor(getCurrentTextColor());
 
-            for (int i = 0; i < value.length(); i++) {
-                char ch = value.charAt(i);
-                if (ch == ':') {
-                    dots.setColor(appearance().accent);
-                    canvas.drawCircle(startX + pitch * 0.5f, startY + pitch * 2.5f, radius, dots);
-                    canvas.drawCircle(startX + pitch * 0.5f, startY + pitch * 4.5f, radius, dots);
-                    dots.setColor(getCurrentTextColor());
-                    startX += pitch;
-                } else {
-                    String[] rows = digits[ch - '0'];
-                    for (int row = 0; row < 7; row++) {
-                        for (int col = 0; col < 5; col++) {
-                            if (rows[row].charAt(col) == '1') {
-                                canvas.drawCircle(startX + (col + 0.5f) * pitch,
-                                        startY + (row + 0.5f) * pitch, radius, dots);
+            for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                String value = lines[lineIndex];
+                float units = 0f;
+                for (int i = 0; i < value.length(); i++) {
+                    units += value.charAt(i) == ':' ? 1f : 5f;
+                    if (i + 1 < value.length()) units += 1f;
+                }
+                float x = getPaddingLeft() + Math.max(0f, (available - units * pitch) / 2f);
+                float y = startY + lineIndex * (lineHeight + dp(1.5f));
+                dots.setColor(stacked ? appearance().accent : getCurrentTextColor());
+                for (int i = 0; i < value.length(); i++) {
+                    char ch = value.charAt(i);
+                    if (ch == ':') {
+                        dots.setColor(appearance().accent);
+                        canvas.drawCircle(x + pitch * 0.5f, y + pitch * 2.5f, radius, dots);
+                        canvas.drawCircle(x + pitch * 0.5f, y + pitch * 4.5f, radius, dots);
+                        dots.setColor(stacked ? appearance().accent : getCurrentTextColor());
+                        x += pitch;
+                    } else {
+                        String[] rows = digits[ch - '0'];
+                        for (int row = 0; row < 7; row++) {
+                            for (int col = 0; col < 5; col++) {
+                                if (rows[row].charAt(col) == '1') {
+                                    canvas.drawCircle(x + (col + 0.5f) * pitch,
+                                            y + (row + 0.5f) * pitch, radius, dots);
+                                }
                             }
                         }
+                        x += 5f * pitch;
                     }
-                    startX += 5f * pitch;
+                    if (i + 1 < value.length()) x += pitch;
                 }
-                if (i + 1 < value.length()) startX += pitch;
             }
+        }
+    }
+
+    /** API-19-safe analog clock face; no external fonts or clock assets required. */
+    private final class AnalogClockTextView extends TextView {
+        private final Paint dial = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint hand = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final ThemeManager.Appearance colors;
+
+        AnalogClockTextView(Context context, ThemeManager.Appearance appearance) {
+            super(context);
+            colors = appearance;
+            setWillNotDraw(false);
+            setIncludeFontPadding(false);
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            float size = Math.min(getWidth(), getHeight());
+            float cx = getWidth() / 2f;
+            float cy = getHeight() / 2f;
+            float radius = Math.max(dp(10), size / 2f - dp(4));
+            dial.setStyle(Paint.Style.FILL);
+            dial.setColor(colors.surface);
+            canvas.drawCircle(cx, cy, radius, dial);
+            dial.setStyle(Paint.Style.STROKE);
+            dial.setStrokeWidth(dp(1.4f));
+            dial.setColor(colors.accent);
+            canvas.drawCircle(cx, cy, radius, dial);
+
+            dial.setStrokeWidth(dp(1.2f));
+            for (int i = 0; i < 12; i++) {
+                double angle = Math.PI * i / 6.0 - Math.PI / 2.0;
+                float inner = radius * (i % 3 == 0 ? 0.78f : 0.85f);
+                float outer = radius * 0.92f;
+                canvas.drawLine(cx + (float)Math.cos(angle) * inner,
+                        cy + (float)Math.sin(angle) * inner,
+                        cx + (float)Math.cos(angle) * outer,
+                        cy + (float)Math.sin(angle) * outer, dial);
+            }
+
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            float minute = now.get(java.util.Calendar.MINUTE) + now.get(java.util.Calendar.SECOND) / 60f;
+            float hour = (now.get(java.util.Calendar.HOUR) % 12) + minute / 60f;
+            drawHand(canvas, cx, cy, radius * 0.48f, hour * 30f, colors.text, dp(2.7f));
+            drawHand(canvas, cx, cy, radius * 0.70f, minute * 6f, colors.accent, dp(1.8f));
+            dial.setStyle(Paint.Style.FILL);
+            dial.setColor(colors.accent);
+            canvas.drawCircle(cx, cy, dp(2.6f), dial);
+        }
+
+        private void drawHand(Canvas canvas, float cx, float cy, float length,
+                              float degrees, int color, float width) {
+            double angle = Math.toRadians(degrees - 90f);
+            hand.setColor(color);
+            hand.setStrokeWidth(width);
+            hand.setStrokeCap(Paint.Cap.ROUND);
+            canvas.drawLine(cx, cy, cx + (float)Math.cos(angle) * length,
+                    cy + (float)Math.sin(angle) * length, hand);
         }
     }
 
@@ -1182,6 +1252,7 @@ public class QinsLauncherActivity extends Activity {
         clockView.setTextColor(nothingMatrixClock ? ("stacked".equals(selectedClockStyle) ? a.accent : 0xFFF7F7F5) :
                 (analogClock ? 0x00000000 : a.text));
         clockView.setTextSize(clockSizeForTheme(a, smallScreen == 1));
+        if (analogClock) clockView.setTextSize(1);
         clockView.setIncludeFontPadding(false);
         clockView.setTypeface(clockTypefaceForTheme(a), clockTypefaceStyle());
         clockView.setFocusable(true);
