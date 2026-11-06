@@ -66,7 +66,8 @@ public class QinsLauncherActivity extends Activity {
     private static final String LAUNCHER_PREFS = "qins_launcher";
     private static final String PINS_KEY = "home_pins";
     private static final String FOLDER_PREFS = "qins_folders";
-    private static final String SOFTKEY_PREFS = "qins_softkeys";
+    private static final String BACKGROUND_PREFS = "qins_backgrounds";
+    private static final String BACKGROUND_STYLE_KEY = "style";
 
     private int page = 0;
     private int homeAppRowHeightDp = 86;
@@ -82,12 +83,7 @@ public class QinsLauncherActivity extends Activity {
     private boolean pinSelectionMode = false;
     private View pendingSelectView;
     private boolean longPressPerformed = false;
-    private String pendingSoftKeySide;
-    private String learningSoftKeySide;
-    private android.app.AlertDialog softKeyLearningDialog;
-    private int swallowLearningKeyCode = -1;
-    private int swallowLearningScanCode = 0;
-    private View folderOverlay;
+     private View folderOverlay;
     private String drawerSearchQuery = "";
     private TextView drawerSearchStatus;
     private SignalStrengthIndicatorView signalIndicator;
@@ -320,23 +316,7 @@ public class QinsLauncherActivity extends Activity {
         signalIndicator.setContentDescription("Cellular signal strength");
         topBar.addView(signalIndicator, new LinearLayout.LayoutParams(dp(23), dp(22)));
 
-        TextView keysButton = new TextView(this);
-        keysButton.setText("⌘");
-        keysButton.setTextSize(17);
-        keysButton.setTextColor(a.text);
-        keysButton.setGravity(Gravity.CENTER);
-        keysButton.setFocusable(true);
-        keysButton.setFocusableInTouchMode(false);
-        keysButton.setContentDescription(getString(R.string.launcher_softkey_settings));
-        styleSurface(keysButton, a.surface, a.border, a.focus, a.cornerDp);
-        keysButton.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { showSoftkeySettings(); }
-        });
-        LinearLayout.LayoutParams keysParams = new LinearLayout.LayoutParams(dp(30), dp(36));
-        keysParams.rightMargin = dp(5);
-        topBar.addView(keysButton, keysParams);
-
-        themeButton = new TextView(this);
+         themeButton = new TextView(this);
         themeButton.setText("◉");
         themeButton.setTextSize(18);
         themeButton.setGravity(Gravity.CENTER);
@@ -520,12 +500,16 @@ public class QinsLauncherActivity extends Activity {
             output.close();
         }
         wallpaperBitmap = null;
+        getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).edit()
+                .putString(BACKGROUND_STYLE_KEY, "photo").commit();
     }
 
     private void resetWallpaper() {
         File file = wallpaperFile();
         if (file.exists()) file.delete();
         wallpaperBitmap = null;
+        getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).edit()
+                .putString(BACKGROUND_STYLE_KEY, "theme").commit();
         refreshLauncherSurface();
     }
 
@@ -659,7 +643,10 @@ public class QinsLauncherActivity extends Activity {
                 else if (ch == ':') normalized.append(':');
             }
             String value = normalized.toString();
-            if (value.length() == 0) return;
+            if (value.length() == 0) {
+                super.onDraw(canvas);
+                return;
+            }
 
             // A digit occupies five dot columns; the colon occupies one.
             // One column of spacing follows every character except the last.
@@ -670,8 +657,8 @@ public class QinsLauncherActivity extends Activity {
             }
             float available = Math.max(1f, getWidth() - getPaddingLeft() - getPaddingRight());
             float verticalRoom = Math.max(dp(7), getHeight() - getPaddingTop() - getPaddingBottom());
-            float pitch = Math.min(dp(4.8f), Math.min(available / units, verticalRoom / 7f));
-            pitch = Math.max(dp(1.5f), pitch);
+            float pitch = Math.min(dp(6.2f), Math.min(available / units, verticalRoom / 7f));
+            pitch = Math.max(dp(2.0f), pitch);
             float totalWidth = units * pitch;
             float startX = getPaddingLeft() + Math.max(0f, (available - totalWidth) / 2f);
             float startY = getPaddingTop() + Math.max(0f, (verticalRoom - 7f * pitch) / 2f);
@@ -717,7 +704,9 @@ public class QinsLauncherActivity extends Activity {
             android.graphics.Rect bounds = getBounds();
             float w = bounds.width();
             float h = bounds.height();
-            Bitmap photo = loadWallpaperBitmap();
+            String backgroundStyle = getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE)
+                    .getString(BACKGROUND_STYLE_KEY, "theme");
+            Bitmap photo = "photo".equals(backgroundStyle) ? loadWallpaperBitmap() : null;
             if (photo != null && !photo.isRecycled()) {
                 float scale = Math.max(w / (float) photo.getWidth(), h / (float) photo.getHeight());
                 float sourceWidth = w / scale;
@@ -741,6 +730,33 @@ public class QinsLauncherActivity extends Activity {
             }
             paint.setAlpha(255);
             paint.setColorFilter(null);
+            paint.setStyle(Paint.Style.FILL);
+            if ("minimal".equals(backgroundStyle) || "gradient".equals(backgroundStyle) ||
+                    "dots".equals(backgroundStyle)) {
+                int startColor = "minimal".equals(backgroundStyle) ? style.background : style.backgroundAlt;
+                paint.setShader(new LinearGradient(0, 0, w, h, startColor,
+                        style.background, Shader.TileMode.CLAMP));
+                canvas.drawRect(bounds, paint);
+                paint.setShader(null);
+                if ("dots".equals(backgroundStyle)) {
+                    paint.setColor(0x1FFFFFFF);
+                    float step = dp(13);
+                    for (float y = dp(7); y < h; y += step) {
+                        for (float x = dp(7); x < w; x += step) {
+                            canvas.drawCircle(x, y, dp(0.75f), paint);
+                        }
+                    }
+                } else if ("gradient".equals(backgroundStyle)) {
+                    Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
+                    glow.setShader(new android.graphics.RadialGradient(w * 0.78f, h * 0.18f,
+                            Math.max(w, h) * 0.72f,
+                            new int[] {0x35FFFFFF, 0x00FFFFFF},
+                            new float[] {0f, 1f}, Shader.TileMode.CLAMP));
+                    canvas.drawRect(bounds, glow);
+                    glow.setShader(null);
+                }
+                return;
+            }
             paint.setShader(new LinearGradient(0, 0, w, h,
                     style.backgroundAlt, style.background, Shader.TileMode.CLAMP));
             canvas.drawRect(bounds, paint);
@@ -757,7 +773,7 @@ public class QinsLauncherActivity extends Activity {
 
         private void drawNothingWallpaper(Canvas canvas, float w, float h) {
             paint.setShader(new LinearGradient(0, 0, w, h,
-                    0xFF17191B, 0xFF080909, Shader.TileMode.CLAMP));
+                    style.backgroundAlt, style.background, Shader.TileMode.CLAMP));
             paint.setStyle(Paint.Style.FILL);
             canvas.drawRect(0, 0, w, h, paint);
             paint.setShader(null);
@@ -781,7 +797,7 @@ public class QinsLauncherActivity extends Activity {
         private void drawPixelWallpaper(Canvas canvas, float w, float h) {
             paint.setStyle(Paint.Style.FILL);
             paint.setShader(new LinearGradient(0, 0, w, h,
-                    new int[] {0xFF171A30, 0xFF25234B, 0xFF0A1020},
+                    new int[] {style.backgroundAlt, style.background, style.backgroundAlt},
                     new float[] {0f, 0.52f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, h, paint);
             paint.setShader(null);
@@ -840,7 +856,7 @@ public class QinsLauncherActivity extends Activity {
         private void drawGalaxyWallpaper(Canvas canvas, float w, float h) {
             paint.setStyle(Paint.Style.FILL);
             paint.setShader(new LinearGradient(0, 0, w * 0.85f, h,
-                    new int[] {0xFFD9D8EA, 0xFFB8B6D2, 0xFF8586A5},
+                    new int[] {style.backgroundAlt, style.background, style.backgroundAlt},
                     new float[] {0f, 0.56f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawRect(0, 0, w, h, paint);
             paint.setShader(null);
@@ -1089,10 +1105,10 @@ public class QinsLauncherActivity extends Activity {
         clockView = nothingDotClock ? new NothingDotMatrixClockView(this) : new TextView(this);
         if (nothingDotClock) {
             clockView.setGravity(Gravity.CENTER);
-            clockView.setMinHeight(dp(smallScreen == 1 ? 38 : 46));
-            clockView.setMinWidth(dp(132));
+            clockView.setMinHeight(dp(smallScreen == 1 ? 58 : 70));
+            clockView.setMinWidth(dp(154));
         }
-        clockView.setTextColor(a.text);
+        clockView.setTextColor(nothingDotClock ? 0xFFF7F7F5 : a.text);
         clockView.setTextSize(clockSizeForTheme(a, smallScreen == 1));
         clockView.setIncludeFontPadding(false);
         clockView.setTypeface(clockTypefaceForTheme(a), clockTypefaceStyle());
@@ -2411,22 +2427,43 @@ public class QinsLauncherActivity extends Activity {
         return new int[] {base.accent, base.background, base.surface, base.text};
     }
 
+    private String backgroundStyleTitle(String value) {
+        if ("gradient".equals(value)) return "Soft gradient";
+        if ("minimal".equals(value)) return "Minimal";
+        if ("dots".equals(value)) return "Dot pattern";
+        if ("photo".equals(value)) return "Photo";
+        return "Theme artwork";
+    }
+
     private void showThemeEditor() {
         final ThemeManager.Appearance base = ThemeManager.getAppearanceById(appearance().id);
         final int[] colors = themeDefaultColors(appearance());
         final String[] roles = new String[] {
-                "Accent  ·  active buttons and focus",
-                "Background  ·  screen behind cards",
-                "Surface  ·  cards and panels",
-                "Text  ·  labels and clock"
+                "Accent color", "Screen background", "Cards and panels", "Text and clock"
         };
-        final String[] keys = new String[] {"accent", "background", "surface", "text"};
         final String[] names = new String[] {
-                "Theme default", "Soft blue", "Violet", "Coral", "Mint", "Amber", "White", "Charcoal"
+                "Theme default", "Soft blue", "Violet", "Coral", "Mint", "Amber", "White", "Charcoal", "Custom"
         };
         final int[] choices = new int[] {
                 0, 0xFF4D83E6, 0xFF8B65C8, 0xFFE56B5F,
                 0xFF4C9B7C, 0xFFD49A35, 0xFFF4F4F4, 0xFF242629
+        };
+        final int[] defaults = new int[] {base.accent, base.background, base.surface, base.text};
+        final int[] selectedChoices = new int[4];
+        final TextView[] roleViews = new TextView[4];
+        for (int i = 0; i < 4; i++) {
+            selectedChoices[i] = 8;
+            if (colors[i] == defaults[i]) selectedChoices[i] = 0;
+            for (int j = 1; j < choices.length; j++) {
+                if (colors[i] == choices[j]) selectedChoices[i] = j;
+            }
+        }
+        final String[] backgroundStyles = new String[] {"theme", "gradient", "minimal", "dots", "photo"};
+        final String[] backgroundLabels = new String[] {
+                "Theme artwork", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"
+        };
+        final String[] selectedBackground = new String[] {
+                getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).getString(BACKGROUND_STYLE_KEY, "theme")
         };
 
         LinearLayout content = new LinearLayout(this);
@@ -2436,23 +2473,32 @@ public class QinsLauncherActivity extends Activity {
         preview.update(colors);
         content.addView(preview, new LinearLayout.LayoutParams(-1, dp(126)));
         TextView hint = new TextView(this);
-        hint.setText("Choose a part below. The preview changes immediately; Save applies it.");
-        hint.setTextSize(10);
+        hint.setText("Choose colors and a background. Preview the palette, then save.");
+        hint.setTextSize(11);
+        hint.setTextColor(base.muted);
         hint.setPadding(dp(2), dp(8), dp(2), dp(8));
         content.addView(hint);
+
         for (int i = 0; i < roles.length; i++) {
             final int roleIndex = i;
             TextView option = new TextView(this);
-            option.setText(roles[i] + "   ·   #" + Integer.toHexString(colors[i] & 0x00FFFFFF).toUpperCase(Locale.ROOT));
-            option.setTextSize(11);
+            roleViews[i] = option;
+            option.setText(roles[i] + "  ·  " + names[selectedChoices[i]]);
+            option.setTextSize(13);
             option.setTextColor(colors[3]);
             option.setGravity(Gravity.CENTER_VERTICAL);
-            option.setPadding(dp(10), 0, dp(10), 0);
+            option.setPadding(dp(12), 0, dp(10), 0);
             option.setFocusable(true);
             option.setFocusableInTouchMode(false);
-            styleSurface(option, colors[2], base.border, base.focus, 8f);
-            LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(-1, dp(38));
-            op.topMargin = dp(4);
+            GradientDrawable swatch = new GradientDrawable();
+            swatch.setShape(GradientDrawable.OVAL);
+            swatch.setColor(colors[i]);
+            swatch.setSize(dp(13), dp(13));
+            option.setCompoundDrawables(swatch, null, null, null);
+            option.setCompoundDrawablePadding(dp(9));
+            styleSurface(option, colors[2], base.border, base.focus, 10f);
+            LinearLayout.LayoutParams op = new LinearLayout.LayoutParams(-1, dp(44));
+            op.topMargin = dp(5);
             content.addView(option, op);
             option.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
@@ -2460,22 +2506,63 @@ public class QinsLauncherActivity extends Activity {
                             .setTitle(roles[roleIndex])
                             .setItems(names, new android.content.DialogInterface.OnClickListener() {
                                 @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                                    colors[roleIndex] = which == 0
-                                            ? (roleIndex == 0 ? base.accent : roleIndex == 1 ? base.background :
-                                               roleIndex == 2 ? base.surface : base.text)
-                                            : choices[which];
+                                    if (which == 0) colors[roleIndex] = defaults[roleIndex];
+                                    else if (which < choices.length) colors[roleIndex] = choices[which];
+                                    selectedChoices[roleIndex] = which;
                                     preview.update(colors);
+                                    roleViews[roleIndex].setText(roles[roleIndex] + "  ·  " + names[which]);
+                                    GradientDrawable dot = new GradientDrawable();
+                                    dot.setShape(GradientDrawable.OVAL);
+                                    dot.setColor(colors[roleIndex]);
+                                    dot.setSize(dp(13), dp(13));
+                                    roleViews[roleIndex].setCompoundDrawables(dot, null, null, null);
                                 }
                             }).setNegativeButton("Cancel", null).show();
                 }
             });
         }
+
+        TextView backgroundsTitle = new TextView(this);
+        backgroundsTitle.setText("Backgrounds");
+        backgroundsTitle.setTextSize(14);
+        backgroundsTitle.setTextColor(base.text);
+        backgroundsTitle.setPadding(dp(2), dp(12), dp(2), dp(3));
+        content.addView(backgroundsTitle);
+        final TextView backgroundChoice = new TextView(this);
+        backgroundChoice.setText("Background style  ·  " + backgroundStyleTitle(selectedBackground[0]));
+        backgroundChoice.setTextSize(13);
+        backgroundChoice.setTextColor(colors[3]);
+        backgroundChoice.setGravity(Gravity.CENTER_VERTICAL);
+        backgroundChoice.setPadding(dp(12), 0, dp(10), 0);
+        backgroundChoice.setFocusable(true);
+        backgroundChoice.setFocusableInTouchMode(false);
+        styleSurface(backgroundChoice, colors[2], base.border, base.focus, 10f);
+        content.addView(backgroundChoice, new LinearLayout.LayoutParams(-1, dp(44)));
+        backgroundChoice.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                int selected = 0;
+                for (int i = 0; i < backgroundStyles.length; i++) {
+                    if (backgroundStyles[i].equals(selectedBackground[0])) selected = i;
+                }
+                new android.app.AlertDialog.Builder(QinsLauncherActivity.this)
+                        .setTitle("Choose background")
+                        .setSingleChoiceItems(backgroundLabels, selected,
+                                new android.content.DialogInterface.OnClickListener() {
+                            @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                                selectedBackground[0] = backgroundStyles[which];
+                                backgroundChoice.setText("Background style  ·  " + backgroundLabels[which]);
+                                dialog.dismiss();
+                            }
+                        }).setNegativeButton("Cancel", null).show();
+            }
+        });
+
         ScrollView editorScroll = new ScrollView(this);
         editorScroll.setFillViewport(false);
         editorScroll.setVerticalScrollBarEnabled(true);
         editorScroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle("Theme preview  ·  " + appearance().title)
+                .setTitle("Personalize theme  ·  " + appearance().title)
                 .setView(editorScroll)
                 .setPositiveButton("Save", new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, int which) {
@@ -2483,6 +2570,8 @@ public class QinsLauncherActivity extends Activity {
                         ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "background", colors[1]);
                         ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "surface", colors[2]);
                         ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "text", colors[3]);
+                        getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).edit()
+                                .putString(BACKGROUND_STYLE_KEY, selectedBackground[0]).commit();
                         if (quickPanelExpanded) showQuickPanel(false);
                         else if (quickPanelVisible) showCompactQuickPanel(false);
                         else showHome(false);
@@ -2892,148 +2981,6 @@ public class QinsLauncherActivity extends Activity {
         }
     }
 
-    private int defaultSoftKeyCode(String side) {
-        return "left".equals(side) ? KeyEvent.KEYCODE_SOFT_LEFT : KeyEvent.KEYCODE_SOFT_RIGHT;
-    }
-
-    private String softKeyAction(String side) {
-        return getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE)
-                .getString(side, "left".equals(side) ? "phone" : "apps");
-    }
-
-    private String softKeySideForEvent(KeyEvent event) {
-        SharedPreferences prefs = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
-        String[] sides = new String[] {"left", "right"};
-        for (String side : sides) {
-            int keyCode = prefs.getInt("keycode_" + side, defaultSoftKeyCode(side));
-            int scanCode = prefs.getInt("scancode_" + side, 0);
-            if (event.getKeyCode() == keyCode ||
-                    (scanCode > 0 && event.getScanCode() == scanCode)) {
-                return side;
-            }
-        }
-        return null;
-    }
-
-    private void showSoftkeySettings() {
-        final String[] choices = new String[] {
-                getString(R.string.launcher_softkey_left) + "  ·  " + softKeyAction("left"),
-                getString(R.string.launcher_softkey_learn) + "  ·  " + getString(R.string.launcher_softkey_left),
-                getString(R.string.launcher_softkey_right) + "  ·  " + softKeyAction("right"),
-                getString(R.string.launcher_softkey_learn) + "  ·  " + getString(R.string.launcher_softkey_right),
-                getString(R.string.launcher_softkey_reset)
-        };
-        new android.app.AlertDialog.Builder(this)
-                .setTitle(R.string.launcher_softkey_settings)
-                .setMessage(R.string.launcher_softkey_config_hint)
-                .setItems(choices, new android.content.DialogInterface.OnClickListener() {
-                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        if (which == 0) showSoftkeyActionPicker("left");
-                        else if (which == 1) learnPhysicalSoftkey("left");
-                        else if (which == 2) showSoftkeyActionPicker("right");
-                        else if (which == 3) learnPhysicalSoftkey("right");
-                        else {
-                            getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
-                                    .remove("keycode_left").remove("keycode_right")
-                                    .remove("scancode_left").remove("scancode_right").commit();
-                            android.widget.Toast.makeText(QinsLauncherActivity.this,
-                                    R.string.launcher_softkey_reset_done,
-                                    android.widget.Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                }).setNegativeButton(android.R.string.cancel, null).show();
-    }
-
-    private void showSoftkeyActionPicker(final String side) {
-        final String[] ids = new String[] {
-                "phone", "apps", "quick", "theme", "wallpaper", "settings", "studio", "home"
-        };
-        final String[] labels = new String[] {
-                getString(R.string.launcher_softkey_phone),
-                getString(R.string.launcher_softkey_apps),
-                getString(R.string.launcher_softkey_quick),
-                getString(R.string.launcher_softkey_theme),
-                getString(R.string.launcher_softkey_wallpaper),
-                getString(R.string.launcher_softkey_settings_action),
-                getString(R.string.launcher_softkey_studio),
-                getString(R.string.launcher_softkey_home)
-        };
-        String current = softKeyAction(side);
-        int selected = 0;
-        for (int i = 0; i < ids.length; i++) if (ids[i].equals(current)) selected = i;
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("left".equals(side)
-                        ? R.string.launcher_softkey_left : R.string.launcher_softkey_right)
-                .setSingleChoiceItems(labels, selected, new android.content.DialogInterface.OnClickListener() {
-                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
-                                .putString(side, ids[which]).commit();
-                        dialog.dismiss();
-                    }
-                }).setNegativeButton(android.R.string.cancel, null).show();
-    }
-
-    private boolean captureLearningSoftKey(int keyCode, KeyEvent event) {
-        if (learningSoftKeySide == null) return false;
-        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-            String side = learningSoftKeySide;
-            int code = keyCode;
-            int scan = event.getScanCode();
-            getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
-                    .putInt("keycode_" + side, code)
-                    .putInt("scancode_" + side, scan).commit();
-            learningSoftKeySide = null;
-            swallowLearningKeyCode = code;
-            swallowLearningScanCode = scan;
-            if (softKeyLearningDialog != null) softKeyLearningDialog.dismiss();
-            softKeyLearningDialog = null;
-            android.widget.Toast.makeText(this,
-                    getString(R.string.launcher_softkey_detected) + "  " + code + " / " + scan,
-                    android.widget.Toast.LENGTH_LONG).show();
-        }
-        return true;
-    }
-
-    private void learnPhysicalSoftkey(final String side) {
-        learningSoftKeySide = side;
-        softKeyLearningDialog = new android.app.AlertDialog.Builder(this)
-                .setTitle("left".equals(side)
-                        ? R.string.launcher_softkey_left : R.string.launcher_softkey_right)
-                .setMessage(R.string.launcher_softkey_learning)
-                .setNegativeButton(android.R.string.cancel, null).create();
-        softKeyLearningDialog.setOnKeyListener(new android.content.DialogInterface.OnKeyListener() {
-            @Override public boolean onKey(android.content.DialogInterface dialog, int keyCode, KeyEvent event) {
-                return captureLearningSoftKey(keyCode, event);
-            }
-        });
-        softKeyLearningDialog.setButton(android.app.AlertDialog.BUTTON_NEGATIVE,
-                getString(android.R.string.cancel),
-                new android.content.DialogInterface.OnClickListener() {
-                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        learningSoftKeySide = null;
-                        softKeyLearningDialog = null;
-                    }
-                });
-        softKeyLearningDialog.setOnCancelListener(new android.content.DialogInterface.OnCancelListener() {
-            @Override public void onCancel(android.content.DialogInterface dialog) {
-                learningSoftKeySide = null;
-                softKeyLearningDialog = null;
-            }
-        });
-        softKeyLearningDialog.show();
-    }
-
-    private void performSoftkeyAction(String action) {
-        if ("phone".equals(action)) openDialer();
-        else if ("apps".equals(action)) { drawerSearchQuery = ""; drawerPage = 0; showDrawer(false); }
-        else if ("quick".equals(action)) showCompactQuickPanel(true);
-        else if ("theme".equals(action)) showThemePicker();
-        else if ("wallpaper".equals(action)) showWallpaperOptions();
-        else if ("settings".equals(action)) openSystemSettings();
-        else if ("studio".equals(action)) openStudio();
-        else if ("home".equals(action)) showHome(false);
-    }
-
     private void openDialer() { openDialer(""); }
 
     private void openDialer(String initialNumber) {
@@ -3091,31 +3038,6 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
-        if (swallowLearningKeyCode == event.getKeyCode() &&
-                (swallowLearningScanCode == 0 || swallowLearningScanCode == event.getScanCode()) &&
-                event.getAction() == KeyEvent.ACTION_UP) {
-            swallowLearningKeyCode = -1;
-            swallowLearningScanCode = 0;
-            return true;
-        }
-
-        if (learningSoftKeySide != null) {
-            return captureLearningSoftKey(event.getKeyCode(), event);
-        }
-
-        String side = softKeySideForEvent(event);
-        if (side != null) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                if (event.getRepeatCount() == 0) pendingSoftKeySide = side;
-                return true;
-            }
-            if (event.getAction() == KeyEvent.ACTION_UP) {
-                if (side.equals(pendingSoftKeySide)) performSoftkeyAction(softKeyAction(side));
-                pendingSoftKeySide = null;
-                return true;
-            }
-            return true;
-        }
         return super.dispatchKeyEvent(event);
     }
 
@@ -3181,6 +3103,16 @@ public class QinsLauncherActivity extends Activity {
                 }
                 return true;
             }
+        }
+        if (keyCode == KeyEvent.KEYCODE_SOFT_LEFT && event.getRepeatCount() == 0) {
+            openDialer();
+            return true;
+        }
+        if (keyCode == KeyEvent.KEYCODE_SOFT_RIGHT && event.getRepeatCount() == 0) {
+            drawerSearchQuery = "";
+            drawerPage = 0;
+            showDrawer(false);
+            return true;
         }
         if (keyCode == KeyEvent.KEYCODE_CALL && event.getRepeatCount() == 0) {
             openDialer();

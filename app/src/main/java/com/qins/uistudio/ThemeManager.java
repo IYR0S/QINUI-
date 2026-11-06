@@ -122,13 +122,23 @@ public final class ThemeManager {
         return editor.commit();
     }
 
+    private static int lightenBackground(int color) {
+        int alpha = color & 0xFF000000;
+        int red = Math.min(255, (int) (((color >> 16) & 0xFF) * 1.08f));
+        int green = Math.min(255, (int) (((color >> 8) & 0xFF) * 1.08f));
+        int blue = Math.min(255, (int) ((color & 0xFF) * 1.08f));
+        return alpha | (red << 16) | (green << 8) | blue;
+    }
+
     private static Appearance withCustomColors(Context context, Appearance a) {
         SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
         int accent = prefs.getInt("custom_" + a.id + "_accent", a.accent);
         int background = prefs.getInt("custom_" + a.id + "_background", a.background);
         int surface = prefs.getInt("custom_" + a.id + "_surface", a.surface);
         int text = prefs.getInt("custom_" + a.id + "_text", a.text);
-        return new Appearance(a.id, a.title, background, a.backgroundAlt, surface, a.surfaceAlt,
+        int backgroundAlt = prefs.contains("custom_" + a.id + "_background")
+                ? lightenBackground(background) : a.backgroundAlt;
+        return new Appearance(a.id, a.title, background, backgroundAlt, surface, a.surfaceAlt,
                 a.tile, a.tileActive, accent, text, a.muted, a.border, a.focus,
                 a.cornerDp, a.monochrome, a.useMonoType);
     }
