@@ -2966,6 +2966,128 @@ public class QinsLauncherActivity extends Activity {
                 }).setNegativeButton("Done", null).show();
     }
 
+    private void switchQuickPanelPage(int page) {
+        if (!quickPanelVisible || !quickPanelExpanded) return;
+        int target = Math.max(0, Math.min(1, page));
+        if (quickPanelPage == target) return;
+        quickPanelPage = target;
+        showQuickPanel(false);
+    }
+
+    private void openNotificationAccessSettings() {
+        try { startActivity(new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); }
+        catch (RuntimeException error) {
+            android.widget.Toast.makeText(this, "Notification access settings unavailable", android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void requestRightKeyBinding() {
+        awaitingRightKeyBind = true;
+        android.widget.Toast.makeText(this, "Press the physical upper-right key once", android.widget.Toast.LENGTH_LONG).show();
+    }
+
+    private void showNotificationPage(LinearLayout panel, ThemeManager.Appearance a) {
+        boolean enabled = NotificationBridgeService.isAccessEnabled(this);
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        Button access = new Button(this);
+        access.setText(enabled ? "Notification access · ON" : "Enable notification access");
+        access.setTextSize(9);
+        actions.addView(access, new LinearLayout.LayoutParams(0, dp(42), 1));
+        access.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { openNotificationAccessSettings(); }
+        });
+        Button bind = new Button(this);
+        bind.setText("Bind right key");
+        bind.setTextSize(9);
+        LinearLayout.LayoutParams bindParams = new LinearLayout.LayoutParams(0, dp(42), 1);
+        bindParams.leftMargin = dp(6);
+        actions.addView(bind, bindParams);
+        bind.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { requestRightKeyBinding(); }
+        });
+        panel.addView(actions);
+
+        TextView explanation = new TextView(this);
+        explanation.setText(enabled
+                ? "Active notifications from the device appear here."
+                : "Allow QINS UI Studio to read notifications once in Android Settings. Notification text stays on this device.");
+        explanation.setTextColor(a.muted);
+        explanation.setTextSize(10);
+        explanation.setPadding(dp(4), dp(8), dp(4), dp(10));
+        panel.addView(explanation);
+
+        if (!enabled) {
+            TextView empty = new TextView(this);
+            empty.setText("No notification access yet");
+            empty.setTextColor(a.text);
+            empty.setGravity(Gravity.CENTER);
+            empty.setTextSize(13);
+            panel.addView(empty, new LinearLayout.LayoutParams(-1, dp(78)));
+            return;
+        }
+
+        List<NotificationBridgeService.NotificationItem> items = NotificationBridgeService.snapshot();
+        if (items.isEmpty()) {
+            TextView empty = new TextView(this);
+            empty.setText("No active notifications");
+            empty.setTextColor(a.muted);
+            empty.setGravity(Gravity.CENTER);
+            empty.setTextSize(13);
+            panel.addView(empty, new LinearLayout.LayoutParams(-1, dp(78)));
+            return;
+        }
+        for (final NotificationBridgeService.NotificationItem item : items) {
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(dp(10), dp(7), dp(10), dp(7));
+            styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+            TextView app = new TextView(this);
+            app.setText(notificationAppLabel(item.packageName));
+            app.setTextColor(a.accent);
+            app.setTextSize(9);
+            card.addView(app);
+            TextView title = new TextView(this);
+            title.setText(item.title);
+            title.setTextColor(a.text);
+            title.setTextSize(12);
+            title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+            title.setMaxLines(2);
+            card.addView(title);
+            if (item.text != null && item.text.length() > 0) {
+                TextView body = new TextView(this);
+                body.setText(item.text);
+                body.setTextColor(a.muted);
+                body.setTextSize(10);
+                body.setMaxLines(3);
+                card.addView(body);
+            }
+            TextView when = new TextView(this);
+            when.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(item.postedAt)));
+            when.setTextColor(a.muted);
+            when.setTextSize(8);
+            card.addView(when);
+            LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(-1, -2);
+            cardParams.topMargin = dp(6);
+            panel.addView(card, cardParams);
+            card.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    try {
+                        Intent launch = getPackageManager().getLaunchIntentForPackage(item.packageName);
+                        if (launch != null) startActivity(launch);
+                    } catch (RuntimeException ignored) { }
+                }
+            });
+        }
+    }
+
+    private String notificationAppLabel(String packageName) {
+        try {
+            android.content.pm.ApplicationInfo info = getPackageManager().getApplicationInfo(packageName, 0);
+            return getPackageManager().getApplicationLabel(info).toString();
+        } catch (RuntimeException ignored) { return packageName; }
+    }
+
     private void showQuickPanel(boolean focusFirst) {
         removeCompactPanelOverlay();
         wifiState = null; bluetoothState = null; soundState = null;
@@ -3009,8 +3131,48 @@ public class QinsLauncherActivity extends Activity {
         panelDate.setTextColor(a.muted);
         panelDate.setTextSize(12);
         LinearLayout.LayoutParams dateParams = new LinearLayout.LayoutParams(-1, -2);
-        dateParams.bottomMargin = dp(14);
+        dateParams.bottomMargin = dp(8);
         panel.addView(panelDate, dateParams);
+
+        LinearLayout tabs = new LinearLayout(this);
+        tabs.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams tabsParams = new LinearLayout.LayoutParams(-1, dp(36));
+        tabsParams.bottomMargin = dp(9);
+        panel.addView(tabs, tabsParams);
+        final TextView controlsTab = new TextView(this);
+        controlsTab.setText("CONTROLS");
+        controlsTab.setTextSize(10);
+        controlsTab.setGravity(Gravity.CENTER);
+        controlsTab.setTextColor(quickPanelPage == 0 ? a.text : a.muted);
+        controlsTab.setFocusable(true);
+        controlsTab.setFocusableInTouchMode(false);
+        styleSurface(controlsTab, quickPanelPage == 0 ? a.tileActive : a.surface, a.border, a.focus, a.cornerDp);
+        tabs.addView(controlsTab, new LinearLayout.LayoutParams(0, -1, 1));
+        controlsTab.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { switchQuickPanelPage(0); }
+        });
+        final TextView notificationsTab = new TextView(this);
+        int notificationCount = NotificationBridgeService.snapshot().size();
+        notificationsTab.setText("NOTIFICATIONS  " + (notificationCount > 0 ? "(" + notificationCount + ")" : ""));
+        notificationsTab.setTextSize(10);
+        notificationsTab.setGravity(Gravity.CENTER);
+        notificationsTab.setTextColor(quickPanelPage == 1 ? a.text : a.muted);
+        notificationsTab.setFocusable(true);
+        notificationsTab.setFocusableInTouchMode(false);
+        styleSurface(notificationsTab, quickPanelPage == 1 ? a.tileActive : a.surface, a.border, a.focus, a.cornerDp);
+        LinearLayout.LayoutParams notificationsParams = new LinearLayout.LayoutParams(0, -1, 1);
+        notificationsParams.leftMargin = dp(6);
+        tabs.addView(notificationsTab, notificationsParams);
+        notificationsTab.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { switchQuickPanelPage(1); }
+        });
+
+        if (quickPanelPage == 1) {
+            showNotificationPage(panel, a);
+            updateClockAndBattery();
+            if (focusFirst) notificationsTab.requestFocus();
+            return;
+        }
 
         String[] expandedKeys = getExpandedQuickTileKeys();
         LinearLayout firstRow = new LinearLayout(this);
@@ -3112,6 +3274,7 @@ public class QinsLauncherActivity extends Activity {
         tile.setGravity(Gravity.CENTER);
         tile.setPadding(dp(3), dp(3), dp(3), dp(3));
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
+        icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
         tile.addView(icon, new LinearLayout.LayoutParams(-1, dp(31)));
 
@@ -3381,6 +3544,32 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+            if (awaitingRightKeyBind) {
+                int keyCode = event.getKeyCode();
+                if (keyCode != KeyEvent.KEYCODE_BACK && keyCode != KeyEvent.KEYCODE_VOLUME_UP &&
+                        keyCode != KeyEvent.KEYCODE_VOLUME_DOWN) {
+                    getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE).edit()
+                            .putInt("right_key_code", keyCode)
+                            .putInt("right_key_scan", event.getScanCode()).commit();
+                    awaitingRightKeyBind = false;
+                    android.widget.Toast.makeText(this, "Upper-right key saved", android.widget.Toast.LENGTH_SHORT).show();
+                    quickPanelPage = 1;
+                    showQuickPanel(false);
+                    return true;
+                }
+            }
+            if (quickPanelVisible && quickPanelExpanded) {
+                SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
+                int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
+                int boundScan = keys.getInt("right_key_scan", 0);
+                if (boundCode != Integer.MIN_VALUE && event.getKeyCode() == boundCode &&
+                        (boundScan == 0 || event.getScanCode() == boundScan)) {
+                    switchQuickPanelPage(1);
+                    return true;
+                }
+            }
+        }
         return super.dispatchKeyEvent(event);
     }
 
@@ -3444,6 +3633,18 @@ public class QinsLauncherActivity extends Activity {
                 if (!longPressPerformed && (event.isLongPress() || event.getRepeatCount() >= 1)) {
                     longPressPerformed = performLongPressAction(pendingSelectView);
                 }
+                return true;
+            }
+        }
+        if (quickPanelVisible && quickPanelExpanded && event.getRepeatCount() == 0) {
+            if (keyCode == KeyEvent.KEYCODE_SOFT_LEFT || keyCode == KeyEvent.KEYCODE_MENU ||
+                    keyCode == KeyEvent.KEYCODE_F1) {
+                switchQuickPanelPage(0);
+                return true;
+            }
+            if (keyCode == KeyEvent.KEYCODE_SOFT_RIGHT || keyCode == KeyEvent.KEYCODE_F2 ||
+                    keyCode == KeyEvent.KEYCODE_SEARCH) {
+                switchQuickPanelPage(1);
                 return true;
             }
         }
