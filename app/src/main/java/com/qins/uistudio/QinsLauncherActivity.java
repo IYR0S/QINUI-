@@ -1696,7 +1696,7 @@ public class QinsLauncherActivity extends Activity {
         final SharedPreferences usage = getSharedPreferences("qins_usage", MODE_PRIVATE);
         List<ResolveInfo> frequent = new ArrayList<ResolveInfo>();
         for (ResolveInfo info : installedApps) {
-            if (usage.getInt("count:" + componentKey(info), 0) > 0) frequent.add(info);
+            if (usage.getInt("count:" + componentKey(info), 0) > 0 && !isDrawerFolderMember(info)) frequent.add(info);
         }
         Collections.sort(frequent, new Comparator<ResolveInfo>() {
             @Override public int compare(ResolveInfo left, ResolveInfo right) {
@@ -2178,6 +2178,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private View createDrawerAppTile(final ResolveInfo info, ThemeManager.Appearance a) {
+        final boolean folder = isFolder(info);
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.VERTICAL);
         tile.setGravity(Gravity.CENTER);
@@ -2187,18 +2188,36 @@ public class QinsLauncherActivity extends Activity {
         tile.setClickable(true);
         tile.setLongClickable(true);
         tile.setTag("drawer:" + componentKey(info));
-        tile.setContentDescription(info.loadLabel(getPackageManager()) +
-                ". Press to open, long press to pin.");
+        tile.setContentDescription((folder ? getFolderName(info) : info.loadLabel(getPackageManager())) +
+                (folder ? ". Folder. Press to open, long press for options." : ". Press to open, long press to pin."));
         styleSurface(tile, a.surface, a.border, a.focus, a.cornerDp);
 
-        ImageView icon = new ImageView(this);
-        icon.setImageDrawable(info.loadIcon(getPackageManager()));
-        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         int iconSize = clamp(screenWidthDp() / Math.max(5, drawerColumns()) - 15, 24, 40);
-        tile.addView(icon, new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)));
+        if (folder) {
+            LinearLayout preview = new LinearLayout(this);
+            preview.setOrientation(LinearLayout.HORIZONTAL);
+            preview.setGravity(Gravity.CENTER);
+            List<ResolveInfo> children = getFolderApps(info);
+            int count = Math.min(3, children.size());
+            int mini = count >= 3 ? 15 : 19;
+            for (int i = 0; i < count; i++) {
+                ImageView childIcon = new ImageView(this);
+                childIcon.setImageDrawable(children.get(i).loadIcon(getPackageManager()));
+                childIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(dp(mini), dp(mini));
+                cp.setMargins(dp(1), 0, dp(1), 0);
+                preview.addView(childIcon, cp);
+            }
+            tile.addView(preview, new LinearLayout.LayoutParams(-1, dp(iconSize)));
+        } else {
+            ImageView icon = new ImageView(this);
+            icon.setImageDrawable(info.loadIcon(getPackageManager()));
+            icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            tile.addView(icon, new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)));
+        }
 
         TextView label = new TextView(this);
-        label.setText(info.loadLabel(getPackageManager()));
+        label.setText(folder ? getFolderName(info) : info.loadLabel(getPackageManager()));
         label.setTextColor(a.text);
         label.setTextSize(screenWidthDp() < 210 ? 7 : 9);
         label.setGravity(Gravity.CENTER);
@@ -2216,11 +2235,16 @@ public class QinsLauncherActivity extends Activity {
         tile.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (pinSelectionMode) pinApp(info, true);
+                else if (isFolder(info)) openHomeFolder(info);
                 else launchApp(info);
             }
         });
         tile.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override public boolean onLongClick(View v) { pinApp(info, false); return true; }
+            @Override public boolean onLongClick(View v) {
+                if (isFolder(info)) showDrawerFolderActions(info);
+                else pinApp(info, false);
+                return true;
+            }
         });
         return tile;
     }
@@ -2298,6 +2322,21 @@ public class QinsLauncherActivity extends Activity {
         allTitle.setTextColor(a.text);
         allTitle.setTextSize(12);
         gridHeading.addView(allTitle, new LinearLayout.LayoutParams(0, dp(32), 1));
+        TextView createFolder = new TextView(this);
+        createFolder.setText("Folder +");
+        createFolder.setTextColor(a.accent);
+        createFolder.setTextSize(9);
+        createFolder.setGravity(Gravity.CENTER);
+        createFolder.setFocusable(true);
+        createFolder.setFocusableInTouchMode(false);
+        createFolder.setPadding(dp(6), 0, dp(6), 0);
+        styleSurface(createFolder, a.surface, a.border, a.focus, a.cornerDp);
+        createFolder.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showDrawerCreateFolderDialog(); }
+        });
+        LinearLayout.LayoutParams createFolderParams = new LinearLayout.LayoutParams(-2, dp(28));
+        createFolderParams.rightMargin = dp(5);
+        gridHeading.addView(createFolder, createFolderParams);
         TextView editGrid = new TextView(this);
         editGrid.setText(getString(R.string.launcher_edit_grid));
         editGrid.setTextColor(a.accent);
@@ -2396,14 +2435,140 @@ public class QinsLauncherActivity extends Activity {
         } else editGrid.requestFocus();
     }
 
+    private boolean isDrawerFolderMember(ResolveInfo info) {
+        if (info == null) return false;
+        String key = componentKey(info);
+        for (ResolveInfo possibleFolder : installedApps) {
+            if (possibleFolder != info && isFolder(possibleFolder) &&
+                    containsComponent(getFolderApps(possibleFolder), key)) return true;
+        }
+        return false;
+    }
+
     private List<ResolveInfo> getDrawerApps() {
         List<ResolveInfo> result = new ArrayList<ResolveInfo>();
         String query = drawerSearchQuery;
         for (ResolveInfo info : installedApps) {
-            String label = info.loadLabel(getPackageManager()).toString();
+            if (isDrawerFolderMember(info)) continue;
+            String label = isFolder(info) ? getFolderName(info) :
+                    info.loadLabel(getPackageManager()).toString();
             if (T9Matcher.matches(label, query)) result.add(info);
         }
         return result;
+    }
+
+    private void showDrawerCreateFolderDialog() {
+        final List<ResolveInfo> candidates = new ArrayList<ResolveInfo>();
+        final List<String> labels = new ArrayList<String>();
+        for (ResolveInfo info : installedApps) {
+            if (!isFolder(info) && !isDrawerFolderMember(info)) {
+                candidates.add(info);
+                labels.add(info.loadLabel(getPackageManager()).toString());
+            }
+        }
+        if (candidates.size() < 2) {
+            android.widget.Toast.makeText(this, "Select at least two apps to create a folder", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(12), dp(6), dp(12), dp(6));
+        final EditText folderName = new EditText(this);
+        folderName.setSingleLine(true);
+        folderName.setHint("Folder name");
+        form.addView(folderName, new LinearLayout.LayoutParams(-1, dp(48)));
+        TextView hint = new TextView(this);
+        hint.setText("Select two or more apps");
+        hint.setTextSize(11);
+        hint.setPadding(0, dp(5), 0, dp(5));
+        form.addView(hint);
+        final android.widget.ListView choices = new android.widget.ListView(this);
+        choices.setChoiceMode(android.widget.ListView.CHOICE_MODE_MULTIPLE);
+        choices.setAdapter(new android.widget.ArrayAdapter<String>(this,
+                android.R.layout.simple_list_item_multiple_choice, labels));
+        form.addView(choices, new LinearLayout.LayoutParams(-1, dp(250)));
+        new android.app.AlertDialog.Builder(this).setTitle("Create app folder")
+                .setView(form)
+                .setPositiveButton("Create", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        android.util.SparseBooleanArray checked = choices.getCheckedItemPositions();
+                        List<ResolveInfo> selected = new ArrayList<ResolveInfo>();
+                        for (int i = 0; i < candidates.size(); i++) if (checked.get(i)) selected.add(candidates.get(i));
+                        if (selected.size() < 2) {
+                            android.widget.Toast.makeText(QinsLauncherActivity.this, "Choose at least two apps", android.widget.Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        String name = folderName.getText().toString().trim();
+                        if (name.length() == 0) name = "Folder";
+                        StringBuilder members = new StringBuilder();
+                        for (ResolveInfo info : selected) {
+                            if (members.length() > 0) members.append('\n');
+                            members.append(componentKey(info));
+                        }
+                        String anchorKey = componentKey(selected.get(0));
+                        getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit()
+                                .putString("apps:" + anchorKey, members.toString())
+                                .putString("name:" + anchorKey, name).commit();
+                        drawerPage = 0;
+                        showDrawer(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showDrawerFolderActions(final ResolveInfo folder) {
+        final String[] actions = new String[] {"Open folder", "Add apps", "Rename", "Ungroup", "Add folder to Home"};
+        new android.app.AlertDialog.Builder(this).setTitle(getFolderName(folder))
+                .setItems(actions, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (which == 0) openHomeFolder(folder);
+                        else if (which == 1) showDrawerFolderAddPicker(folder);
+                        else if (which == 2) renameDrawerFolder(folder);
+                        else if (which == 3) {
+                            getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit()
+                                    .remove("apps:" + componentKey(folder))
+                                    .remove("name:" + componentKey(folder)).commit();
+                            drawerPage = 0;
+                            showDrawer(false);
+                        } else pinApp(folder, false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showDrawerFolderAddPicker(final ResolveInfo folder) {
+        final List<ResolveInfo> candidates = new ArrayList<ResolveInfo>();
+        for (ResolveInfo info : installedApps) {
+            if (info != folder && !isFolder(info) && !isDrawerFolderMember(info)) candidates.add(info);
+        }
+        if (candidates.isEmpty()) return;
+        String[] names = new String[candidates.size()];
+        for (int i = 0; i < candidates.size(); i++) names[i] = candidates.get(i).loadLabel(getPackageManager()).toString();
+        new android.app.AlertDialog.Builder(this).setTitle("Add apps to " + getFolderName(folder))
+                .setItems(names, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        String key = componentKey(folder);
+                        String raw = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).getString("apps:" + key, key);
+                        String add = componentKey(candidates.get(which));
+                        getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit()
+                                .putString("apps:" + key, raw + "\n" + add).commit();
+                        showDrawer(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void renameDrawerFolder(final ResolveInfo folder) {
+        final EditText name = new EditText(this);
+        name.setSingleLine(true);
+        name.setText(getFolderName(folder));
+        new android.app.AlertDialog.Builder(this).setTitle("Rename folder")
+                .setView(name).setPositiveButton(android.R.string.ok, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        String value = name.getText().toString().trim();
+                        if (value.length() == 0) value = "Folder";
+                        getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE).edit()
+                                .putString("name:" + componentKey(folder), value).commit();
+                        showDrawer(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private int digitFromKeyCode(int keyCode) {
