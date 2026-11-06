@@ -631,6 +631,14 @@ public class QinsLauncherActivity extends Activity {
             super(context);
             setIncludeFontPadding(false);
             setSingleLine(true);
+            setGravity(Gravity.CENTER);
+            setWillNotDraw(false);
+        }
+
+        @Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int width = resolveSize(dp(220), widthMeasureSpec);
+            int height = resolveSize(dp(76), heightMeasureSpec);
+            setMeasuredDimension(width, height);
         }
 
         @Override protected void onDraw(Canvas canvas) {
@@ -889,12 +897,13 @@ public class QinsLauncherActivity extends Activity {
             paint.setShader(null);
 
             float unit = Math.min(w, h);
+            // Samsung / One UI variant: cool brushed-silver spheres and soft graphite shadows.
             drawGalaxyOrb(canvas, w * 0.82f, h * 0.02f, unit * 0.39f,
-                    0xFFE4E1F4, 0xFFB2B0CE, 0xFF686987);
+                    0xFFF8FAFC, 0xFFBEC5CE, 0xFF707985);
             drawGalaxyOrb(canvas, w * 0.51f, h * 0.54f, unit * 0.43f,
-                    0xFFFFF4C7, 0xFFD4D0E5, 0xFF777895);
+                    0xFFE9EDF2, 0xFFADB6C1, 0xFF626C78);
             drawGalaxyOrb(canvas, w * 0.13f, h * 1.02f, unit * 0.30f,
-                    0xFFF1EAD1, 0xFFB7B5D2, 0xFF777994);
+                    0xFFE0E5EB, 0xFFA0AAB5, 0xFF59636F);
 
             Paint grain = new Paint(Paint.ANTI_ALIAS_FLAG);
             grain.setColor(0x22FFFFFF);
@@ -2397,7 +2406,10 @@ public class QinsLauncherActivity extends Activity {
         if ("bold".equals(style) || "material".equals(style)) return Typeface.create("sans-serif-medium", Typeface.NORMAL);
         return Typeface.create("sans-serif-light", Typeface.NORMAL);
     }
-    private int clockTypefaceStyle() { return Typeface.NORMAL; }
+    private int clockTypefaceStyle() {
+        String style = clockStyle(appearance());
+        return ("bold".equals(style) || "digital".equals(style)) ? Typeface.BOLD : Typeface.NORMAL;
+    }
     private String formatClockForTheme(String time) {
         String style = clockStyle(appearance());
         if ("stacked".equals(style)) return time.replace(":", "\n");
