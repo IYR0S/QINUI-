@@ -662,7 +662,7 @@ public class QinsLauncherActivity extends Activity {
                 char ch = raw.charAt(i);
                 int digit = Character.digit(ch, 10);
                 if (digit >= 0) normalized.append((char) ('0' + digit));
-                else if (ch == ':' || ch == '\\n') normalized.append(ch);
+                else if (ch == ':' || ch == '\n') normalized.append(ch);
             }
             String[] lines = normalized.toString().split("\\n");
             if (lines.length == 0 || lines[0].length() == 0) return;
