@@ -209,6 +209,13 @@ public final class NotificationBridgeService extends NotificationListenerService
         String packageName = sbn.getPackageName() == null ? "" : sbn.getPackageName();
         String titleValue = title == null ? "" : title.toString().trim();
         String textValue = text == null ? "" : text.toString().trim();
+        if (extras != null) {
+            CharSequence artist = extras.getCharSequence("android.media.metadata.ARTIST");
+            if (artist == null) artist = extras.getCharSequence("android.media.metadata.ALBUM_ARTIST");
+            if (artist != null && artist.toString().trim().length() > 0) {
+                textValue = artist.toString().trim();
+            }
+        }
         if (titleValue.length() == 0 && extras != null) {
             CharSequence alternate = extras.getCharSequence("android.title.big");
             if (alternate == null) alternate = extras.getCharSequence("android.media.metadata.TITLE");
