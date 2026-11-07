@@ -1567,7 +1567,7 @@ public class QinsLauncherActivity extends Activity {
         clockView.setTextDirection(View.TEXT_DIRECTION_LTR);
         clockView.setGravity(clockHorizontalGravity | Gravity.CENTER_VERTICAL);
         boolean solidClockBackground = clockBackgroundFilled(a);
-        int clockBackgroundColor = solidClockBackground ? a.surface : 0x00000000;
+        int clockBackgroundColor = solidClockBackground ? clockBackgroundColor(a) : 0x00000000;
         int clockBorderColor = solidClockBackground ? a.border : 0x00000000;
         styleSurface(clockView, clockBackgroundColor, clockBorderColor, a.focus, a.cornerDp);
         clockView.setPadding(dp(7), dp(4), dp(7), dp(4));
@@ -2079,7 +2079,7 @@ public class QinsLauncherActivity extends Activity {
                 int miniSize = previewCount >= 4 ? 10 : (previewCount >= 3 ? 12 : 15);
                 for (int mini = 0; mini < previewCount; mini++) {
                     ImageView smallIcon = new ImageView(this);
-                    smallIcon.setImageDrawable(folderApps.get(mini).loadIcon(getPackageManager()));
+                    normalizeAppIcon(smallIcon.setImageDrawable(folderApps.get(mini).loadIcon(getPackageManager())));
                     smallIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     if (a.monochrome) {
                         ColorMatrix matrix = new ColorMatrix();
@@ -2094,7 +2094,7 @@ public class QinsLauncherActivity extends Activity {
                         -1, dp(22), Gravity.CENTER));
             } else {
                 final ImageView icon = new ImageView(this);
-                icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
+                normalizeAppIcon(icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager()))));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) {
                     ColorMatrix matrix = new ColorMatrix();
@@ -2486,7 +2486,7 @@ public class QinsLauncherActivity extends Activity {
                 item.setFocusableInTouchMode(false);
                 item.setClickable(true);
                 final ImageView icon = new ImageView(this);
-                icon.setImageDrawable(child.loadIcon(getPackageManager()));
+                normalizeAppIcon(icon.setImageDrawable(child.loadIcon(getPackageManager())));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 item.addView(icon, new LinearLayout.LayoutParams(dp(32), dp(32)));
                 TextView label = new TextView(this);
@@ -2637,7 +2637,7 @@ public class QinsLauncherActivity extends Activity {
             item.setFocusableInTouchMode(false);
             item.setClickable(true);
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
+            normalizeAppIcon(icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager()))));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
                 android.graphics.ColorMatrix monochrome = new android.graphics.ColorMatrix();
@@ -2913,7 +2913,7 @@ public class QinsLauncherActivity extends Activity {
             int mini = count >= 4 ? 12 : (count >= 3 ? 15 : 19);
             for (int i = 0; i < count; i++) {
                 ImageView childIcon = new ImageView(this);
-                childIcon.setImageDrawable(children.get(i).loadIcon(getPackageManager()));
+                normalizeAppIcon(childIcon.setImageDrawable(children.get(i).loadIcon(getPackageManager())));
                 childIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); childIcon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
                 LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(dp(mini), dp(mini));
@@ -2923,7 +2923,7 @@ public class QinsLauncherActivity extends Activity {
             tile.addView(preview, new LinearLayout.LayoutParams(-1, dp(iconSize)));
         } else {
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
+            normalizeAppIcon(icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager()))));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
             // Keep every app icon at the same full visual size; downloaded apps
@@ -3414,20 +3414,37 @@ public class QinsLauncherActivity extends Activity {
                 .getBoolean(clockBackgroundKey(a), false);
     }
 
+    private int clockBackgroundColor(ThemeManager.Appearance a) {
+        return getSharedPreferences("qins_clock", MODE_PRIVATE)
+                .getInt("clock_background_color_" + a.id, a.surface);
+    }
+
     private void showClockBackgroundPicker() {
         final ThemeManager.Appearance a = appearance();
-        final String[] choices = new String[] {
-                getString(R.string.launcher_clock_background_transparent),
-                getString(R.string.launcher_clock_background_solid)
+        final String[] labels = new String[] {
+                "Transparent", "Theme color", "Charcoal", "White", "Blue", "Purple",
+                "Teal", "Amber", "Red", "Green"
         };
-        int selected = clockBackgroundFilled(a) ? 1 : 0;
+        final int[] colors = new int[] {
+                0x00000000, a.surface, 0xFF292D32, 0xFFF4F4F1, 0xFF315B9A,
+                0xFF654A87, 0xFF176D68, 0xFF9A6A20, 0xFF9D3434, 0xFF426B45
+        };
+        final android.content.SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
+        int selected = 0;
+        if (clockBackgroundFilled(a)) {
+            int saved = prefs.getInt("clock_background_color_" + a.id, a.surface);
+            selected = 1;
+            for (int i = 1; i < colors.length; i++) if (colors[i] == saved) { selected = i; break; }
+        }
         new android.app.AlertDialog.Builder(this)
                 .setTitle(R.string.launcher_clock_background)
-                .setSingleChoiceItems(choices, selected,
+                .setSingleChoiceItems(labels, selected,
                         new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        getSharedPreferences("qins_clock", MODE_PRIVATE).edit()
-                                .putBoolean(clockBackgroundKey(a), which == 1).commit();
+                        android.content.SharedPreferences.Editor edit = prefs.edit();
+                        edit.putBoolean(clockBackgroundKey(a), which != 0);
+                        if (which != 0) edit.putInt("clock_background_color_" + a.id, colors[which]);
+                        edit.commit();
                         dialog.dismiss();
                         showHome(false);
                     }
@@ -3526,7 +3543,7 @@ public class QinsLauncherActivity extends Activity {
                             new FrameLayout.LayoutParams(-1, dp(66), Gravity.CENTER));
                 }
                 if (clockBackgroundFilled(a)) {
-                    styleSurface(previewCard, a.tileActive, a.border, a.focus, a.cornerDp);
+                    styleSurface(previewCard, clockBackgroundColor(a), a.border, a.focus, a.cornerDp);
                 } else {
                     styleSurface(previewCard, 0x00000000, 0x00000000, a.focus, a.cornerDp);
                 }
@@ -5341,6 +5358,7 @@ public class QinsLauncherActivity extends Activity {
         if (target == null || !(target.getTag() instanceof String)) return false;
         String tag = (String) target.getTag();
         if ("home:clock".equals(tag)) { showClockStylePicker(); return true; }
+        if ("home:widget-stack".equals(tag)) { showHomeWidgetPagePicker(); return true; }
         if ("pages".equals(tag) || tag.startsWith("page-dot:")) { showAddPageDialog(); return true; }
         if (tag.startsWith("home:")) {
             try { enterEditMode(Integer.parseInt(tag.substring(5))); return true; }
