@@ -3,6 +3,7 @@ package com.qins.uistudio;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.view.KeyEvent;
 import android.graphics.Bitmap;
 import android.service.notification.NotificationListenerService;
@@ -114,6 +115,50 @@ public final class NotificationBridgeService extends NotificationListenerService
         notifyChanged();
     }
 
+    /**
+     * Prefer an actual media filename when the player includes a file path or URI
+     * in its notification extras. Android 4.4 does not expose a universal
+     * currently-playing file-path API, so callers may not provide one.
+     */
+    private static String fileNameFromExtras(Bundle extras) {
+        if (extras == null) return null;
+        String[] keys = new String[] {
+                "filename", "file_name", "fileName", "file_path", "filePath",
+                "path", "file_uri", "fileUri", "media_uri", "mediaUri",
+                "android.media.metadata.MEDIA_URI", "android.media.metadata.DATA",
+                Notification.EXTRA_TITLE, Notification.EXTRA_TEXT
+        };
+        for (String key : keys) {
+            try {
+                Object value = extras.get(key);
+                if (value == null) continue;
+                String raw = value instanceof Uri ? value.toString() : value.toString();
+                if (raw == null) continue;
+                raw = raw.trim();
+                if (raw.length() == 0) continue;
+
+                boolean explicitName = "filename".equals(key) || "file_name".equals(key) ||
+                        "fileName".equals(key);
+                String candidate = raw;
+                if (raw.startsWith("file:") || raw.startsWith("content:")) {
+                    String segment = Uri.parse(raw).getLastPathSegment();
+                    if (segment != null) candidate = segment;
+                } else {
+                    int slash = candidate.lastIndexOf('/');
+                    if (slash >= 0) candidate = candidate.substring(slash + 1);
+                }
+                int query = candidate.indexOf('?');
+                if (query >= 0) candidate = candidate.substring(0, query);
+                candidate = Uri.decode(candidate).trim();
+                if (candidate.length() == 0) continue;
+
+                boolean audioFile = candidate.matches("(?i).+\\.(mp3|flac|wav|m4a|aac|ogg|opus|wma|aiff|alac|mp4)$");
+                if (explicitName || audioFile) return candidate;
+            } catch (RuntimeException ignored) { }
+        }
+        return null;
+    }
+
     private NotificationItem toItem(StatusBarNotification sbn) {
         Notification notification = sbn.getNotification();
         Bundle extras = notification == null ? null : notification.extras;
@@ -178,13 +223,20 @@ public final class NotificationBridgeService extends NotificationListenerService
                 (notification.flags & (Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR)) != 0;
         boolean media = !missed && (transportAction || mediaSession ||
                 (mediaPackage && (count > 0 || ongoing)));
-        if (media && extras != null) {
-            CharSequence trackTitle = extras.getCharSequence("android.media.metadata.TITLE");
-            if (trackTitle == null) trackTitle = extras.getCharSequence("android.media.metadata.DISPLAY_TITLE");
-            if (trackTitle != null && trackTitle.toString().trim().length() > 0)
-                titleValue = trackTitle.toString().trim();
-            else if ((titleValue.equals(packageName) || titleValue.length() == 0) && textValue.length() > 0)
-                titleValue = textValue;
+        if (media) {
+            // If the media player exposes a path/URI, show its basename rather than
+            // attempting to infer or identify the song from its audio content.
+            String fileName = fileNameFromExtras(extras);
+            if (fileName != null) {
+                titleValue = fileName;
+            } else if (extras != null) {
+                CharSequence trackTitle = extras.getCharSequence("android.media.metadata.TITLE");
+                if (trackTitle == null) trackTitle = extras.getCharSequence("android.media.metadata.DISPLAY_TITLE");
+                if (trackTitle != null && trackTitle.toString().trim().length() > 0)
+                    titleValue = trackTitle.toString().trim();
+                else if ((titleValue.equals(packageName) || titleValue.length() == 0) && textValue.length() > 0)
+                    titleValue = textValue;
+            }
         }
         return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, artwork, actionTitles, actions);
     }
