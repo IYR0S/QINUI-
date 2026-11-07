@@ -1635,6 +1635,18 @@ public class QinsLauncherActivity extends Activity {
         return key;
     }
 
+    private void registerQuickTile(final String key, final View tile, final TextView state) {
+        if ("wifi".equals(key)) { wifiTile = tile; wifiState = state; }
+        else if ("bluetooth".equals(key)) { bluetoothTile = tile; bluetoothState = state; }
+        else if ("sound".equals(key)) { soundTile = tile; soundState = state; }
+        tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override public void onFocusChange(View view, boolean focused) {
+                boolean active = state != null && "ON".contentEquals(state.getText());
+                updateQuickTileVisual(key, tile, active);
+            }
+        });
+    }
+
     private View compactQuickTile(String key, ThemeManager.Appearance a) {
         String label = quickLabel(key), glyph = glyphForQuickKey(key);
         LinearLayout tile = new LinearLayout(this); tile.setOrientation(LinearLayout.VERTICAL); tile.setGravity(Gravity.CENTER); tile.setPadding(dp(2), dp(2), dp(2), dp(2));
