@@ -712,13 +712,15 @@ public class QinsLauncherActivity extends Activity {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final float radius;
         private final int baseColor, fillColor, borderColor, focusColor;
+        private final boolean horizontal;
         private float level;
         private boolean focused;
 
         QuickLevelFillDrawable(float radiusDp, int baseColor, int fillColor,
-                               int borderColor, int focusColor, float level) {
+                               int borderColor, int focusColor, float level, boolean horizontal) {
             radius = dp(radiusDp); this.baseColor = baseColor; this.fillColor = fillColor;
             this.borderColor = borderColor; this.focusColor = focusColor;
+            this.horizontal = horizontal;
             setLevelValue(level);
         }
         void setLevelValue(float value) { level = Math.max(0f, Math.min(1f, value)); invalidateSelf(); }
@@ -733,7 +735,8 @@ public class QinsLauncherActivity extends Activity {
             if (level > 0f) {
                 int save = canvas.save(); canvas.clipPath(clip);
                 paint.setColor(fillColor);
-                canvas.drawRect(r.left, r.bottom - r.height() * level, r.right, r.bottom, paint);
+                if (horizontal) canvas.drawRect(r.left, r.top, r.left + r.width() * level, r.bottom, paint);
+                else canvas.drawRect(r.left, r.bottom - r.height() * level, r.right, r.bottom, paint);
                 canvas.restoreToCount(save);
             }
             paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(dp(focused ? 2.5f : 1f));
@@ -4289,9 +4292,10 @@ public class QinsLauncherActivity extends Activity {
         int fillColor = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? a.accent : 0xFFFFFFFF;
         float radius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 8f : a.cornerDp;
         Drawable current = card.getBackground();
+        boolean horizontal = !ThemeManager.APPEARANCE_NOTHING.equals(a.id);
         QuickLevelFillDrawable background = current instanceof QuickLevelFillDrawable
                 ? (QuickLevelFillDrawable) current
-                : new QuickLevelFillDrawable(radius, 0xFF000000, fillColor, a.border, a.accent, level);
+                : new QuickLevelFillDrawable(radius, 0xFF000000, fillColor, a.border, a.accent, level, horizontal);
         background.setLevelValue(level);
         background.setFocused(card.hasFocus());
         if (current != background) card.setBackgroundDrawable(background);
@@ -4448,7 +4452,9 @@ public class QinsLauncherActivity extends Activity {
         final int initialBrightness = readBrightness();
         updateBrightnessCard(brightness, a, initialBrightness, 255);
         TextView heading = new TextView(this); heading.setText(getString(R.string.launcher_brightness));
-        heading.setTextColor(a.text); heading.setTextSize(13); brightness.addView(heading);
+        heading.setTextColor(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 0xFF111111 : a.text);
+        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) heading.setShadowLayer(dp(1), 0, 0, 0xFFFFFFFF);
+        heading.setTextSize(13); brightness.addView(heading);
         SeekBar seek = new SeekBar(this); seek.setMax(255); seek.setProgress(Math.max(0, Math.min(255, initialBrightness)));
         seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         hideSeekBarMarker(seek);
