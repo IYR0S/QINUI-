@@ -1746,19 +1746,22 @@ public class QinsLauncherActivity extends Activity {
         final NotificationBridgeService.NotificationItem item = items.get(homeWidgetIndex);
         LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(8), dp(5), dp(8), dp(5));
         card.setFocusable(true); card.setFocusableInTouchMode(false); card.setClickable(true); card.setTag("home:widget-stack"); styleSurface(card, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+        card.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) { showHomeWidgetPagePicker(); return true; }
+        });
         TextView label = new TextView(this); label.setText(item.missedCall ? getString(R.string.launcher_missed_call) : getString(R.string.launcher_now_playing)); label.setTextColor(a.accent); label.setTextSize(9); card.addView(label);
-        LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.HORIZONTAL); content.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.HORIZONTAL); content.setGravity(Gravity.CENTER_VERTICAL); content.setTag("home:widget-stack");
         if (item.media && item.artwork != null && !item.artwork.isRecycled()) {
             ImageView artwork = new ImageView(this); artwork.setImageBitmap(item.artwork);
-            artwork.setScaleType(ImageView.ScaleType.CENTER_CROP); artwork.setContentDescription("Album artwork");
+            artwork.setScaleType(ImageView.ScaleType.CENTER_CROP); artwork.setContentDescription("Album artwork"); artwork.setTag("home:widget-stack");
             LinearLayout.LayoutParams art = new LinearLayout.LayoutParams(dp(38), dp(38)); art.rightMargin = dp(7); content.addView(artwork, art);
         }
-        LinearLayout textBlock = new LinearLayout(this); textBlock.setOrientation(LinearLayout.VERTICAL);
-        TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
-        if (item.text != null && item.text.length() > 0) { TextView detail = new TextView(this); detail.setText(item.text); detail.setTextColor(a.muted); detail.setTextSize(9); detail.setSingleLine(true); detail.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(detail); }
+        LinearLayout textBlock = new LinearLayout(this); textBlock.setOrientation(LinearLayout.VERTICAL); textBlock.setTag("home:widget-stack");
+        TextView title = new TextView(this); title.setTag("home:widget-stack"); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
+        if (item.text != null && item.text.length() > 0) { TextView detail = new TextView(this); detail.setTag("home:widget-stack"); detail.setText(item.text); detail.setTextColor(a.muted); detail.setTextSize(9); detail.setSingleLine(true); detail.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(detail); }
         content.addView(textBlock, new LinearLayout.LayoutParams(0, -2, 1)); card.addView(content);
         if (item.media) {
-            LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER);
+            LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER); controls.setTag("home:widget-stack");
             boolean hasTransport = false;
             if (item.actions != null && item.actionTitles != null) {
                 for (int i = 0; i < item.actions.length; i++) {
@@ -1769,6 +1772,7 @@ public class QinsLauncherActivity extends Activity {
                     hasTransport = true; final int ix = i;
                     TextView button = new TextView(this);
                     String visibleLabel = item.actionTitles[i] == null ? "" : item.actionTitles[i];
+                    button.setTag("home:widget-stack");
                     button.setText(visibleLabel.length() > 0 ? visibleLabel : (i == 0 ? "‹" : (i == 1 ? "Ⅱ / ▶" : "›")));
                     button.setTextColor(a.accent);
                     button.setGravity(Gravity.CENTER); button.setTextSize(11); button.setFocusable(true); button.setFocusableInTouchMode(false);
@@ -1781,7 +1785,7 @@ public class QinsLauncherActivity extends Activity {
                 final int[] keys = new int[] {KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_NEXT};
                 final String[] labels = new String[] {"‹", "Ⅱ / ▶", "›"};
                 for (int i = 0; i < keys.length; i++) {
-                    final int key = keys[i]; TextView button = new TextView(this); button.setText(labels[i]);
+                    final int key = keys[i]; TextView button = new TextView(this); button.setTag("home:widget-stack"); button.setText(labels[i]);
                     button.setTextColor(a.accent); button.setGravity(Gravity.CENTER); button.setTextSize(14);
                     button.setFocusable(true); button.setFocusableInTouchMode(false); styleSurface(button, 0x00000000, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 4f : 8f);
                     controls.addView(button, new LinearLayout.LayoutParams(0, dp(28), 1));
@@ -3600,7 +3604,13 @@ public class QinsLauncherActivity extends Activity {
                         if (which != 0) edit.putInt("clock_background_color_" + a.id, colors[which]);
                         edit.commit();
                         dialog.dismiss();
-                        if (clockEditorPreviewCard != null) clockEditorPreviewCard.setBackgroundColor(which == 0 ? 0x00000000 : colors[which]);
+                        int chosen = which == 0 ? 0x00000000 : colors[which];
+                        if (clockEditorPreviewCard != null) {
+                            styleSurface(clockEditorPreviewCard, chosen, which == 0 ? 0x00000000 : a.border, a.focus, a.cornerDp);
+                        }
+                        if (clockView != null) {
+                            styleSurface(clockView, chosen, which == 0 ? 0x00000000 : a.border, a.focus, a.cornerDp);
+                        }
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
@@ -3645,36 +3655,43 @@ public class QinsLauncherActivity extends Activity {
 
         final LinearLayout grid = new LinearLayout(this);
         grid.setOrientation(LinearLayout.VERTICAL);
-        ScrollView styleScroll = new ScrollView(this);
-        styleScroll.setFillViewport(false);
-        styleScroll.setVerticalScrollBarEnabled(true);
-        styleScroll.addView(grid, new ScrollView.LayoutParams(-1, -2));
-        LinearLayout.LayoutParams scrollParams = new LinearLayout.LayoutParams(-1, dp(clamp(screenHeightDp() / 2, 132, 196)));
-        scrollParams.topMargin = dp(7);
-        content.addView(styleScroll, scrollParams);
+        content.addView(grid, new LinearLayout.LayoutParams(-1, -2));
 
         LinearLayout actions = new LinearLayout(this);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, dp(36));
+        actions.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(-1, -2);
         actionParams.topMargin = dp(7);
         content.addView(actions, actionParams);
+
+        LinearLayout actionRowOne = new LinearLayout(this);
+        actionRowOne.setOrientation(LinearLayout.HORIZONTAL);
+        actions.addView(actionRowOne, new LinearLayout.LayoutParams(-1, dp(36)));
+        LinearLayout actionRowTwo = new LinearLayout(this);
+        actionRowTwo.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams secondRowParams = new LinearLayout.LayoutParams(-1, dp(36));
+        secondRowParams.topMargin = dp(4);
+        actions.addView(actionRowTwo, secondRowParams);
 
         TextView background = quickEditorButton("Clock background", a, new View.OnClickListener() {
             @Override public void onClick(View v) { showClockBackgroundPicker(); }
         });
-        actions.addView(background, new LinearLayout.LayoutParams(0, -1, 1));
+        actionRowOne.addView(background, new LinearLayout.LayoutParams(0, -1, 1));
+        TextView display = quickEditorButton("Clock display", a, new View.OnClickListener() {
+            @Override public void onClick(View v) { showClockDisplayPicker(); }
+        });
+        LinearLayout.LayoutParams displayParams = new LinearLayout.LayoutParams(0, -1, 1);
+        displayParams.leftMargin = dp(4);
+        actionRowOne.addView(display, displayParams);
         TextView position = quickEditorButton("Position", a, new View.OnClickListener() {
             @Override public void onClick(View v) { showClockPositionPicker(); }
         });
-        LinearLayout.LayoutParams positionParams = new LinearLayout.LayoutParams(0, -1, 1);
-        positionParams.leftMargin = dp(4);
-        actions.addView(position, positionParams);
+        actionRowTwo.addView(position, new LinearLayout.LayoutParams(0, -1, 1));
         TextView alignment = quickEditorButton("Alignment", a, new View.OnClickListener() {
             @Override public void onClick(View v) { showClockAlignmentPicker(); }
         });
         LinearLayout.LayoutParams alignmentParams = new LinearLayout.LayoutParams(0, -1, 1);
         alignmentParams.leftMargin = dp(4);
-        actions.addView(alignment, alignmentParams);
+        actionRowTwo.addView(alignment, alignmentParams);
 
         final Runnable[] render = new Runnable[1];
         render[0] = new Runnable() {
@@ -3762,9 +3779,13 @@ public class QinsLauncherActivity extends Activity {
             }
         };
 
+        ScrollView editorScroll = new ScrollView(this);
+        editorScroll.setFillViewport(false);
+        editorScroll.setVerticalScrollBarEnabled(true);
+        editorScroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Clock editor · " + a.title)
-                .setView(content)
+                .setView(editorScroll)
                 .setPositiveButton("Done", new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, int which) {
                         showHome(false);
@@ -3778,7 +3799,6 @@ public class QinsLauncherActivity extends Activity {
             dialog.getWindow().setLayout(-1, maxEditorHeight);
         }
         render[0].run();
-        if (dialog.getWindow() != null) dialog.getWindow().setLayout(-1, -2);
     }
     private float clockSizeForTheme(ThemeManager.Appearance a, boolean small) {
         String style = clockStyle(a);
@@ -5551,6 +5571,10 @@ public class QinsLauncherActivity extends Activity {
                 keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
     }
 
+    private boolean isWidgetLongPressKey(int keyCode) {
+        return isSelectKey(keyCode) || keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_F1;
+    }
+
     private boolean isLongPressTargetTag(String tag) {
         return tag.startsWith("home:") || tag.startsWith("drawer:") ||
                 tag.startsWith("page-dot:") || tag.startsWith("quick:") ||
@@ -5593,7 +5617,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean onKeyLongPress(int keyCode, KeyEvent event) {
-        if (isSelectKey(keyCode) && performLongPressAction(
+        if (isWidgetLongPressKey(keyCode) && performLongPressAction(
                 pendingSelectView != null ? pendingSelectView : getCurrentFocus())) {
             longPressPerformed = true;
             return true;
@@ -5796,7 +5820,8 @@ public class QinsLauncherActivity extends Activity {
                 return true;
             }
         }
-        if (isSelectKey(keyCode)) {
+        if (isSelectKey(keyCode) || (isWidgetCardDescendant(getCurrentFocus()) &&
+                (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_F1))) {
             View focused = getCurrentFocus();
             if (focused != null && "home:drawer-trigger".equals(focused.getTag())) {
                 if (event.getRepeatCount() == 0) {
@@ -5955,7 +5980,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (isSelectKey(keyCode) && pendingSelectView != null) {
+        if ((isSelectKey(keyCode) || isWidgetLongPressKey(keyCode)) && pendingSelectView != null) {
             View target = pendingSelectView;
             pendingSelectView = null;
             if (!longPressPerformed) target.performClick();
