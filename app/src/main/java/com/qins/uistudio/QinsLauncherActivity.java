@@ -4028,6 +4028,8 @@ public class QinsLauncherActivity extends Activity {
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, (active || tile.hasFocus()) ? a.accent : a.border, a.accent, a.cornerDp, tile.hasFocus()));
         else if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && "quick-connectivity".equals(tile.getTag()))
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, tile.hasFocus() ? a.accent : a.border, a.accent, 22f, tile.hasFocus()));
+        else if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && ("sound".equals(key) || "settings".equals(key)))
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, tile.hasFocus() ? a.accent : a.border, a.accent, 8f, tile.hasFocus()));
         else if (tile.hasFocus()) tile.setBackgroundDrawable(new FocusSurfaceDrawable(0x223C8060, a.accent, a.accent, a.cornerDp, true));
         else tile.setBackgroundColor(0x00000000);
     }
