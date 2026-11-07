@@ -1562,7 +1562,7 @@ public class QinsLauncherActivity extends Activity {
         final boolean compactClockInTopRow = clockPrefs.getBoolean("clock_compact_top", false);
         final int clockAlignment = clockPrefs.getInt("clock_alignment", 0);
         final int clockHorizontalGravity = clockAlignment == 1 ? Gravity.RIGHT : Gravity.LEFT;
-        final boolean nothingMatrixClock = ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
+        final boolean nothingMatrixClock = !compactClockInTopRow && ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
                 ("dot".equals(selectedClockStyle) || "stacked".equals(selectedClockStyle));
         final boolean analogClock = "analog".equals(selectedClockStyle);
         LinearLayout top = new LinearLayout(this);
@@ -1651,7 +1651,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout homeContent = new LinearLayout(this);
         homeContent.setOrientation(LinearLayout.VERTICAL);
         int clockPosition = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("clock_position", 0);
-        if (clockPosition > 0) {
+        if (clockPosition > 0 && !compactClockInTopRow) {
             View upperSpace = new View(this);
             homeContent.addView(upperSpace, new LinearLayout.LayoutParams(-1, 0, clockPosition == 1 ? 1 : 2));
         }
