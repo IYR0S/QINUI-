@@ -366,6 +366,7 @@ public class QinsLauncherActivity extends Activity {
         appsNavButton.setPadding(dp(15), 0, dp(15), 0);
         appsNavButton.setFocusable(true);
         appsNavButton.setFocusableInTouchMode(false);
+        appsNavButton.setVisibility(View.GONE);
         styleSurface(appsNavButton, a.surface, a.border, a.focus, a.cornerDp);
         appsNavButton.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
@@ -513,7 +514,7 @@ public class QinsLauncherActivity extends Activity {
                 bounds.outHeight / (sample * 2) >= targetHeight) sample *= 2;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = sample;
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         try {
             stream = getContentResolver().openInputStream(uri);
             return stream == null ? null : BitmapFactory.decodeStream(stream, null, options);
@@ -1386,6 +1387,10 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showHome(boolean focusHandle) {
+        if (root != null && root.getChildCount() > 0) {
+            root.getChildAt(0).setVisibility(View.VISIBLE);
+            root.setPadding(root.getPaddingLeft(), dp(4), root.getPaddingRight(), root.getPaddingBottom());
+        }
         quickPanelPage = 0;
         closeHomeFolder();
         removeCompactPanelOverlay();
@@ -1398,6 +1403,8 @@ public class QinsLauncherActivity extends Activity {
         updateNavigationButton();
 
         final String selectedClockStyle = clockStyle(a);
+        final int clockAlignment = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("clock_alignment", 0);
+        final int clockHorizontalGravity = clockAlignment == 1 ? Gravity.RIGHT : Gravity.LEFT;
         final boolean nothingMatrixClock = ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
                 ("dot".equals(selectedClockStyle) || "stacked".equals(selectedClockStyle));
         final boolean analogClock = "analog".equals(selectedClockStyle);
@@ -1413,7 +1420,8 @@ public class QinsLauncherActivity extends Activity {
 
         LinearLayout timeBlock = new LinearLayout(this);
         timeBlock.setOrientation(LinearLayout.VERTICAL);
-        timeBlock.setGravity(nothingMatrixClock ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
+        timeBlock.setGravity((nothingMatrixClock && clockAlignment == 0 ? Gravity.CENTER : Gravity.CENTER_VERTICAL) |
+                (clockAlignment == 1 ? Gravity.RIGHT : Gravity.LEFT));
         clockView = nothingMatrixClock ? new NothingDotMatrixClockView(this, "stacked".equals(selectedClockStyle)) :
                 (analogClock ? new AnalogClockTextView(this, a) : new TextView(this));
         if (nothingMatrixClock) {
@@ -1436,6 +1444,7 @@ public class QinsLauncherActivity extends Activity {
         clockView.setFocusable(true);
         clockView.setFocusableInTouchMode(false);
         clockView.setTextDirection(View.TEXT_DIRECTION_LTR);
+        clockView.setGravity(clockHorizontalGravity | Gravity.CENTER_VERTICAL);
         boolean solidClockBackground = clockBackgroundFilled(a);
         int clockBackgroundColor = solidClockBackground ? a.surface : 0x00000000;
         int clockBorderColor = solidClockBackground ? a.border : 0x00000000;
@@ -1456,6 +1465,7 @@ public class QinsLauncherActivity extends Activity {
         dateView.setTextColor(a.muted);
         dateView.setTextSize(smallScreen == 1 ? 9 : 11);
         dateView.setSingleLine(true);
+        dateView.setGravity(clockHorizontalGravity);
         timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
         if (nothingMatrixClock) {
             top.addView(timeBlock, new LinearLayout.LayoutParams(-1, -2));
@@ -2310,7 +2320,7 @@ public class QinsLauncherActivity extends Activity {
         closeEdgePanel();
         final ThemeManager.Appearance a = appearance();
         FrameLayout scrim = new FrameLayout(this);
-        scrim.setBackgroundColor(0x33000000);
+        scrim.setBackgroundColor(0x18000000);
         scrim.setFocusable(true);
         scrim.setClickable(true);
         scrim.setOnClickListener(new View.OnClickListener() {
@@ -2319,7 +2329,7 @@ public class QinsLauncherActivity extends Activity {
 
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(8), dp(8), dp(8), dp(8));
+        panel.setPadding(dp(4), dp(6), dp(4), dp(6));
         panel.setBackgroundColor(a.surface);
         panel.setFocusable(true);
         panel.setClickable(true);
@@ -2328,13 +2338,8 @@ public class QinsLauncherActivity extends Activity {
         });
 
         LinearLayout header = new LinearLayout(this);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView heading = new TextView(this);
-        heading.setText("EDGE");
-        heading.setTextColor(a.text);
-        heading.setTextSize(11);
-        heading.setTypeface(Typeface.DEFAULT_BOLD);
-        header.addView(heading, new LinearLayout.LayoutParams(0, dp(34), 1));
+        header.setGravity(Gravity.CENTER);
+        header.setOrientation(LinearLayout.HORIZONTAL);
         TextView settings = new TextView(this);
         settings.setText("⚙");
         settings.setTextSize(18);
@@ -2347,9 +2352,9 @@ public class QinsLauncherActivity extends Activity {
         settings.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showEdgePanelSettings(); }
         });
-        header.addView(settings, new LinearLayout.LayoutParams(dp(34), dp(34)));
+        header.addView(settings, new LinearLayout.LayoutParams(dp(42), dp(42)));
         edgePanelItems.add(settings);
-        panel.addView(header, new LinearLayout.LayoutParams(-1, dp(38)));
+        panel.addView(header, new LinearLayout.LayoutParams(-1, dp(46)));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -2364,24 +2369,15 @@ public class QinsLauncherActivity extends Activity {
             LinearLayout item = new LinearLayout(this);
             item.setOrientation(LinearLayout.HORIZONTAL);
             item.setGravity(Gravity.CENTER_VERTICAL);
-            item.setPadding(dp(5), dp(4), dp(5), dp(4));
+            item.setPadding(dp(2), dp(2), dp(2), dp(2));
             item.setFocusable(true);
             item.setFocusableInTouchMode(false);
             item.setClickable(true);
             ImageView icon = new ImageView(this);
             icon.setImageDrawable(info.loadIcon(getPackageManager()));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            item.addView(icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
-            TextView label = new TextView(this);
-            label.setText(info.loadLabel(getPackageManager()));
-            label.setTextColor(a.text);
-            label.setTextSize(11);
-            label.setSingleLine(true);
-            label.setEllipsize(android.text.TextUtils.TruncateAt.END);
-            LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(0, -2, 1);
-            labelParams.leftMargin = dp(7);
-            labelParams.rightMargin = dp(3);
-            item.addView(label, labelParams);
+            item.addView(icon, new LinearLayout.LayoutParams(dp(38), dp(38)));
+            item.setGravity(Gravity.CENTER);
             styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
             item.setContentDescription(info.loadLabel(getPackageManager()));
             item.setOnClickListener(new View.OnClickListener() {
@@ -2391,7 +2387,7 @@ public class QinsLauncherActivity extends Activity {
                 }
             });
             LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(-1, dp(48));
-            itemParams.bottomMargin = dp(4);
+            itemParams.bottomMargin = dp(2);
             list.addView(item, itemParams);
             edgePanelItems.add(item);
         }
@@ -2411,27 +2407,12 @@ public class QinsLauncherActivity extends Activity {
         scroll.addView(list, new ScrollView.LayoutParams(-1, -2));
         panel.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        TextView close = new TextView(this);
-        close.setText("×");
-        close.setTextColor(a.text);
-        close.setTextSize(20);
-        close.setGravity(Gravity.CENTER);
-        close.setFocusable(true);
-        close.setFocusableInTouchMode(false);
-        styleSurface(close, a.surfaceAlt, a.border, a.focus, a.cornerDp);
-        close.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { closeEdgePanel(); }
-        });
-        LinearLayout.LayoutParams closeParams = new LinearLayout.LayoutParams(-1, dp(34));
-        closeParams.topMargin = dp(4);
-        panel.addView(close, closeParams);
-
-        int panelWidth = clamp((int)(screenWidthDp() * 0.48f), 132, 190);
+        int panelWidth = 54;
         FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(dp(panelWidth), -1,
                 Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        panelParams.topMargin = dp(8);
-        panelParams.bottomMargin = dp(8);
-        panelParams.rightMargin = dp(4);
+        panelParams.topMargin = 0;
+        panelParams.bottomMargin = 0;
+        panelParams.rightMargin = 0;
         scrim.addView(panel, panelParams);
         pageContainer.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
         edgePanelOverlay = scrim;
@@ -3164,15 +3145,17 @@ public class QinsLauncherActivity extends Activity {
         final ThemeManager.Appearance a = appearance();
         final String[] values = clockStyleOptions(a);
         String[] styleLabels = clockStyleLabels(a);
-        final String[] choices = new String[styleLabels.length + 2];
+        final String[] choices = new String[styleLabels.length + 3];
         System.arraycopy(styleLabels, 0, choices, 0, styleLabels.length);
         choices[styleLabels.length] = getString(R.string.launcher_clock_background);
         choices[styleLabels.length + 1] = getString(R.string.launcher_clock_position);
+        choices[styleLabels.length + 2] = "Clock alignment";
         new android.app.AlertDialog.Builder(this).setTitle("Clock design · " + a.title)
                 .setItems(choices, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         if (which == values.length) { showClockBackgroundPicker(); return; }
                         if (which == values.length + 1) { showClockPositionPicker(); return; }
+                        if (which == values.length + 2) { showClockAlignmentPicker(); return; }
                         getSharedPreferences("qins_clock", MODE_PRIVATE).edit()
                                 .putString(clockStyleKey(a), values[which]).commit();
                         showHome(false);
@@ -3521,6 +3504,10 @@ public class QinsLauncherActivity extends Activity {
         pinSelectionMode = false;
         editMode = false;
         pageContent.removeAllViews();
+        if (root != null && root.getChildCount() > 0) {
+            root.getChildAt(0).setVisibility(View.GONE);
+            root.setPadding(root.getPaddingLeft(), 0, root.getPaddingRight(), root.getPaddingBottom());
+        }
         ThemeManager.Appearance a = appearance();
         // Draw the wallpaper once on the full root. A second drawable here
         // cropped the image to the shorter content viewport when Quick Settings opened.
@@ -3605,7 +3592,10 @@ public class QinsLauncherActivity extends Activity {
         String[] expandedKeys = getExpandedQuickTileKeys();
         LinearLayout firstRow = new LinearLayout(this);
         firstRow.setOrientation(LinearLayout.HORIZONTAL);
-        int quickTileHeight = clamp((int) (screenHeightDp() * 0.22f), 54, 68);
+        boolean pixelQuickGrid = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
+        int quickTileHeight = pixelQuickGrid
+                ? clamp((screenWidthDp() - 12) / 2, 56, 116)
+                : clamp((int) (screenHeightDp() * 0.22f), 54, 68);
         panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
         for (int i = 0; i < 2; i++) {
             final String key = expandedKeys[i];
@@ -3614,7 +3604,7 @@ public class QinsLauncherActivity extends Activity {
                     ? quickConnectivityTile(key, a)
                     : quickTile(glyphForQuickKey(key), quickLabel(key), a);
             LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
-            if (i > 0) tileParams.leftMargin = dp(7);
+            if (i > 0 && !pixelQuickGrid) tileParams.leftMargin = dp(7);
             firstRow.addView(tile, tileParams);
             tile.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { performQuickAction(key); }
@@ -3624,13 +3614,13 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout secondRow = new LinearLayout(this);
         secondRow.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams secondParams = new LinearLayout.LayoutParams(-1, dp(quickTileHeight));
-        secondParams.topMargin = dp(7);
+        secondParams.topMargin = pixelQuickGrid ? 0 : dp(7);
         panel.addView(secondRow, secondParams);
         for (int i = 2; i < 4; i++) {
             final String key = expandedKeys[i];
             View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
             LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
-            if (i > 2) tileParams.leftMargin = dp(7);
+            if (i > 2 && !pixelQuickGrid) tileParams.leftMargin = dp(7);
             secondRow.addView(tile, tileParams);
             tile.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { performQuickAction(key); }
@@ -3792,7 +3782,8 @@ public class QinsLauncherActivity extends Activity {
         FrameLayout iconWrap = new FrameLayout(this); GradientDrawable shape = new GradientDrawable();
         if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) shape.setShape(GradientDrawable.OVAL);
         else { shape.setShape(GradientDrawable.RECTANGLE); shape.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 10 : 8)); }
-        shape.setColor(a.tile); iconWrap.setBackgroundDrawable(shape); iconWrap.setTag("quick-icon-shape");
+        shape.setColor(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 0x00000000 : a.tile);
+        iconWrap.setBackgroundDrawable(shape); iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent); icon.setVisualStyle(a.id);
         int quickIconSize = clamp(screenHeightDp() / 8, 30, 40), glyphSize = dp(quickIconSize * 0.64f);
         iconWrap.addView(icon, new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER));
@@ -3801,7 +3792,9 @@ public class QinsLauncherActivity extends Activity {
         TextView name = new TextView(this); name.setText(label); name.setTextColor(a.text); name.setTextSize(12); textBlock.addView(name);
         TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(10); textBlock.addView(state); tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp); else tile.setBackgroundColor(0x00000000);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
+        else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, 10f);
+        else tile.setBackgroundColor(0x00000000);
         registerQuickTile(symbol, tile, state); return tile;
     }
 
@@ -3820,6 +3813,20 @@ public class QinsLauncherActivity extends Activity {
                 .setSingleChoiceItems(positions, selected, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         prefs.edit().putInt("clock_position", which).commit(); dialog.dismiss(); showHome(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showClockAlignmentPicker() {
+        final android.content.SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
+        int selected = Math.max(0, Math.min(1, prefs.getInt("clock_alignment", 0)));
+        final String[] options = new String[] {"Left", "Right"};
+        new android.app.AlertDialog.Builder(this).setTitle("Clock alignment")
+                .setSingleChoiceItems(options, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        prefs.edit().putInt("clock_alignment", which).commit();
+                        dialog.dismiss();
+                        showHome(false);
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
@@ -4130,11 +4137,9 @@ public class QinsLauncherActivity extends Activity {
     private boolean isBoundRightSoftKey(KeyEvent event) {
         SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
         int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
-        int boundScan = keys.getInt("right_key_scan", 0);
         if (boundCode == Integer.MIN_VALUE || event.getKeyCode() != boundCode) return false;
-        // Prefer scan-code matching when available, but accept a missing scan code.
-        // Firmware may omit it on ACTION_UP; the gesture latch below consumes that UP.
-        return boundScan <= 0 || event.getScanCode() <= 0 || event.getScanCode() == boundScan;
+        // QINS firmware may report different scan codes for the same physical soft key
+        // across firmware builds and between DOWN/UP. The bound Android key code is stable.
     }
 
     private boolean isLeftSoftKey(KeyEvent event) {
@@ -4202,8 +4207,8 @@ public class QinsLauncherActivity extends Activity {
         SharedPreferences edgePrefs = getSharedPreferences("qins_edge_panel", MODE_PRIVATE);
         int rightBoundCode = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE)
                 .getInt("right_key_code", Integer.MIN_VALUE);
-        if (rightSoftKeyGestureActive && event.getAction() == KeyEvent.ACTION_UP &&
-                (event.getKeyCode() == rightBoundCode || isBoundRightSoftKey(event))) {
+        if (rightSoftKeyGestureActive && event.getAction() == KeyEvent.ACTION_UP) {
+            // Consume the matching release even if the firmware changes its key code on UP.
             rightSoftKeyGestureActive = false;
             return true;
         }
