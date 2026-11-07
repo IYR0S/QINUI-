@@ -4350,7 +4350,7 @@ public class QinsLauncherActivity extends Activity {
     private void addNothingVerticalSliderCard(LinearLayout row, String label, int value, int max,
                                               final SeekBar.OnSeekBarChangeListener listener, final ThemeManager.Appearance a) {
         final LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setGravity(Gravity.CENTER);
-        card.setPadding(dp(4), dp(6), dp(4), dp(6));
+        card.setPadding(dp(4), dp(2), dp(4), dp(2));
         final boolean brightness = label.equals(getString(R.string.launcher_brightness));
         if (brightness) updateBrightnessCard(card, a, value, max);
         else styleSurface(card, a.surface, a.border, a.focus, 8f);
@@ -4372,8 +4372,8 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar bar) { listener.onStartTrackingTouch(bar); }
             @Override public void onStopTrackingTouch(SeekBar bar) { listener.onStopTrackingTouch(bar); }
         });
-        card.addView(seek, new LinearLayout.LayoutParams(dp(30), dp(52)));
-        row.addView(card, new LinearLayout.LayoutParams(0, dp(78), 1));
+        card.addView(seek, new LinearLayout.LayoutParams(dp(30), dp(48)));
+        row.addView(card, new LinearLayout.LayoutParams(0, dp(72), 1));
     }
 
     private void addNothingVerticalSliders(LinearLayout panel, ThemeManager.Appearance a) {
@@ -4396,7 +4396,7 @@ public class QinsLauncherActivity extends Activity {
         final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
         dnd.setText("⊖\\nDND\\n" + (quiet ? "ON" : "OFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false);
         styleSurface(dnd, quiet ? a.tileActive : a.surface, a.border, a.focus, 8f);
-        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(0, dp(78), 1); dndParams.leftMargin = dp(4); row.addView(dnd, dndParams);
+        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(0, dp(72), 1); dndParams.leftMargin = dp(4); row.addView(dnd, dndParams);
         dnd.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleDoNotDisturb(); } });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.topMargin = dp(8); panel.addView(row, params);
     }
