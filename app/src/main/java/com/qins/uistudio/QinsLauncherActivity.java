@@ -3895,8 +3895,8 @@ public class QinsLauncherActivity extends Activity {
             canvas.save(); canvas.rotate(-90); canvas.translate(-getHeight(), 0); super.onDraw(canvas); canvas.restore();
         }
         @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) { setProgress(Math.min(getMax(), getProgress() + 1)); return true; }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) { setProgress(Math.max(0, getProgress() - 1)); return true; }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP && getProgress() < getMax()) { setProgress(getProgress() + 1); return true; }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && getProgress() > 0) { setProgress(getProgress() - 1); return true; }
             return super.onKeyDown(keyCode, event);
         }
     }
