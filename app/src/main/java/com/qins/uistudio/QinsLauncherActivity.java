@@ -3665,35 +3665,173 @@ public class QinsLauncherActivity extends Activity {
                 }).setNegativeButton("Cancel", null).show();
     }
 
-    private void showQuickSettingsEditor() {
-        final boolean sixTileTheme = ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) ||
-                ThemeManager.APPEARANCE_PIXEL.equals(appearance().id) ||
-                ThemeManager.APPEARANCE_NOTHING.equals(appearance().id);
-        final boolean samsung = ThemeManager.APPEARANCE_GALAXY.equals(appearance().id);
-        final int expandedCount = sixTileTheme ? 6 : 4;
-        ArrayList<String> slotList = new ArrayList<String>();
-        for (int i = 1; i <= 4; i++) slotList.add(getString(R.string.launcher_compact_shortcut, i));
-        for (int i = 1; i <= expandedCount; i++) {
-            if (samsung && i == 1) slotList.add("Wi-Fi (fixed)");
-            else if (samsung && i == 2) slotList.add("Bluetooth (fixed)");
-            else slotList.add(getString(R.string.launcher_expanded_tile, i));
-        }
-        slotList.add("Tile sizes");
-        slotList.add(getString(R.string.launcher_theme_colors));
-        slotList.add(getString(R.string.launcher_clock_design));
-        slotList.add(getString(R.string.launcher_upper_right_key));
-        final String[] slots = slotList.toArray(new String[slotList.size()]);
-        new android.app.AlertDialog.Builder(this).setTitle("Customize quick settings")
-                .setItems(slots, new android.content.DialogInterface.OnClickListener() {
-                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        if (which < 4) showQuickTileEditor(which);
-                        else if (which < 4 + expandedCount) showExpandedQuickTileEditor(which - 4);
-                        else if (which == 4 + expandedCount) showQuickTileSizePicker();
-                        else if (which == 5 + expandedCount) showThemeEditor();
-                        else if (which == 6 + expandedCount) showClockStylePicker();
-                        else requestRightKeyBinding();
+    private void showQuickSettingsEditor() { showQuickSettingsEditor(false); }
+
+    private TextView quickEditorButton(String label, ThemeManager.Appearance a,
+                                       View.OnClickListener listener) {
+        TextView button = new TextView(this);
+        button.setText(label); button.setTextColor(a.text); button.setTextSize(11);
+        button.setGravity(Gravity.CENTER); button.setFocusable(true);
+        button.setFocusableInTouchMode(false); button.setClickable(true);
+        styleSurface(button, a.surface, a.border, a.focus, a.cornerDp);
+        button.setOnClickListener(listener);
+        return button;
+    }
+
+    private void showQuickSettingsEditor(boolean startCompact) {
+        final ThemeManager.Appearance a = appearance();
+        final boolean[] compactMode = new boolean[] {startCompact};
+        final int[] selected = new int[] {0};
+        final String[][] working = new String[][] {getQuickTileKeys(), getExpandedQuickTileKeys()};
+        final int expandedVisibleCount = (ThemeManager.APPEARANCE_GALAXY.equals(a.id) ||
+                ThemeManager.APPEARANCE_NOTHING.equals(a.id) || ThemeManager.APPEARANCE_PIXEL.equals(a.id)) ? 6 : 4;
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(10), dp(6), dp(10), dp(6));
+
+        LinearLayout tabs = new LinearLayout(this);
+        tabs.setOrientation(LinearLayout.HORIZONTAL);
+        final TextView compactTab = quickEditorButton("Compact", a, null);
+        final TextView expandedTab = quickEditorButton("Expanded", a, null);
+        tabs.addView(compactTab, new LinearLayout.LayoutParams(0, dp(38), 1));
+        LinearLayout.LayoutParams expandedTabParams = new LinearLayout.LayoutParams(0, dp(38), 1);
+        expandedTabParams.leftMargin = dp(6);
+        tabs.addView(expandedTab, expandedTabParams);
+        content.addView(tabs);
+
+        TextView hint = new TextView(this);
+        hint.setText("Select a tile in the preview, then replace it or move it with the arrows.");
+        hint.setTextColor(a.muted); hint.setTextSize(10);
+        hint.setPadding(dp(2), dp(7), dp(2), dp(7));
+        content.addView(hint);
+
+        final LinearLayout preview = new LinearLayout(this);
+        preview.setOrientation(LinearLayout.VERTICAL);
+        preview.setPadding(dp(2), dp(2), dp(2), dp(2));
+        content.addView(preview, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        actions.setPadding(0, dp(8), 0, 0);
+        content.addView(actions);
+
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Edit Quick Settings")
+                .setView(content)
+                .setPositiveButton("Done", null)
+                .create();
+
+        final Runnable[] render = new Runnable[1];
+        final Runnable save = new Runnable() {
+            @Override public void run() {
+                if (compactMode[0]) saveQuickTileKeys(working[0]);
+                else saveExpandedQuickTileKeys(working[1]);
+            }
+        };
+
+        compactTab.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { compactMode[0] = true; selected[0] = 0; render[0].run(); }
+        });
+        expandedTab.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { compactMode[0] = false; selected[0] = 0; render[0].run(); }
+        });
+
+        render[0] = new Runnable() {
+            @Override public void run() {
+                compactTab.setTextColor(compactMode[0] ? a.accent : a.text);
+                expandedTab.setTextColor(compactMode[0] ? a.text : a.accent);
+                preview.removeAllViews();
+                String[] keys = working[compactMode[0] ? 0 : 1];
+                int count = compactMode[0] ? 4 : expandedVisibleCount;
+                int columns = compactMode[0] ? 4 :
+                        ((ThemeManager.APPEARANCE_GALAXY.equals(a.id) ||
+                          ThemeManager.APPEARANCE_NOTHING.equals(a.id) ||
+                          ThemeManager.APPEARANCE_PIXEL.equals(a.id)) ? 3 : 2);
+                LinearLayout row = null;
+                for (int i = 0; i < count; i++) {
+                    if (i % columns == 0) {
+                        row = new LinearLayout(QinsLauncherActivity.this);
+                        row.setOrientation(LinearLayout.HORIZONTAL);
+                        row.setGravity(Gravity.CENTER_VERTICAL);
+                        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(compactMode[0] ? 72 : 88));
+                        if (i > 0) rowParams.topMargin = dp(4);
+                        preview.addView(row, rowParams);
                     }
-                }).setNegativeButton("Done", null).show();
+                    final int index = i;
+                    LinearLayout tile = new LinearLayout(QinsLauncherActivity.this);
+                    tile.setOrientation(LinearLayout.VERTICAL);
+                    tile.setGravity(Gravity.CENTER);
+                    tile.setPadding(dp(2), dp(2), dp(2), dp(2));
+                    int fill = i == selected[0] ? a.tileActive : a.surface;
+                    styleSurface(tile, fill, i == selected[0] ? a.accent : a.border, a.focus, a.cornerDp);
+                    FrameLayout iconBox = new FrameLayout(QinsLauncherActivity.this);
+                    GradientDrawable iconShape = new GradientDrawable();
+                    if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) iconShape.setShape(GradientDrawable.OVAL);
+                    else { iconShape.setShape(GradientDrawable.RECTANGLE); iconShape.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 6 : 8)); }
+                    iconShape.setColor(a.tile);
+                    if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) iconShape.setStroke(dp(1), a.border);
+                    iconBox.setBackgroundDrawable(iconShape);
+                    QinsGlyphView glyph = new QinsGlyphView(QinsLauncherActivity.this,
+                            glyphForQuickKey(keys[i]), a.accent);
+                    glyph.setVisualStyle(a.id);
+                    int iconSize = compactMode[0] ? 22 : (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 38 : 30);
+                    iconBox.addView(glyph, new FrameLayout.LayoutParams(dp(iconSize), dp(iconSize), Gravity.CENTER));
+                    tile.addView(iconBox, new LinearLayout.LayoutParams(dp(compactMode[0] ? 28 : 48), dp(compactMode[0] ? 28 : 48)));
+                    TextView name = new TextView(QinsLauncherActivity.this);
+                    name.setText(quickLabel(keys[i])); name.setTextColor(a.text);
+                    name.setTextSize(compactMode[0] ? 8 : 10); name.setGravity(Gravity.CENTER);
+                    name.setSingleLine(true); name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                    tile.addView(name, new LinearLayout.LayoutParams(-1, -2));
+                    tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
+                    tile.setOnClickListener(new View.OnClickListener() {
+                        @Override public void onClick(View v) { selected[0] = index; render[0].run(); }
+                    });
+                    LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
+                    if (i % columns > 0) tileParams.leftMargin = dp(3);
+                    row.addView(tile, tileParams);
+                }
+                actions.removeAllViews();
+                TextView change = quickEditorButton("Change", a, new View.OnClickListener() {
+                    @Override public void onClick(View v) {
+                        final String[] labels = quickLabels();
+                        new android.app.AlertDialog.Builder(QinsLauncherActivity.this)
+                                .setTitle("Choose tile")
+                                .setItems(labels, new android.content.DialogInterface.OnClickListener() {
+                                    @Override public void onClick(android.content.DialogInterface d, int which) {
+                                        String[] current = working[compactMode[0] ? 0 : 1];
+                                        current[selected[0]] = QUICK_OPTIONS[which];
+                                        save.run(); render[0].run();
+                                    }
+                                }).setNegativeButton("Cancel", null).show();
+                    }
+                });
+                actions.addView(change, new LinearLayout.LayoutParams(0, dp(38), 1));
+                String[] moveLabels = new String[] {"←", "→", "↑", "↓"};
+                final int[] deltas = new int[] {-1, 1, -columns, columns};
+                for (int m = 0; m < moveLabels.length; m++) {
+                    final int delta = deltas[m];
+                    TextView move = quickEditorButton(moveLabels[m], a, new View.OnClickListener() {
+                        @Override public void onClick(View v) {
+                            String[] current = working[compactMode[0] ? 0 : 1];
+                            int countNow = compactMode[0] ? 4 : expandedVisibleCount;
+                            int target = selected[0] + delta;
+                            if (target < 0 || target >= countNow) return;
+                            if ((delta == -1 || delta == 1) && selected[0] / columns != target / columns) return;
+                            String temp = current[selected[0]]; current[selected[0]] = current[target]; current[target] = temp;
+                            selected[0] = target; save.run(); render[0].run();
+                        }
+                    });
+                    LinearLayout.LayoutParams moveParams = new LinearLayout.LayoutParams(0, dp(38), 0.62f);
+                    moveParams.leftMargin = dp(3);
+                    actions.addView(move, moveParams);
+                }
+            }
+        };
+
+        dialog.show();
+        render[0].run();
+        if (dialog.getWindow() != null) dialog.getWindow().setLayout(-1, -2);
     }
 
     private void switchQuickPanelPage(int page) {
