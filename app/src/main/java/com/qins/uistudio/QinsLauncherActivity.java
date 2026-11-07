@@ -20,9 +20,11 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ClipDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.hardware.Camera;
@@ -1665,7 +1667,10 @@ public class QinsLauncherActivity extends Activity {
         if (homeWidgetArea == null) return;
         List<NotificationBridgeService.NotificationItem> all = NotificationBridgeService.snapshot();
         ArrayList<NotificationBridgeService.NotificationItem> items = new ArrayList<NotificationBridgeService.NotificationItem>();
-        for (NotificationBridgeService.NotificationItem item : all) if (item.missedCall || item.media) items.add(item);
+        int mediaPage = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE).getInt("home_media_widget_page", 0);
+        for (NotificationBridgeService.NotificationItem item : all) {
+            if (item.missedCall || (item.media && page == mediaPage)) items.add(item);
+        }
         if (items.isEmpty()) return;
         homeWidgetIndex = Math.max(0, Math.min(homeWidgetIndex, items.size() - 1));
         final NotificationBridgeService.NotificationItem item = items.get(homeWidgetIndex);
@@ -1717,7 +1722,34 @@ public class QinsLauncherActivity extends Activity {
         }
         LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2); lp.leftMargin=dp(4); lp.rightMargin=dp(4); lp.topMargin=dp(4); homeWidgetArea.addView(card,lp);
         card.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){try{Intent launch=getPackageManager().getLaunchIntentForPackage(item.packageName);if(launch!=null)startActivity(launch);}catch(RuntimeException ignored){}}});
-        card.setOnLongClickListener(new View.OnLongClickListener(){@Override public boolean onLongClick(View v){List<NotificationBridgeService.NotificationItem> now=NotificationBridgeService.snapshot();int count=0;for(NotificationBridgeService.NotificationItem x:now)if(x.missedCall||x.media)count++;if(count>1){homeWidgetIndex=(homeWidgetIndex+1)%count;showHome(false);if(homeWidgetArea.getChildCount()>0)homeWidgetArea.getChildAt(0).requestFocus();}return true;}});
+        card.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override public boolean onLongClick(View v) {
+                showHomeWidgetPagePicker();
+                return true;
+            }
+        });
+    }
+
+    private void showHomeWidgetPagePicker() {
+        final int count = Math.max(1, pageCount());
+        final String[] labels = new String[count];
+        for (int i = 0; i < count; i++) labels[i] = "Home page " + (i + 1);
+        int selected = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE)
+                .getInt("home_media_widget_page", 0);
+        selected = Math.max(0, Math.min(selected, count - 1));
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Move music widget to")
+                .setSingleChoiceItems(labels, selected,
+                        new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE).edit()
+                                .putInt("home_media_widget_page", which).commit();
+                        dialog.dismiss();
+                        showHome(false);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void showCompactQuickPanel(boolean focusFirst) {
@@ -1954,6 +1986,40 @@ public class QinsLauncherActivity extends Activity {
         return button;
     }
 
+    private Drawable normalizeAppIcon(Drawable source) {
+        if (source == null) return null;
+        final int sampleSize = 128;
+        Bitmap sample = Bitmap.createBitmap(sampleSize, sampleSize, Bitmap.Config.ARGB_8888);
+        Canvas sampleCanvas = new Canvas(sample);
+        source.setBounds(0, 0, sampleSize, sampleSize);
+        source.draw(sampleCanvas);
+        int minX = sampleSize, minY = sampleSize, maxX = -1, maxY = -1;
+        int[] row = new int[sampleSize];
+        for (int y = 0; y < sampleSize; y++) {
+            sample.getPixels(row, 0, sampleSize, 0, y, sampleSize, 1);
+            for (int x = 0; x < sampleSize; x++) if (((row[x] >>> 24) & 0xFF) > 20) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+            }
+        }
+        if (maxX < minX || maxY < minY) { sample.recycle(); return source; }
+        int cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
+        Bitmap normalized = Bitmap.createBitmap(sampleSize, sampleSize, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(normalized);
+        Rect sourceRect = new Rect(minX, minY, maxX + 1, maxY + 1);
+        float scale = Math.min(112f / cropWidth, 112f / cropHeight);
+        int outWidth = Math.max(1, Math.round(cropWidth * scale));
+        int outHeight = Math.max(1, Math.round(cropHeight * scale));
+        int left = (sampleSize - outWidth) / 2, top = (sampleSize - outHeight) / 2;
+        Rect destRect = new Rect(left, top, left + outWidth, top + outHeight);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        canvas.drawBitmap(sample, sourceRect, destRect, paint);
+        sample.recycle();
+        return new BitmapDrawable(getResources(), normalized);
+    }
+
     private void populateHomeApps(ThemeManager.Appearance a) {
         appRow.removeAllViews();
         int start = page * APPS_PER_PAGE;
@@ -1993,7 +2059,7 @@ public class QinsLauncherActivity extends Activity {
                     .getFloat("icon_scale", 1.0f);
             int iconFrameSize = clamp(Math.round((screenWidthDp() / 4 - 12) * iconScale), 38, 76);
             boolean nothingIcons = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
-            int iconSize = nothingIcons ? iconFrameSize - 11 : Math.round(iconFrameSize * 0.86f);
+            int iconSize = Math.round(iconFrameSize * (nothingIcons ? 0.82f : 0.98f));
             FrameLayout iconFrame = new FrameLayout(this);
             if (nothingIcons) {
                 GradientDrawable iconBackground = new GradientDrawable();
@@ -2028,7 +2094,7 @@ public class QinsLauncherActivity extends Activity {
                         -1, dp(22), Gravity.CENTER));
             } else {
                 final ImageView icon = new ImageView(this);
-                icon.setImageDrawable(info.loadIcon(getPackageManager()));
+                icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) {
                     ColorMatrix matrix = new ColorMatrix();
@@ -2571,7 +2637,7 @@ public class QinsLauncherActivity extends Activity {
             item.setFocusableInTouchMode(false);
             item.setClickable(true);
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(info.loadIcon(getPackageManager()));
+            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
                 android.graphics.ColorMatrix monochrome = new android.graphics.ColorMatrix();
@@ -2837,7 +2903,7 @@ public class QinsLauncherActivity extends Activity {
 
         int widthIconSize = clamp(screenWidthDp() / Math.max(1, drawerColumns()) - 16, 40, 64);
         int heightIconSize = clamp((screenHeightDp() - 105) / Math.max(1, drawerRows()) - 27, 36, 62);
-        int iconSize = Math.round(Math.min(widthIconSize, heightIconSize) * 0.88f);
+        int iconSize = Math.round(Math.min(widthIconSize, heightIconSize) * 0.98f);
         if (folder) {
             LinearLayout preview = new LinearLayout(this);
             preview.setOrientation(LinearLayout.HORIZONTAL);
@@ -2857,7 +2923,7 @@ public class QinsLauncherActivity extends Activity {
             tile.addView(preview, new LinearLayout.LayoutParams(-1, dp(iconSize)));
         } else {
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(info.loadIcon(getPackageManager()));
+            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
             // Keep every app icon at the same full visual size; downloaded apps
@@ -3389,18 +3455,20 @@ public class QinsLauncherActivity extends Activity {
         previewCard.setOrientation(LinearLayout.VERTICAL);
         previewCard.setGravity(Gravity.CENTER);
         previewCard.setPadding(dp(8), dp(6), dp(8), dp(6));
+        final FrameLayout previewClockHolder = new FrameLayout(this);
         final TextView previewTime = new TextView(this);
         previewTime.setGravity(Gravity.CENTER);
         previewTime.setIncludeFontPadding(false);
         previewTime.setTextColor(a.text);
-        previewCard.addView(previewTime, new LinearLayout.LayoutParams(-1, dp(44)));
+        previewClockHolder.addView(previewTime, new FrameLayout.LayoutParams(-1, dp(66), Gravity.CENTER));
+        previewCard.addView(previewClockHolder, new LinearLayout.LayoutParams(-1, dp(66)));
         TextView previewDate = new TextView(this);
         previewDate.setText(new SimpleDateFormat("EEEE  ·  d MMM", Locale.getDefault()).format(new Date()));
         previewDate.setTextColor(a.muted);
         previewDate.setTextSize(10);
         previewDate.setGravity(Gravity.CENTER);
         previewCard.addView(previewDate);
-        content.addView(previewCard, new LinearLayout.LayoutParams(-1, dp(78)));
+        content.addView(previewCard, new LinearLayout.LayoutParams(-1, dp(100)));
 
         final LinearLayout grid = new LinearLayout(this);
         grid.setOrientation(LinearLayout.VERTICAL);
@@ -3439,10 +3507,24 @@ public class QinsLauncherActivity extends Activity {
         render[0] = new Runnable() {
             @Override public void run() {
                 String style = selectedStyle[0];
-                previewTime.setText("stacked".equals(style) ? "12\n45" : "12:45");
-                previewTime.setTypeface(clockTypefaceForStyle(a, style),
-                        ("bold".equals(style) || "digital".equals(style)) ? Typeface.BOLD : Typeface.NORMAL);
-                previewTime.setTextSize("compact".equals(style) ? 25 : 33);
+                previewClockHolder.removeAllViews();
+                boolean nothingMatrix = ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
+                        ("dot".equals(style) || "stacked".equals(style));
+                if (nothingMatrix) {
+                    NothingDotMatrixClockView matrix = new NothingDotMatrixClockView(
+                            QinsLauncherActivity.this, "stacked".equals(style));
+                    matrix.setText("stacked".equals(style) ? "12\n45" : "12:45");
+                    matrix.setTextColor("stacked".equals(style) ? a.accent : 0xFFF7F7F5);
+                    previewClockHolder.addView(matrix,
+                            new FrameLayout.LayoutParams(-1, dp("stacked".equals(style) ? 84 : 68), Gravity.CENTER));
+                } else {
+                    previewTime.setText("stacked".equals(style) ? "12\n45" : "12:45");
+                    previewTime.setTypeface(clockTypefaceForStyle(a, style),
+                            ("bold".equals(style) || "digital".equals(style)) ? Typeface.BOLD : Typeface.NORMAL);
+                    previewTime.setTextSize("compact".equals(style) ? 25 : 33);
+                    previewClockHolder.addView(previewTime,
+                            new FrameLayout.LayoutParams(-1, dp(66), Gravity.CENTER));
+                }
                 if (clockBackgroundFilled(a)) {
                     styleSurface(previewCard, a.tileActive, a.border, a.focus, a.cornerDp);
                 } else {
@@ -4376,9 +4458,14 @@ public class QinsLauncherActivity extends Activity {
             name.setTextSize(11);
             state.setTextColor(0xFFA4A7A8);
             state.setTextSize(9);
+        } else if (pixelTheme) {
+            styleSurface(tile, quickSurfaceColor(a, a.tile), a.border, a.focus, 14f);
+            iconWrap.setBackgroundColor(0x00000000);
+            name.setTextColor(a.text);
+            name.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            name.setTextSize(12);
+            state.setTextColor(a.muted);
         } else {
-            // Pixel and One UI keep the tile container frameless; Pixel's icon
-            // surface and left-aligned label block define its Material layout.
             tile.setBackgroundColor(0x00000000);
         }
         registerQuickTile(symbol, tile, state);
@@ -4497,8 +4584,8 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void styleLevelSeekBar(SeekBar seek, ThemeManager.Appearance a) {
-        // The card itself visualizes the level; keep a visible thumb so the
-        // current position never disappears while the user moves across it.
+        // The level card itself shows the current value. Keep the SeekBar track
+        // invisible and remove the thumb marker so no dots remain on the slider.
         GradientDrawable emptyTrack = new GradientDrawable();
         emptyTrack.setColor(0x00000000);
         GradientDrawable emptyProgress = new GradientDrawable();
@@ -4508,20 +4595,8 @@ public class QinsLauncherActivity extends Activity {
         layers.setId(0, android.R.id.background);
         layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
-
-        GradientDrawable thumb = new GradientDrawable();
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            thumb.setShape(GradientDrawable.RECTANGLE);
-            thumb.setCornerRadius(dp(2));
-        } else {
-            thumb.setShape(GradientDrawable.OVAL);
-        }
-        thumb.setColor(a.accent);
-        int size = ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 20 : 16;
-        thumb.setSize(dp(size), dp(size));
-        seek.setThumb(thumb);
-        seek.setThumbOffset(dp(size / 2));
-        seek.setPadding(dp(size / 2), 0, dp(size / 2), 0);
+        seek.setThumb(null);
+        seek.setPadding(0, 0, 0, 0);
         seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
     }
 
@@ -4828,6 +4903,21 @@ public class QinsLauncherActivity extends Activity {
             return;
         }
         int fill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, a.border, a.accent, 14f, tile.hasFocus()));
+            View iconSurface = tile.findViewWithTag("quick-icon-shape");
+            if (iconSurface != null) iconSurface.setBackgroundColor(0x00000000);
+            QinsGlyphView glyph = findQuickGlyph(tile);
+            if (glyph != null) glyph.setTint(active ? a.text : a.accent);
+            if (tile instanceof android.view.ViewGroup && ((android.view.ViewGroup) tile).getChildCount() > 1) {
+                android.view.ViewGroup labels = (android.view.ViewGroup) ((android.view.ViewGroup) tile).getChildAt(1);
+                for (int i = 0; i < labels.getChildCount(); i++) {
+                    View label = labels.getChildAt(i);
+                    if (label instanceof TextView) ((TextView) label).setTextColor(i == 0 ? a.text : a.muted);
+                }
+            }
+            return;
+        }
         View shape = tile.findViewWithTag("quick-icon-shape");
         if (shape != null) {
             GradientDrawable bg = new GradientDrawable();
@@ -5408,7 +5498,7 @@ public class QinsLauncherActivity extends Activity {
                     event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ||
                     event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) return true;
         }
-        if (!drawerVisible && !editMode && folderOverlay == null &&
+        if (!quickPanelVisible && !drawerVisible && !editMode && folderOverlay == null &&
                 edgePrefs.getBoolean("enabled", true) && isBoundRightSoftKey(event)) {
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
                 rightSoftKeyGestureActive = true;
