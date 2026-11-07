@@ -94,6 +94,9 @@ public class QinsLauncherActivity extends Activity {
     private View pendingSelectView;
     private boolean longPressPerformed = false;
      private View folderOverlay;
+    private View edgePanelOverlay;
+    private final List<View> edgePanelItems = new ArrayList<View>();
+    private int edgePanelFocusIndex = 0;
     private String drawerSearchQuery = "";
     private TextView drawerSearchStatus;
     private SignalStrengthIndicatorView signalIndicator;
@@ -1818,8 +1821,8 @@ public class QinsLauncherActivity extends Activity {
                 miniIcons.setGravity(Gravity.CENTER);
                 miniIcons.setOrientation(LinearLayout.HORIZONTAL);
                 List<ResolveInfo> folderApps = getFolderApps(info);
-                int previewCount = Math.min(3, folderApps.size());
-                int miniSize = previewCount >= 3 ? 12 : 15;
+                int previewCount = Math.min(4, folderApps.size());
+                int miniSize = previewCount >= 4 ? 10 : (previewCount >= 3 ? 12 : 15);
                 for (int mini = 0; mini < previewCount; mini++) {
                     ImageView smallIcon = new ImageView(this);
                     smallIcon.setImageDrawable(folderApps.get(mini).loadIcon(getPackageManager()));
@@ -2268,6 +2271,216 @@ public class QinsLauncherActivity extends Activity {
         if (first != null) first.requestFocus();
     }
 
+
+    private boolean isEdgePanelEnabled() {
+        return getSharedPreferences("qins_edge_panel", MODE_PRIVATE).getBoolean("enabled", true);
+    }
+
+    private String edgePanelSelection() {
+        return getSharedPreferences("qins_edge_panel", MODE_PRIVATE).getString("apps", "");
+    }
+
+    private boolean isEdgeAppSelected(ResolveInfo info, int fallbackIndex) {
+        String selected = edgePanelSelection();
+        if (selected.length() == 0) return fallbackIndex < 5;
+        String key = componentKey(info);
+        String[] values = selected.split("\\|");
+        for (String value : values) if (key.equals(value)) return true;
+        return false;
+    }
+
+    private void closeEdgePanel() {
+        if (pageContainer != null && edgePanelOverlay != null) {
+            pageContainer.removeView(edgePanelOverlay);
+        }
+        edgePanelOverlay = null;
+        edgePanelItems.clear();
+    }
+
+    private void moveEdgePanelFocus(int direction) {
+        if (edgePanelItems.isEmpty()) return;
+        edgePanelFocusIndex = clamp(edgePanelFocusIndex + direction, 0, edgePanelItems.size() - 1);
+        edgePanelItems.get(edgePanelFocusIndex).requestFocus();
+    }
+
+    private void showEdgePanel() {
+        if (!isEdgePanelEnabled() || pageContainer == null) return;
+        closeEdgePanel();
+        final ThemeManager.Appearance a = appearance();
+        FrameLayout scrim = new FrameLayout(this);
+        scrim.setBackgroundColor(0x33000000);
+        scrim.setFocusable(true);
+        scrim.setClickable(true);
+        scrim.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { closeEdgePanel(); }
+        });
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setPadding(dp(8), dp(8), dp(8), dp(8));
+        panel.setBackgroundColor(a.surface);
+        panel.setFocusable(true);
+        panel.setClickable(true);
+        panel.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { /* keep focus inside the panel */ }
+        });
+
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView heading = new TextView(this);
+        heading.setText("EDGE");
+        heading.setTextColor(a.text);
+        heading.setTextSize(11);
+        heading.setTypeface(Typeface.DEFAULT_BOLD);
+        header.addView(heading, new LinearLayout.LayoutParams(0, dp(34), 1));
+        TextView settings = new TextView(this);
+        settings.setText("⚙");
+        settings.setTextSize(18);
+        settings.setTextColor(a.text);
+        settings.setGravity(Gravity.CENTER);
+        settings.setFocusable(true);
+        settings.setFocusableInTouchMode(false);
+        styleSurface(settings, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+        settings.setContentDescription(getString(R.string.launcher_edge_settings));
+        settings.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showEdgePanelSettings(); }
+        });
+        header.addView(settings, new LinearLayout.LayoutParams(dp(34), dp(34)));
+        panel.addView(header, new LinearLayout.LayoutParams(-1, dp(38)));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(false);
+        scroll.setVerticalScrollBarEnabled(false);
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        int selectedCount = 0;
+        for (int i = 0; i < installedApps.size(); i++) {
+            final ResolveInfo info = installedApps.get(i);
+            if (isFolder(info) || !isEdgeAppSelected(info, i)) continue;
+            selectedCount++;
+            LinearLayout item = new LinearLayout(this);
+            item.setOrientation(LinearLayout.HORIZONTAL);
+            item.setGravity(Gravity.CENTER_VERTICAL);
+            item.setPadding(dp(5), dp(4), dp(5), dp(4));
+            item.setFocusable(true);
+            item.setFocusableInTouchMode(false);
+            item.setClickable(true);
+            ImageView icon = new ImageView(this);
+            icon.setImageDrawable(info.loadIcon(getPackageManager()));
+            icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            item.addView(icon, new LinearLayout.LayoutParams(dp(30), dp(30)));
+            TextView label = new TextView(this);
+            label.setText(info.loadLabel(getPackageManager()));
+            label.setTextColor(a.text);
+            label.setTextSize(11);
+            label.setSingleLine(true);
+            label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(0, -2, 1);
+            labelParams.leftMargin = dp(7);
+            labelParams.rightMargin = dp(3);
+            item.addView(label, labelParams);
+            styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+            item.setContentDescription(info.loadLabel(getPackageManager()));
+            item.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    closeEdgePanel();
+                    launchApp(info);
+                }
+            });
+            LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(-1, dp(48));
+            itemParams.bottomMargin = dp(4);
+            list.addView(item, itemParams);
+            edgePanelItems.add(item);
+        }
+        if (selectedCount == 0) {
+            TextView empty = new TextView(this);
+            empty.setText(R.string.launcher_edge_choose_apps);
+            empty.setTextColor(a.muted);
+            empty.setTextSize(11);
+            empty.setGravity(Gravity.CENTER);
+            empty.setFocusable(true);
+            empty.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { showEdgePanelSettings(); }
+            });
+            list.addView(empty, new LinearLayout.LayoutParams(-1, dp(58)));
+            edgePanelItems.add(empty);
+        }
+        scroll.addView(list, new ScrollView.LayoutParams(-1, -2));
+        panel.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+
+        TextView close = new TextView(this);
+        close.setText("×");
+        close.setTextColor(a.text);
+        close.setTextSize(20);
+        close.setGravity(Gravity.CENTER);
+        close.setFocusable(true);
+        close.setFocusableInTouchMode(false);
+        styleSurface(close, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+        close.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { closeEdgePanel(); }
+        });
+        LinearLayout.LayoutParams closeParams = new LinearLayout.LayoutParams(-1, dp(34));
+        closeParams.topMargin = dp(4);
+        panel.addView(close, closeParams);
+
+        int panelWidth = clamp((int)(screenWidthDp() * 0.48f), 132, 190);
+        FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(dp(panelWidth), -1,
+                Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        panelParams.topMargin = dp(8);
+        panelParams.bottomMargin = dp(8);
+        panelParams.rightMargin = dp(4);
+        scrim.addView(panel, panelParams);
+        pageContainer.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
+        edgePanelOverlay = scrim;
+        edgePanelFocusIndex = 0;
+        if (!edgePanelItems.isEmpty()) edgePanelItems.get(0).requestFocus();
+        else settings.requestFocus();
+    }
+
+    private void showEdgePanelSettings() {
+        final List<ResolveInfo> choices = new ArrayList<ResolveInfo>();
+        final List<String> labelsList = new ArrayList<String>();
+        for (ResolveInfo info : installedApps) {
+            if (isFolder(info)) continue;
+            choices.add(info);
+            labelsList.add(info.loadLabel(getPackageManager()).toString());
+        }
+        final String[] labels = labelsList.toArray(new String[labelsList.size()]);
+        final boolean[] checked = new boolean[choices.size()];
+        for (int i = 0; i < choices.size(); i++) checked[i] = isEdgeAppSelected(choices.get(i), i);
+        final java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<String>();
+        for (int i = 0; i < choices.size(); i++) if (checked[i]) selected.add(componentKey(choices.get(i)));
+        final android.widget.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle(R.string.launcher_edge_panel)
+                .setMultiChoiceItems(labels, checked, new android.content.DialogInterface.OnMultiChoiceClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int which, boolean isChecked) {
+                        String key = componentKey(choices.get(which));
+                        if (isChecked) selected.add(key); else selected.remove(key);
+                    }
+                })
+                .setPositiveButton(android.R.string.ok, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int which) {
+                        StringBuilder value = new StringBuilder();
+                        for (String key : selected) {
+                            if (value.length() > 0) value.append('|');
+                            value.append(key);
+                        }
+                        getSharedPreferences("qins_edge_panel", MODE_PRIVATE).edit()
+                                .putString("apps", value.toString()).putBoolean("enabled", true).commit();
+                        showEdgePanel();
+                    }
+                })
+                .setNeutralButton(R.string.launcher_edge_disable, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface d, int which) {
+                        getSharedPreferences("qins_edge_panel", MODE_PRIVATE).edit()
+                                .putBoolean("enabled", false).commit();
+                        closeEdgePanel();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null).create();
+        dialog.show();
+    }
+
     private void showFolderActions(final ResolveInfo folder) {
         final String[] actions = new String[] {
                 "Open folder", "Add app", "Rename folder", "Ungroup apps"
@@ -2420,8 +2633,8 @@ public class QinsLauncherActivity extends Activity {
             preview.setOrientation(LinearLayout.HORIZONTAL);
             preview.setGravity(Gravity.CENTER);
             List<ResolveInfo> children = getFolderApps(info);
-            int count = Math.min(3, children.size());
-            int mini = count >= 3 ? 15 : 19;
+            int count = Math.min(4, children.size());
+            int mini = count >= 4 ? 12 : (count >= 3 ? 15 : 19);
             for (int i = 0; i < count; i++) {
                 ImageView childIcon = new ImageView(this);
                 childIcon.setImageDrawable(children.get(i).loadIcon(getPackageManager()));
@@ -3982,6 +4195,48 @@ public class QinsLauncherActivity extends Activity {
                 showQuickPanel(true);
                 return true;
             }
+        }
+        SharedPreferences edgePrefs = getSharedPreferences("qins_edge_panel", MODE_PRIVATE);
+        int rightBoundCode = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE)
+                .getInt("right_key_code", Integer.MIN_VALUE);
+        if (rightSoftKeyGestureActive && event.getAction() == KeyEvent.ACTION_UP &&
+                (event.getKeyCode() == rightBoundCode || isBoundRightSoftKey(event))) {
+            rightSoftKeyGestureActive = false;
+            return true;
+        }
+        if (edgePanelOverlay != null) {
+            if (isBoundRightSoftKey(event) && event.getAction() == KeyEvent.ACTION_DOWN &&
+                    event.getRepeatCount() == 0) {
+                rightSoftKeyGestureActive = true;
+                closeEdgePanel();
+                return true;
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
+                if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) closeEdgePanel();
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
+                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN) {
+                moveEdgePanelFocus(1);
+                return true;
+            }
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
+                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) {
+                moveEdgePanelFocus(-1);
+                return true;
+            }
+            if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT ||
+                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT ||
+                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ||
+                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) return true;
+        }
+        if (!quickPanelVisible && !drawerVisible && !editMode && edgePrefs.getBoolean("enabled", true) &&
+                isBoundRightSoftKey(event)) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
+                rightSoftKeyGestureActive = true;
+                showEdgePanel();
+            }
+            return true;
         }
         if (quickPanelVisible && quickPanelExpanded && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) { rightSoftKeyGestureActive=true; if(quickPanelPage==1)switchQuickPanelPage(0);else showHome(false); }
