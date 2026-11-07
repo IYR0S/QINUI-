@@ -1397,6 +1397,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showHome(boolean focusHandle) {
+        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (root != null && root.getChildCount() > 0) {
             root.getChildAt(0).setVisibility(View.VISIBLE);
             root.setPadding(root.getPaddingLeft(), dp(4), root.getPaddingRight(), root.getPaddingBottom());
@@ -2397,6 +2398,15 @@ public class QinsLauncherActivity extends Activity {
             item.setGravity(Gravity.CENTER);
             if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
             else item.setBackgroundColor(0x00000000);
+            item.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override public void onFocusChange(View v, boolean focused) {
+                    if (focused) {
+                        GradientDrawable glow = new GradientDrawable(); glow.setShape(GradientDrawable.OVAL);
+                        glow.setColor(0x334F9BFF); glow.setStroke(dp(2), a.accent); v.setBackgroundDrawable(glow);
+                    } else if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(v, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+                    else v.setBackgroundColor(0x00000000);
+                }
+            });
             item.setContentDescription(info.loadLabel(getPackageManager()));
             item.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
@@ -3515,6 +3525,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showQuickPanel(boolean focusFirst) {
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         removeCompactPanelOverlay();
         wifiState = null; bluetoothState = null; soundState = null;
         wifiTile = null; bluetoothTile = null; soundTile = null;
@@ -3536,13 +3547,14 @@ public class QinsLauncherActivity extends Activity {
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
+        scroll.setPadding(0, 0, 0, 0);
         scroll.setClipToPadding(false);
         scroll.setVerticalScrollBarEnabled(false);
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setClipChildren(false);
         panel.setClipToPadding(false);
-        panel.setPadding(dp(2), dp(4), dp(2), dp(10));
+        panel.setPadding(0, 0, 0, dp(10));
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
 
@@ -4046,7 +4058,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout row = null; int used = 0;
         for (int i = 0; i < count; i++) {
             final String key = keys[i];
-            String defaultSize = ThemeManager.APPEARANCE_GALAXY.equals(a.id) && i < 2 ? "2x1" : "2x1";
+            String defaultSize = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? (i < 2 ? "2x1" : "1x1") : "2x1";
             String size = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key, defaultSize);
             int[] span = parseTileSpan(size); int sx = span[0], sy = span[1];
             if (used + sx > columns) { row = null; used = 0; }
@@ -4056,6 +4068,7 @@ public class QinsLauncherActivity extends Activity {
                     ? quickConnectivityTile(key, a) : quickTile(glyphForQuickKey(key), quickLabel(key), a);
             LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, dp(baseHeight * sy), sx);
             if (used > 0) tp.leftMargin = dp(4); row.addView(tile, tp);
+            if (sy > 1) { ViewGroup.LayoutParams rowLp = row.getLayoutParams(); rowLp.height = dp(baseHeight * sy); row.setLayoutParams(rowLp); }
             tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { performQuickAction(key); } });
             used += sx; if (used == columns) row = null;
         }
