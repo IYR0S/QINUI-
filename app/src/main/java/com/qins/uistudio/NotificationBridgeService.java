@@ -155,8 +155,10 @@ public final class NotificationBridgeService extends NotificationListenerService
                 pkg.contains("audio") || pkg.contains("podcast") || pkg.contains("deezer") ||
                 pkg.contains("soundcloud") || pkg.contains("poweramp") || pkg.contains("foobar");
         boolean mediaSession = extras != null && extras.containsKey("android.mediaSession");
+        boolean ongoing = notification != null &&
+                (notification.flags & (Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR)) != 0;
         boolean media = !missed && (transportAction || mediaSession ||
-                (mediaPackage && count > 0));
+                (mediaPackage && (count > 0 || ongoing)));
         return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, actionTitles, actions);
     }
 
