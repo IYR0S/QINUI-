@@ -5551,6 +5551,12 @@ public class QinsLauncherActivity extends Activity {
                 keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || keyCode == KeyEvent.KEYCODE_BUTTON_A;
     }
 
+    private boolean isLongPressTargetTag(String tag) {
+        return tag.startsWith("home:") || tag.startsWith("drawer:") ||
+                tag.startsWith("page-dot:") || tag.startsWith("quick:") ||
+                "home:drawer-trigger".equals(tag) || "pages".equals(tag);
+    }
+
     private boolean isWidgetCardDescendant(View view) {
         View current = view;
         while (current != null) {
@@ -5800,13 +5806,8 @@ public class QinsLauncherActivity extends Activity {
                     return true;
                 }
             }
-            if (focused != null && (isWidgetCardDescendant(focused) || (focused.getTag() instanceof String &&
-                    (((String) focused.getTag()).startsWith("home:") ||
-                     ((String) focused.getTag()).startsWith("drawer:") ||
-                     ((String) focused.getTag()).startsWith("page-dot:") ||
-                     ((String) focused.getTag()).startsWith("quick:") ||
-                     "home:drawer-trigger".equals(focused.getTag()) ||
-                     "pages".equals(focused.getTag())))) {
+            if (focused != null && (isWidgetCardDescendant(focused) ||
+                    (focused.getTag() instanceof String && isLongPressTargetTag((String) focused.getTag())))) {
                 if (event.getRepeatCount() == 0) {
                     pendingSelectView = focused;
                     longPressPerformed = false;
