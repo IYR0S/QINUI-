@@ -3792,6 +3792,7 @@ public class QinsLauncherActivity extends Activity {
         if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) shape.setShape(GradientDrawable.OVAL);
         else { shape.setShape(GradientDrawable.RECTANGLE); shape.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 10 : 8)); }
         shape.setColor(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 0x00000000 : a.tile);
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) shape.setCornerRadius(dp(5));
         iconWrap.setBackgroundDrawable(shape); iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent); icon.setVisualStyle(a.id); icon.setTag("quick-glyph");
         int quickIconSize = clamp(screenHeightDp() / 8, 30, 40), glyphSize = dp(quickIconSize * 0.64f);
@@ -3879,8 +3880,9 @@ public class QinsLauncherActivity extends Activity {
         heading.setTextColor(a.text); heading.setTextSize(13); brightness.addView(heading);
         SeekBar seek = new SeekBar(this); seek.setMax(255); seek.setProgress(Math.max(0, Math.min(255, readBrightness())));
         seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(8));
-        GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(8));
+        float radius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 1f : (ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 14f : 10f);
+        GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(radius));
+        GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(radius));
         LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL)});
         layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
         GradientDrawable thumb = new GradientDrawable(); thumb.setShape(GradientDrawable.OVAL); thumb.setColor(a.accent); thumb.setSize(dp(16), dp(16)); seek.setThumb(thumb);
@@ -4020,7 +4022,7 @@ public class QinsLauncherActivity extends Activity {
         if (shape != null) {
             GradientDrawable bg = new GradientDrawable();
             if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) bg.setShape(GradientDrawable.OVAL);
-            else { bg.setShape(GradientDrawable.RECTANGLE); bg.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 10 : 8)); }
+            else { bg.setShape(GradientDrawable.RECTANGLE); bg.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? (active ? 14 : 5) : 8)); }
             bg.setColor(fill); shape.setBackgroundDrawable(bg);
         }
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, (active || tile.hasFocus()) ? a.accent : a.border, a.accent, a.cornerDp, tile.hasFocus()));
@@ -4091,7 +4093,11 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showQuickTileSizePicker() {
-        final String[] keys = getExpandedQuickTileKeys(); final String[] labels = new String[keys.length];
+        String[] allKeys = getExpandedQuickTileKeys();
+        int visibleCount = ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) ? 6 : 4;
+        final String[] keys = new String[visibleCount];
+        System.arraycopy(allKeys, 0, keys, 0, visibleCount);
+        final String[] labels = new String[keys.length];
         for (int i = 0; i < keys.length; i++) labels[i] = quickLabel(keys[i]);
         new android.app.AlertDialog.Builder(this).setTitle("Choose a tile to resize").setItems(labels, new android.content.DialogInterface.OnClickListener() {
             @Override public void onClick(android.content.DialogInterface dialog, int which) {
