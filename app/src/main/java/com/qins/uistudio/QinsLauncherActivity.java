@@ -4158,13 +4158,17 @@ public class QinsLauncherActivity extends Activity {
             else { bg.setShape(GradientDrawable.RECTANGLE); bg.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? (active ? 14 : 5) : 8)); }
             bg.setColor(fill); shape.setBackgroundDrawable(bg);
         }
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, (active || tile.hasFocus()) ? a.accent : a.border, a.accent, a.cornerDp, tile.hasFocus()));
-        else if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && "quick-connectivity".equals(tile.getTag()))
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, tile.hasFocus() ? a.accent : a.border, a.accent, 22f, tile.hasFocus()));
-        else if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && ("sound".equals(key) || "settings".equals(key)))
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, tile.hasFocus() ? a.accent : a.border, a.accent, 8f, tile.hasFocus()));
-        else if (tile.hasFocus()) tile.setBackgroundDrawable(new FocusSurfaceDrawable(0x223C8060, a.accent, a.accent, a.cornerDp, true));
-        else tile.setBackgroundColor(0x00000000);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, (active || tile.hasFocus()) ? a.accent : a.border, a.accent, 3f, tile.hasFocus()));
+        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            int pixelFill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(pixelFill,
+                    tile.hasFocus() ? a.accent : a.border, a.accent, active ? 22f : 16f, tile.hasFocus()));
+        } else if (tile.hasFocus()) {
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, a.accent, a.accent, 0f, true));
+        } else {
+            tile.setBackgroundColor(0x00000000);
+        }
     }
 
     private void setQuickState(String key, TextView state, View tile, String label, boolean active) {
@@ -4250,7 +4254,7 @@ public class QinsLauncherActivity extends Activity {
                 final String key = keys[which - 1]; final String[] sizes = new String[] {"1 × 1 · Small", "2 × 1 · Wide", "2 × 2 · Large"};
                 String current = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key,
                         ThemeManager.APPEARANCE_GALAXY.equals(appearance().id)
-                                ? (("wifi".equals(key) || "bluetooth".equals(key)) ? "2x1" : "1x1")
+                                ? "1x1"
                                 : (ThemeManager.APPEARANCE_PIXEL.equals(appearance().id) ? "1x1" : "2x1"));
                 int selected = "1x1".equals(current) ? 0 : ("2x2".equals(current) ? 2 : 1);
                 new android.app.AlertDialog.Builder(QinsLauncherActivity.this).setTitle("Tile size: " + quickLabel(key))
