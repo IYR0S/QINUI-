@@ -803,7 +803,7 @@ public class QinsLauncherActivity extends Activity {
                 if (digit >= 0) normalized.append((char) ('0' + digit));
                 else if (ch == ':' || ch == '\n') normalized.append(ch);
             }
-            String[] lines = normalized.toString().split("\\n");
+            String[] lines = normalized.toString().split("\n");
             if (lines.length == 0 || lines[0].length() == 0) return;
 
             float maxUnits = 1f;
@@ -1365,7 +1365,7 @@ public class QinsLauncherActivity extends Activity {
         }
         String saved = prefs.getString(PINS_KEY, "");
         if (saved.length() == 0) return;
-        String[] keys = saved.split("\\n");
+        String[] keys = saved.split("\n");
         for (String key : keys) {
             ResolveInfo info = findApp(key);
             if (info != null && !isPinned(info)) pinnedApps.add(info);
@@ -1383,7 +1383,7 @@ public class QinsLauncherActivity extends Activity {
         if (info == null) return false;
         String raw = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE)
                 .getString("apps:" + componentKey(info), "");
-        return raw.length() > 0 && raw.split("\\n").length > 1;
+        return raw.length() > 0 && raw.split("\n").length > 1;
     }
 
     private String getFolderName(ResolveInfo info) {
@@ -1398,7 +1398,7 @@ public class QinsLauncherActivity extends Activity {
         String raw = getSharedPreferences(FOLDER_PREFS, MODE_PRIVATE)
                 .getString("apps:" + componentKey(folder), "");
         if (raw.length() == 0) return result;
-        for (String key : raw.split("\\n")) {
+        for (String key : raw.split("\n")) {
             ResolveInfo info = findApp(key);
             if (info != null && !containsComponent(result, key)) result.add(info);
         }
@@ -3439,7 +3439,7 @@ public class QinsLauncherActivity extends Activity {
         render[0] = new Runnable() {
             @Override public void run() {
                 String style = selectedStyle[0];
-                previewTime.setText("stacked".equals(style) ? "12\\n45" : "12:45");
+                previewTime.setText("stacked".equals(style) ? "12\n45" : "12:45");
                 previewTime.setTypeface(clockTypefaceForStyle(a, style),
                         ("bold".equals(style) || "digital".equals(style)) ? Typeface.BOLD : Typeface.NORMAL);
                 previewTime.setTextSize("compact".equals(style) ? 25 : 33);
@@ -3469,7 +3469,7 @@ public class QinsLauncherActivity extends Activity {
                     styleSurface(option, selected ? a.tileActive : a.surface,
                             selected ? a.accent : a.border, a.focus, a.cornerDp);
                     TextView sample = new TextView(QinsLauncherActivity.this);
-                    sample.setText("stacked".equals(value) ? "12\\n45" : "12:45");
+                    sample.setText("stacked".equals(value) ? "12\n45" : "12:45");
                     sample.setTextColor(a.text);
                     sample.setGravity(Gravity.CENTER);
                     sample.setIncludeFontPadding(false);
@@ -4572,7 +4572,7 @@ public class QinsLauncherActivity extends Activity {
                     @Override public void onStopTrackingTouch(SeekBar bar) { }
                 }, a);
         final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
-        dnd.setText("⊖\\nDND\\n" + (quiet ? "ON" : "OFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false);
+        dnd.setText("⊖\nDND\n" + (quiet ? "ON" : "OFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false);
         styleSurface(dnd, quiet ? a.tileActive : a.surface, a.border, a.focus, 8f);
         LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(0, dp(78), 1); dndParams.leftMargin = dp(4); row.addView(dnd, dndParams);
         dnd.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleDoNotDisturb(); } });
@@ -4660,7 +4660,7 @@ public class QinsLauncherActivity extends Activity {
         heading.setTextSize(13); brightness.addView(heading);
         SeekBar seek = new SeekBar(this); seek.setMax(255); seek.setProgress(Math.max(0, Math.min(255, initialBrightness)));
         seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        hideSeekBarMarker(seek);
+        styleLevelSeekBar(seek, a);
         attachBrightnessFocus(brightness, seek);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
@@ -5135,7 +5135,7 @@ public class QinsLauncherActivity extends Activity {
 
         final TextView dnd = new TextView(this);
         boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
-        dnd.setText("⊖\\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\\nON" : "\\nOFF"));
+        dnd.setText("⊖\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\nON" : "\nOFF"));
         dnd.setTextColor(a.text);
         dnd.setTextSize(10);
         dnd.setGravity(Gravity.CENTER);
