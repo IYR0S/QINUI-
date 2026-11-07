@@ -60,6 +60,7 @@ public final class QinsGlyphView extends View {
         else if ("flashlight".equals(glyph)) drawFlashlight(canvas);
         else if ("hotspot".equals(glyph)) drawHotspot(canvas);
         else if ("dnd".equals(glyph)) drawDoNotDisturb(canvas);
+        else if ("dark-mode".equals(glyph)) drawDarkMode(canvas);
         else if ("home".equals(glyph)) drawHome(canvas);
         else if ("add".equals(glyph)) drawAdd(canvas);
         else if ("remove".equals(glyph)) drawRemove(canvas);
@@ -235,6 +236,14 @@ public final class QinsGlyphView extends View {
         c.drawArc(new RectF(-10, -10, 10, 10), 210, 120, false, paint);
         c.drawArc(new RectF(-6, -6, 6, 6), 30, 120, false, paint);
         c.drawArc(new RectF(-10, -10, 10, 10), 30, 120, false, paint);
+    }
+
+    private void drawDarkMode(Canvas c) {
+        c.drawCircle(0, 0, 9, paint);
+        paint.setStyle(Paint.Style.FILL);
+        Path cut = new Path(); cut.addCircle(5, -4, 8, Path.Direction.CW);
+        c.drawPath(cut, paint);
+        paint.setStyle(Paint.Style.STROKE);
     }
 
     private void drawDoNotDisturb(Canvas c) {
