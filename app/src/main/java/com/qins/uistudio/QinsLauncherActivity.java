@@ -3885,7 +3885,10 @@ public class QinsLauncherActivity extends Activity {
         GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(radius));
         LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL)});
         layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
-        GradientDrawable thumb = new GradientDrawable(); thumb.setShape(GradientDrawable.OVAL); thumb.setColor(a.accent); thumb.setSize(dp(16), dp(16)); seek.setThumb(thumb);
+        GradientDrawable thumb = new GradientDrawable();
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) { thumb.setShape(GradientDrawable.RECTANGLE); thumb.setCornerRadius(dp(2)); }
+        else thumb.setShape(GradientDrawable.OVAL);
+        thumb.setColor(a.accent); int thumbSize = ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 20 : 16; thumb.setSize(dp(thumbSize), dp(thumbSize)); seek.setThumb(thumb);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) { if (fromUser) writeBrightness(Math.max(1, value)); }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
@@ -4157,9 +4160,13 @@ public class QinsLauncherActivity extends Activity {
         TextView heading = new TextView(this); heading.setText("◖  " + getString(R.string.launcher_volume)); heading.setTextColor(a.text); heading.setTextSize(13); volume.addView(heading);
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE); final int max = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)); final int current = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
         SeekBar seek = new SeekBar(this); seek.setMax(max); seek.setProgress(current); seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(8)); GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(8));
+        float sliderRadius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 1f : (ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 14f : 10f);
+        GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(sliderRadius)); GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(sliderRadius));
         LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL)}); layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
-        GradientDrawable thumb = new GradientDrawable(); thumb.setShape(GradientDrawable.OVAL); thumb.setColor(a.accent); thumb.setSize(dp(16), dp(16)); seek.setThumb(thumb);
+        GradientDrawable thumb = new GradientDrawable();
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) { thumb.setShape(GradientDrawable.RECTANGLE); thumb.setCornerRadius(dp(2)); }
+        else thumb.setShape(GradientDrawable.OVAL);
+        thumb.setColor(a.accent); int thumbSize = ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 20 : 16; thumb.setSize(dp(thumbSize), dp(thumbSize)); seek.setThumb(thumb);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { @Override public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser){AudioManager m=(AudioManager)getSystemService(Context.AUDIO_SERVICE);if(m!=null)m.setStreamVolume(AudioManager.STREAM_MUSIC,value,0);}} @Override public void onStartTrackingTouch(SeekBar bar){} @Override public void onStopTrackingTouch(SeekBar bar){} });
         volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(32))); row.addView(volume, new LinearLayout.LayoutParams(0, dp(66), 1));
         final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
