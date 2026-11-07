@@ -116,4 +116,8 @@
     <string name="launcher_clock_top">למעלה</string>
     <string name="launcher_clock_center">במרכז</string>
     <string name="launcher_clock_bottom">למטה</string>
+    <string name="launcher_edge_panel">לוח Edge</string>
+    <string name="launcher_edge_settings">הגדרות לוח Edge</string>
+    <string name="launcher_edge_choose_apps">בחר אפליקציות ללוח Edge</string>
+    <string name="launcher_edge_disable">כיבוי לוח Edge</string>
 </resources>
