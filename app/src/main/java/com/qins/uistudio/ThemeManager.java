@@ -166,6 +166,13 @@ public final class ThemeManager {
                 .putBoolean(DARK_MODE_KEY, next).commit();
     }
 
+    private static Appearance lightAppearance(Appearance a) {
+        if (!APPEARANCE_NOTHING.equals(a.id)) return a;
+        return new Appearance(a.id, a.title, 0xFFF4F4F2, 0xFFE8E8E6, 0xFFFFFFFF, 0xFFE8E8E6,
+                0xFFE2E2E0, 0xFFD2D2D0, a.accent, 0xFF171819, 0xFF666A6B,
+                0xFFD2D4D4, 0xFF8C9091, a.cornerDp, true, a.useMonoType);
+    }
+
     private static Appearance darkAppearance(Appearance a) {
         if (APPEARANCE_NOTHING.equals(a.id)) return a;
         if (APPEARANCE_PIXEL.equals(a.id)) {
@@ -186,7 +193,7 @@ public final class ThemeManager {
             if (appearance.id.equals(selected)) { chosen = appearance; break; }
         }
         Appearance custom = withCustomColors(context, chosen);
-        return isDarkMode(context) ? darkAppearance(custom) : custom;
+        return isDarkMode(context) ? darkAppearance(custom) : lightAppearance(custom);
     }
 
     public static boolean applyAppearance(Context context, String id) {
