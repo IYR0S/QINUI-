@@ -2346,6 +2346,7 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onClick(View v) { showEdgePanelSettings(); }
         });
         header.addView(settings, new LinearLayout.LayoutParams(dp(34), dp(34)));
+        edgePanelItems.add(settings);
         panel.addView(header, new LinearLayout.LayoutParams(-1, dp(38)));
 
         ScrollView scroll = new ScrollView(this);
@@ -2450,7 +2451,7 @@ public class QinsLauncherActivity extends Activity {
         for (int i = 0; i < choices.size(); i++) checked[i] = isEdgeAppSelected(choices.get(i), i);
         final java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<String>();
         for (int i = 0; i < choices.size(); i++) if (checked[i]) selected.add(componentKey(choices.get(i)));
-        final android.widget.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+        final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle(R.string.launcher_edge_panel)
                 .setMultiChoiceItems(labels, checked, new android.content.DialogInterface.OnMultiChoiceClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, int which, boolean isChecked) {
