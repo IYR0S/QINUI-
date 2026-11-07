@@ -123,6 +123,16 @@ public final class NotificationBridgeService extends NotificationListenerService
         String packageName = sbn.getPackageName() == null ? "" : sbn.getPackageName();
         String titleValue = title == null ? "" : title.toString().trim();
         String textValue = text == null ? "" : text.toString().trim();
+        if (titleValue.length() == 0 && extras != null) {
+            CharSequence alternate = extras.getCharSequence("android.title.big");
+            if (alternate == null) alternate = extras.getCharSequence("android.media.metadata.TITLE");
+            if (alternate == null) alternate = extras.getCharSequence("android.media.metadata.DISPLAY_TITLE");
+            if (alternate == null) alternate = extras.getCharSequence(Notification.EXTRA_SUB_TEXT);
+            if (alternate != null) titleValue = alternate.toString().trim();
+        }
+        if (titleValue.length() == 0 && notification != null && notification.tickerText != null)
+            titleValue = notification.tickerText.toString().trim();
+        if (titleValue.length() == 0 && textValue.length() > 0) titleValue = textValue;
         if (titleValue.length() == 0) titleValue = packageName;
         String searchable = (titleValue + " " + textValue).toLowerCase(java.util.Locale.US);
         String pkg = packageName.toLowerCase(java.util.Locale.US);
