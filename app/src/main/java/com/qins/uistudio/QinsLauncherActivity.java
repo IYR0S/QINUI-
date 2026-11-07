@@ -3489,30 +3489,28 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showQuickSettingsEditor() {
-        final String[] slots = new String[] {
-                getString(R.string.launcher_compact_shortcut, 1),
-                getString(R.string.launcher_compact_shortcut, 2),
-                getString(R.string.launcher_compact_shortcut, 3),
-                getString(R.string.launcher_compact_shortcut, 4),
-                ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) ? "Wi-Fi (fixed)" : getString(R.string.launcher_expanded_tile, 1),
-                ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) ? "Bluetooth (fixed)" : getString(R.string.launcher_expanded_tile, 2),
-                getString(R.string.launcher_expanded_tile, 3),
-                getString(R.string.launcher_expanded_tile, 4),
-                getString(R.string.launcher_expanded_tile, 5),
-                getString(R.string.launcher_expanded_tile, 6),
-                "Tile sizes",
-                getString(R.string.launcher_theme_colors),
-                getString(R.string.launcher_clock_design),
-                getString(R.string.launcher_upper_right_key)
-        };
+        final boolean samsung = ThemeManager.APPEARANCE_GALAXY.equals(appearance().id);
+        final int expandedCount = samsung ? 6 : 4;
+        ArrayList<String> slotList = new ArrayList<String>();
+        for (int i = 1; i <= 4; i++) slotList.add(getString(R.string.launcher_compact_shortcut, i));
+        for (int i = 1; i <= expandedCount; i++) {
+            if (samsung && i == 1) slotList.add("Wi-Fi (fixed)");
+            else if (samsung && i == 2) slotList.add("Bluetooth (fixed)");
+            else slotList.add(getString(R.string.launcher_expanded_tile, i));
+        }
+        slotList.add("Tile sizes");
+        slotList.add(getString(R.string.launcher_theme_colors));
+        slotList.add(getString(R.string.launcher_clock_design));
+        slotList.add(getString(R.string.launcher_upper_right_key));
+        final String[] slots = slotList.toArray(new String[slotList.size()]);
         new android.app.AlertDialog.Builder(this).setTitle("Customize quick settings")
                 .setItems(slots, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         if (which < 4) showQuickTileEditor(which);
-                        else if (which < 10) showExpandedQuickTileEditor(which - 4);
-                        else if (which == 10) showQuickTileSizePicker();
-                        else if (which == 11) showThemeEditor();
-                        else if (which == 12) showClockStylePicker();
+                        else if (which < 4 + expandedCount) showExpandedQuickTileEditor(which - 4);
+                        else if (which == 4 + expandedCount) showQuickTileSizePicker();
+                        else if (which == 5 + expandedCount) showThemeEditor();
+                        else if (which == 6 + expandedCount) showClockStylePicker();
                         else requestRightKeyBinding();
                     }
                 }).setNegativeButton("Done", null).show();
