@@ -142,6 +142,11 @@ public class QinsLauncherActivity extends Activity {
     private TextView panelBluetoothLabel, panelSoundLabel;
     private Camera flashlightCamera;
     private boolean flashlightEnabled;
+    private View flashlightScreenOverlay;
+    private float flashlightPreviousBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
+    private TextView usbStatusIndicator, wifiStatusIndicator, bluetoothTransferIndicator;
+    private boolean usbConnected;
+    private ScrollView quickPanelScrollView;
     private View wifiTile;
     private View bluetoothTile;
     private View soundTile;
@@ -153,6 +158,9 @@ public class QinsLauncherActivity extends Activity {
 
     private final BroadcastReceiver systemReceiver = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
+            if ("android.hardware.usb.action.USB_STATE".equals(intent.getAction())) {
+                usbConnected = intent.getBooleanExtra("connected", false);
+            }
             updateClockAndBattery();
             updateQuickStates();
         }
@@ -210,6 +218,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override protected void onPause() {
+        if (flashlightScreenOverlay != null) closeScreenFlashlight();
         if (flashlightCamera != null) {
             try { flashlightCamera.stopPreview(); flashlightCamera.release(); } catch (RuntimeException ignored) { }
             flashlightCamera = null;
@@ -232,8 +241,15 @@ public class QinsLauncherActivity extends Activity {
             filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
             filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
             filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
+            filter.addAction("android.hardware.usb.action.USB_STATE");
+            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
             registerReceiver(systemReceiver, filter);
             receiversRegistered = true;
+        } catch (RuntimeException ignored) { }
+        try {
+            Intent stickyUsb = registerReceiver(null, new IntentFilter("android.hardware.usb.action.USB_STATE"));
+            if (stickyUsb != null) usbConnected = stickyUsb.getBooleanExtra("connected", false);
         } catch (RuntimeException ignored) { }
     }
 
@@ -353,11 +369,29 @@ public class QinsLauncherActivity extends Activity {
                 Typeface.BOLD);
         topBar.addView(wordmark, new LinearLayout.LayoutParams(0, dp(42), 1));
 
+        wifiStatusIndicator = new TextView(this);
+        wifiStatusIndicator.setText("⌁");
+        wifiStatusIndicator.setTextSize(16);
+        wifiStatusIndicator.setGravity(Gravity.CENTER);
+        wifiStatusIndicator.setContentDescription("Wi-Fi status");
+        topBar.addView(wifiStatusIndicator, new LinearLayout.LayoutParams(dp(18), dp(22)));
         signalIndicator = new SignalStrengthIndicatorView(this);
         signalIndicator.setSignal(cellularSignalLevel,
                 cellularServiceKnown && !cellularServiceAvailable, a.accent, a.muted);
         signalIndicator.setContentDescription("Cellular signal strength");
         topBar.addView(signalIndicator, new LinearLayout.LayoutParams(dp(23), dp(22)));
+        usbStatusIndicator = new TextView(this);
+        usbStatusIndicator.setText("USB");
+        usbStatusIndicator.setTextSize(8);
+        usbStatusIndicator.setGravity(Gravity.CENTER);
+        usbStatusIndicator.setContentDescription("USB connection status");
+        topBar.addView(usbStatusIndicator, new LinearLayout.LayoutParams(dp(24), dp(22)));
+        bluetoothTransferIndicator = new TextView(this);
+        bluetoothTransferIndicator.setText("⇧");
+        bluetoothTransferIndicator.setTextSize(16);
+        bluetoothTransferIndicator.setGravity(Gravity.CENTER);
+        bluetoothTransferIndicator.setContentDescription("Bluetooth file transfer");
+        topBar.addView(bluetoothTransferIndicator, new LinearLayout.LayoutParams(dp(18), dp(22)));
         homeBluetoothStatus = new QinsGlyphView(this, "bluetooth", a.muted); homeBluetoothStatus.setVisualStyle(a.id);
         topBar.addView(homeBluetoothStatus, new LinearLayout.LayoutParams(dp(18), dp(22)));
         homeSoundStatus = new QinsGlyphView(this, "sound", a.muted); homeSoundStatus.setVisualStyle(a.id);
@@ -1407,7 +1441,9 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showHome(boolean focusHandle) {
-        getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        // Keep Android's native status bar hidden at all times; QINS draws its own
+        // status indicators in the launcher header.
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         if (root != null && root.getChildCount() > 0) {
             root.getChildAt(0).setVisibility(View.VISIBLE);
             root.setPadding(root.getPaddingLeft(), dp(4), root.getPaddingRight(), root.getPaddingBottom());
@@ -3601,7 +3637,11 @@ public class QinsLauncherActivity extends Activity {
         updateNavigationButton();
 
         ScrollView scroll = new ScrollView(this);
+        quickPanelScrollView = scroll;
+        scroll.setSmoothScrollingEnabled(true);
         scroll.setFillViewport(true);
+        scroll.setFocusable(false);
+        scroll.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
         scroll.setPadding(0, 0, 0, 0);
         scroll.setClipToPadding(false);
         scroll.setVerticalScrollBarEnabled(false);
@@ -3690,7 +3730,8 @@ public class QinsLauncherActivity extends Activity {
 
         String[] expandedKeys = getExpandedQuickTileKeys();
         addQuickMediaCard(panel, a);
-        addQuickTileGrid(panel, a, expandedKeys, ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 6 : 4);
+        addQuickTileGrid(panel, a, expandedKeys,
+                ThemeManager.APPEARANCE_GALAXY.equals(a.id) || ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 6 : 4);
         updateQuickStates();
 
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) addNothingVerticalSliders(panel, a);
@@ -3832,7 +3873,11 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private View quickTile(String symbol, String label, ThemeManager.Appearance a) {
-        LinearLayout tile = new LinearLayout(this); tile.setOrientation(LinearLayout.VERTICAL); tile.setGravity(Gravity.CENTER); tile.setPadding(dp(3), dp(3), dp(3), dp(3));
+        LinearLayout tile = new LinearLayout(this);
+        boolean nothingTheme = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
+        tile.setOrientation(LinearLayout.VERTICAL);
+        tile.setGravity(Gravity.CENTER);
+        tile.setPadding(dp(nothingTheme ? 5 : 3), dp(3), dp(nothingTheme ? 5 : 3), dp(3));
         FrameLayout iconWrap = new FrameLayout(this); GradientDrawable shape = new GradientDrawable();
         if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) shape.setShape(GradientDrawable.OVAL);
         else { shape.setShape(GradientDrawable.RECTANGLE); shape.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 10 : 8)); }
@@ -3848,7 +3893,16 @@ public class QinsLauncherActivity extends Activity {
         TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(10); textBlock.addView(state); tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            styleSurface(tile, a.tile, a.border, a.focus, 3f);
+            // Nothing OS 5: high-contrast graphite/off-white controls, compact labels,
+            // and a distinct active surface rather than generic outlined rectangles.
+            styleSurface(tile, 0xFF242729, 0xFF242729, a.focus, 16f);
+            iconWrap.setBackgroundColor(0x00000000);
+            icon.setTint(0xFFF4F4F2);
+            name.setTextColor(0xFFF4F4F2);
+            name.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+            name.setTextSize(11);
+            state.setTextColor(0xFFA4A7A8);
+            state.setTextSize(9);
         } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
             styleSurface(tile, quickSurfaceColor(a, a.tile), a.border, a.focus, 22f);
         } else {
@@ -4160,6 +4214,21 @@ public class QinsLauncherActivity extends Activity {
         }
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, (active || tile.hasFocus()) ? a.accent : a.border, a.accent, 3f, tile.hasFocus()));
+        } else if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            int fill = active ? 0xFFECEDEA : 0xFF242729;
+            int text = active ? 0xFF171819 : 0xFFF4F4F2;
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? 0xFFECEDEA : 0xFF242729,
+                    a.accent, 16f, tile.hasFocus()));
+            QinsGlyphView glyph = findQuickGlyph(tile);
+            if (glyph != null) glyph.setTint(text);
+            for (int i = 0; i < ((android.view.ViewGroup) tile).getChildCount(); i++) {
+                View child = ((android.view.ViewGroup) tile).getChildAt(i);
+                if (child instanceof LinearLayout) {
+                    android.view.ViewGroup block = (android.view.ViewGroup) child;
+                    for (int j = 0; j < block.getChildCount(); j++) if (block.getChildAt(j) instanceof TextView)
+                        ((TextView) block.getChildAt(j)).setTextColor(text);
+                }
+            }
         } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
             int pixelFill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(pixelFill,
@@ -4211,12 +4280,13 @@ public class QinsLauncherActivity extends Activity {
         // Galaxy = six circular controls, Pixel = two-column Material tiles,
         // Nothing = two-column monochrome wide switches plus vertical sliders.
         final int columns = galaxy ? 3 : 2;
-        final int baseHeight = galaxy ? 78 : (pixel ? clamp((screenWidthDp() - 16) / 2, 84, 112) : 64);
+        final int baseHeight = galaxy ? 78 : (pixel ? clamp((screenWidthDp() - 16) / 2, 84, 112) : 72);
         LinearLayout row = null; int used = 0;
         for (int i = 0; i < count; i++) {
             final String key = keys[i];
-            String defaultSize = galaxy ? "1x1" : (pixel ? "1x1" : "2x1");
+            String defaultSize = "1x1";
             String size = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key, defaultSize);
+            if (nothing && "2x1".equals(size)) size = "1x1";
             int[] span = parseTileSpan(size); int sx = span[0], sy = span[1];
             if (used + sx > columns) { row = null; used = 0; }
             if (row == null) { row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
@@ -4285,6 +4355,30 @@ public class QinsLauncherActivity extends Activity {
     private void updateStatusIndicators(boolean bt, int mode) {
         ThemeManager.Appearance a = appearance(); String glyph = mode == AudioManager.RINGER_MODE_SILENT ? "sound-muted" : (mode == AudioManager.RINGER_MODE_VIBRATE ? "sound-vibrate" : "sound");
         if (homeBluetoothStatus != null) homeBluetoothStatus.setTint(bt ? a.accent : a.muted);
+        if (wifiStatusIndicator != null) {
+            WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            boolean wifiOn = wifi != null && wifi.isWifiEnabled();
+            wifiStatusIndicator.setTextColor(wifiOn ? a.accent : a.muted);
+            wifiStatusIndicator.setVisibility(wifiOn ? View.VISIBLE : View.GONE);
+        }
+        if (usbStatusIndicator != null) {
+            usbStatusIndicator.setTextColor(usbConnected ? a.accent : a.muted);
+            usbStatusIndicator.setVisibility(usbConnected ? View.VISIBLE : View.GONE);
+        }
+        if (bluetoothTransferIndicator != null) {
+            boolean transferring = false;
+            for (NotificationBridgeService.NotificationItem n : NotificationBridgeService.snapshot()) {
+                String packageName = n.packageName == null ? "" : n.packageName.toLowerCase(Locale.US);
+                String message = ((n.title == null ? "" : n.title) + " " + (n.text == null ? "" : n.text)).toLowerCase(Locale.US);
+                if (packageName.contains("bluetooth") &&
+                        (message.contains("send") || message.contains("receiv") || message.contains("transfer") ||
+                         message.contains("שליח") || message.contains("קבל") || message.contains("מעביר"))) {
+                    transferring = true; break;
+                }
+            }
+            bluetoothTransferIndicator.setTextColor(transferring ? a.accent : a.muted);
+            bluetoothTransferIndicator.setVisibility(transferring ? View.VISIBLE : View.GONE);
+        }
         if (homeSoundStatus != null) { homeSoundStatus.setGlyph(glyph); homeSoundStatus.setTint(mode == AudioManager.RINGER_MODE_NORMAL ? a.accent : a.muted); }
         if (panelBluetoothStatus != null) panelBluetoothStatus.setTint(bt ? a.accent : a.muted);
         if (panelBluetoothLabel != null) { panelBluetoothLabel.setText(bt ? "Bluetooth on" : "Bluetooth off"); panelBluetoothLabel.setTextColor(bt ? a.accent : a.muted); }
@@ -4293,13 +4387,46 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void toggleFlashlight() {
+        if (flashlightScreenOverlay != null) {
+            closeScreenFlashlight();
+            return;
+        }
         try {
-            if (flashlightEnabled && flashlightCamera != null) { flashlightCamera.stopPreview(); flashlightCamera.release(); flashlightCamera = null; flashlightEnabled = false; }
-            else { Camera camera = Camera.open(); Camera.Parameters p = camera.getParameters();
-                if (p.getSupportedFlashModes() == null || !p.getSupportedFlashModes().contains(Camera.Parameters.FLASH_MODE_TORCH)) { camera.release(); android.widget.Toast.makeText(this, "Torch unavailable", android.widget.Toast.LENGTH_SHORT).show(); return; }
-                p.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH); camera.setParameters(p); camera.startPreview(); flashlightCamera = camera; flashlightEnabled = true; }
+            android.view.Window window = getWindow();
+            WindowManager.LayoutParams attrs = window.getAttributes();
+            flashlightPreviousBrightness = attrs.screenBrightness;
+            attrs.screenBrightness = 1.0f;
+            window.setAttributes(attrs);
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            FrameLayout overlay = new FrameLayout(this);
+            overlay.setBackgroundColor(0xFFFFFFFF);
+            overlay.setFocusableInTouchMode(true);
+            overlay.setFocusable(true);
+            overlay.setContentDescription("Screen flashlight. Press any physical key to exit.");
+            FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+            decor.addView(overlay, new FrameLayout.LayoutParams(-1, -1));
+            overlay.requestFocus();
+            flashlightScreenOverlay = overlay;
+            flashlightEnabled = true;
             updateQuickStates();
-        } catch (RuntimeException error) { flashlightEnabled = false; android.widget.Toast.makeText(this, "Flashlight unavailable", android.widget.Toast.LENGTH_SHORT).show(); }
+        } catch (RuntimeException error) {
+            closeScreenFlashlight();
+            android.widget.Toast.makeText(this, "Screen flashlight unavailable", android.widget.Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void closeScreenFlashlight() {
+        if (flashlightScreenOverlay != null && flashlightScreenOverlay.getParent() instanceof android.view.ViewGroup) {
+            ((android.view.ViewGroup) flashlightScreenOverlay.getParent()).removeView(flashlightScreenOverlay);
+        }
+        flashlightScreenOverlay = null;
+        flashlightEnabled = false;
+        try {
+            WindowManager.LayoutParams attrs = getWindow().getAttributes();
+            attrs.screenBrightness = flashlightPreviousBrightness;
+            getWindow().setAttributes(attrs);
+        } catch (RuntimeException ignored) { }
+        if (quickPanelVisible && quickPanelExpanded) updateQuickStates();
     }
 
     private void openHotspotSettings() {
@@ -4366,6 +4493,8 @@ public class QinsLauncherActivity extends Activity {
             int next = mode == AudioManager.RINGER_MODE_NORMAL ? AudioManager.RINGER_MODE_VIBRATE :
                     (mode == AudioManager.RINGER_MODE_VIBRATE ? AudioManager.RINGER_MODE_SILENT :
                             AudioManager.RINGER_MODE_NORMAL);
+            // Keep all three Android ringer states in the same cycle:
+            // Sound -> Vibrate -> Silent -> Sound.
             audio.setRingerMode(next);
             updateQuickStates();
         } catch (RuntimeException error) {
@@ -4504,6 +4633,13 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if (flashlightScreenOverlay != null) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                closeScreenFlashlight();
+                return true;
+            }
+            return true;
+        }
         View focusedForCenter = getCurrentFocus();
         Object centerTag = focusedForCenter == null ? null : focusedForCenter.getTag();
         if (!quickPanelVisible && !drawerVisible && "home:drawer-trigger".equals(centerTag) &&
