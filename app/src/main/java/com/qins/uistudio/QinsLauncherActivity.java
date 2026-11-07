@@ -451,14 +451,16 @@ public class QinsLauncherActivity extends Activity {
     private void showWallpaperOptions() {
         final String[] choices = new String[] {
                 getString(R.string.launcher_wallpaper_gallery),
-                getString(R.string.launcher_wallpaper_reset)
+                getString(R.string.launcher_wallpaper_reset),
+                getString(R.string.launcher_edge_settings)
         };
         new android.app.AlertDialog.Builder(this)
                 .setTitle(R.string.launcher_wallpaper)
                 .setItems(choices, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         if (which == 0) pickWallpaperFromGallery();
-                        else resetWallpaper();
+                        else if (which == 1) resetWallpaper();
+                        else showEdgePanelSettings();
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
