@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import java.util.Calendar;
 
 /** Shared color palette and launcher appearance presets; API 19 compatible. */
 public final class ThemeManager {
@@ -11,6 +12,8 @@ public final class ThemeManager {
     private static final String KEY = "selected_theme";
     private static final String APPEARANCE_PREFS = "qins_interface";
     private static final String APPEARANCE_KEY = "appearance";
+    private static final String DARK_MODE_KEY = "dark_mode";
+    private static final String SMART_PROFILE_KEY = "smart_profile";
     public static final String APPEARANCE_GALAXY = "galaxy";
     public static final String APPEARANCE_PIXEL = "pixel";
     public static final String APPEARANCE_NOTHING = "nothing";
@@ -152,13 +155,52 @@ public final class ThemeManager {
                 a.cornerDp, a.monochrome, a.useMonoType);
     }
 
+    public static boolean isSmartProfileEnabled(Context context) {
+        return context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(SMART_PROFILE_KEY, false);
+    }
+
+    public static boolean isDarkMode(Context context) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
+        if (prefs.getBoolean(SMART_PROFILE_KEY, false)) {
+            int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+            return hour >= 19 || hour < 7;
+        }
+        return prefs.getBoolean(DARK_MODE_KEY, false);
+    }
+
+    public static boolean toggleSmartProfile(Context context) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
+        return prefs.edit().putBoolean(SMART_PROFILE_KEY, !prefs.getBoolean(SMART_PROFILE_KEY, false)).commit();
+    }
+
+    public static boolean toggleDarkMode(Context context) {
+        android.content.SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
+        prefs.edit().putBoolean(SMART_PROFILE_KEY, false).commit();
+        return prefs.edit().putBoolean(DARK_MODE_KEY, !prefs.getBoolean(DARK_MODE_KEY, false)).commit();
+    }
+
+    private static Appearance darkAppearance(Appearance a) {
+        if (APPEARANCE_NOTHING.equals(a.id)) return a;
+        if (APPEARANCE_PIXEL.equals(a.id)) {
+            return new Appearance(a.id, a.title, 0xFF101714, 0xFF18221C, 0xFF1D2922, 0xFF26342B,
+                    0xFF26342B, 0xFF344B3D, a.accent, 0xFFF1F6F0, 0xFFAAB9AC,
+                    0xFF34443A, 0xFF8CC9A0, a.cornerDp, false, a.useMonoType);
+        }
+        return new Appearance(a.id, a.title, 0xFF11151C, 0xFF191F29, 0xFF202733, 0xFF283140,
+                0xFF283140, 0xFF30415A, a.accent, 0xFFF3F5FA, 0xFFADB7C7,
+                0xFF364252, 0xFF8DB3FF, a.cornerDp, false, a.useMonoType);
+    }
+
     public static Appearance getAppearance(Context context) {
         String selected = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
                 .getString(APPEARANCE_KEY, APPEARANCE_GALAXY);
+        Appearance chosen = APPEARANCES[0];
         for (Appearance appearance : APPEARANCES) {
-            if (appearance.id.equals(selected)) return withCustomColors(context, appearance);
+            if (appearance.id.equals(selected)) { chosen = appearance; break; }
         }
-        return APPEARANCES[0];
+        Appearance custom = withCustomColors(context, chosen);
+        return isDarkMode(context) ? darkAppearance(custom) : custom;
     }
 
     public static boolean applyAppearance(Context context, String id) {
