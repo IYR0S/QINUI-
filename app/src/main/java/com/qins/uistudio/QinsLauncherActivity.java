@@ -444,7 +444,7 @@ public class QinsLauncherActivity extends Activity {
                 bounds.outHeight / (sample * 2) >= targetHeight) sample *= 2;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = sample;
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         wallpaperBitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
         return wallpaperBitmap;
     }
