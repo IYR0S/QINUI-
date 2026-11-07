@@ -230,6 +230,7 @@ public class QinsLauncherActivity extends Activity {
             filter.addAction(Intent.ACTION_BATTERY_CHANGED);
             filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
             filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+            filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
             registerReceiver(systemReceiver, filter);
             receiversRegistered = true;
         } catch (RuntimeException ignored) { }
