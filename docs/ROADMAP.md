@@ -78,3 +78,15 @@ A module is not marked complete until it builds, survives relaunch, handles deni
 - Apps drawer defaults to a 3 × 4 grid and uses consistent, full-size app icons.
 - Media notifications are recognized using transport action labels, media-session extras and ongoing player notifications; Quick Settings refreshes when media starts or stops.
 - Media action extraction uses reflection to avoid directly linking newer Notification.Action types on the API 19 target.
+
+## QINS launcher integration and Quick Settings follow-up — 2026-11-07
+
+- Keep Android's native status bar hidden in the launcher itself; the earlier home-screen path cleared FLAG_FULLSCREEN, undoing the custom header. The launcher header now shows its own Wi-Fi/cellular/Bluetooth/sound indicators, a USB-connected marker, and a best-effort Bluetooth file-transfer marker derived from notifications.
+- The USB marker listens for Android's sticky USB state broadcast. Bluetooth transfer indication depends on the notification-listener permission and the firmware's Bluetooth transfer notification; it cannot guarantee visibility for silent/system-private transfer states.
+- Nothing Quick Settings now uses six controls, compact 1×1 tile defaults, monochrome high-contrast active/inactive surfaces, circular icon wells, standard sans-serif typography rather than the prior generic monospaced text, a visible scroll bar, and a D-pad scroll fallback.
+- The Nothing media card can show notification artwork in a bounded 50dp thumbnail. If notification actions are unavailable on Android 4.4, transport controls fall back to AudioManager media-key events; apps must register media-button handling for those events to work.
+- The screen flashlight is a full-screen white overlay with per-window maximum brightness, dismissed by any physical key; it no longer turns on the camera LED.
+- Sound mode explicitly cycles Sound → Vibrate → Silent → Sound and declares the VIBRATE permission.
+- Edge Bar focus glow is inset and drawn on the app icon only, preventing the previous circle from exceeding the icon bounds.
+- App menu includes Android's Home-app chooser. The manifest already registers QINS as a HOME activity; the user must choose it and select Always / set it as the default in Android's own resolver.
+- Native Android Settings pages, permission dialogs, and system-owned menus cannot be globally recolored by an ordinary third-party launcher. Without root or a ROM/system image change, the safe route is to build QINS-owned themed settings pages for supported functions and launch Android's native settings pages only for functions that must remain system-owned. Global theme control would require system-level integration matched to the exact QINS firmware build.
