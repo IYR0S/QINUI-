@@ -2305,6 +2305,10 @@ public class QinsLauncherActivity extends Activity {
         if (pageContainer != null && edgePanelOverlay != null) {
             pageContainer.removeView(edgePanelOverlay);
         }
+        if (root != null) {
+            int sidePadding = dp(clamp(screenWidthDp() / 14, 8, 14));
+            root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), sidePadding, root.getPaddingBottom());
+        }
         edgePanelOverlay = null;
         edgePanelItems.clear();
     }
@@ -2318,6 +2322,7 @@ public class QinsLauncherActivity extends Activity {
     private void showEdgePanel() {
         if (!isEdgePanelEnabled() || pageContainer == null) return;
         closeEdgePanel();
+        if (root != null) root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), 0, root.getPaddingBottom());
         final ThemeManager.Appearance a = appearance();
         FrameLayout scrim = new FrameLayout(this);
         scrim.setBackgroundColor(0x18000000);
@@ -2393,11 +2398,9 @@ public class QinsLauncherActivity extends Activity {
             edgePanelItems.add(item);
         }
         if (selectedCount == 0) {
-            TextView empty = new TextView(this);
-            empty.setText(R.string.launcher_edge_choose_apps);
-            empty.setTextColor(a.muted);
-            empty.setTextSize(11);
-            empty.setGravity(Gravity.CENTER);
+            QinsGlyphView empty = new QinsGlyphView(this, "plus", a.accent);
+            empty.setVisualStyle(a.id);
+            empty.setContentDescription(getString(R.string.launcher_edge_choose_apps));
             empty.setFocusable(true);
             empty.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { showEdgePanelSettings(); }
