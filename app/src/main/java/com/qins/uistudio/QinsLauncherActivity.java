@@ -2571,6 +2571,11 @@ public class QinsLauncherActivity extends Activity {
             final ImageView icon = new ImageView(this);
             icon.setImageDrawable(info.loadIcon(getPackageManager()));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+                android.graphics.ColorMatrix monochrome = new android.graphics.ColorMatrix();
+                monochrome.setSaturation(0f);
+                icon.setColorFilter(new android.graphics.ColorMatrixColorFilter(monochrome));
+            }
             item.addView(icon, new LinearLayout.LayoutParams(dp(46), dp(46)));
             item.setGravity(Gravity.CENTER);
             if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
@@ -4338,8 +4343,8 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar bar) { listener.onStartTrackingTouch(bar); }
             @Override public void onStopTrackingTouch(SeekBar bar) { listener.onStopTrackingTouch(bar); }
         });
-        card.addView(seek, new LinearLayout.LayoutParams(dp(30), dp(104)));
-        row.addView(card, new LinearLayout.LayoutParams(0, dp(132), 1));
+        card.addView(seek, new LinearLayout.LayoutParams(dp(30), dp(52)));
+        row.addView(card, new LinearLayout.LayoutParams(0, dp(78), 1));
     }
 
     private void addNothingVerticalSliders(LinearLayout panel, ThemeManager.Appearance a) {
@@ -4362,7 +4367,7 @@ public class QinsLauncherActivity extends Activity {
         final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
         dnd.setText("⊖\\nDND\\n" + (quiet ? "ON" : "OFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false);
         styleSurface(dnd, quiet ? a.tileActive : a.surface, a.border, a.focus, 8f);
-        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(0, dp(132), 1); dndParams.leftMargin = dp(4); row.addView(dnd, dndParams);
+        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(0, dp(78), 1); dndParams.leftMargin = dp(4); row.addView(dnd, dndParams);
         dnd.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleDoNotDisturb(); } });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.topMargin = dp(8); panel.addView(row, params);
     }
