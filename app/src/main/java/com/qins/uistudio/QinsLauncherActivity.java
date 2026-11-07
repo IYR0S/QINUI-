@@ -4077,7 +4077,8 @@ public class QinsLauncherActivity extends Activity {
         float level = max <= 0 ? 0f : Math.max(0f, Math.min(1f, value / (float) max));
         GradientDrawable background = new GradientDrawable();
         background.setColor(blendBrightnessColor(a.surface, a.accent, 0.06f + 0.38f * level));
-        background.setCornerRadius(dp(8));
+        float radius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 8f : a.cornerDp;
+        background.setCornerRadius(dp(radius));
         background.setStroke(dp(1), a.border);
         card.setBackgroundDrawable(background);
     }
