@@ -87,7 +87,7 @@ public class QinsLauncherActivity extends Activity {
     private static final String SOFTKEY_PREFS = "qins_softkeys";
     private int homePageCount = 1;
     private static final String QUICK_PREFS = "qins_quick_tiles";
-    private static final String[] QUICK_OPTIONS = new String[] {"sound", "bluetooth", "settings", "theme", "wifi", "brightness", "volume", "flashlight", "hotspot", "dnd"};
+    private static final String[] QUICK_OPTIONS = new String[] {"sound", "bluetooth", "settings", "theme", "wifi", "brightness", "volume", "flashlight", "hotspot", "dnd", "dark_mode"};
     
     private boolean drawerVisible = false;
     private boolean editMode = false;
@@ -1670,6 +1670,7 @@ public class QinsLauncherActivity extends Activity {
         if ("flashlight".equals(key)) return "flashlight";
         if ("hotspot".equals(key)) return "hotspot";
         if ("dnd".equals(key)) return "dnd";
+        if ("dark_mode".equals(key)) return "dark-mode";
         return key;
     }
 
@@ -1707,7 +1708,7 @@ public class QinsLauncherActivity extends Activity {
         return new String[] {getString(R.string.launcher_sound), getString(R.string.launcher_bluetooth),
                 getString(R.string.launcher_settings), getString(R.string.launcher_theme), getString(R.string.launcher_wifi),
                 getString(R.string.launcher_brightness), getString(R.string.launcher_volume),
-                "Flashlight", "Hotspot", "Do not disturb"};
+                "Flashlight", "Hotspot", "Do not disturb", "Dark mode"};
     }
 
     private String quickLabel(String key) {
@@ -1794,6 +1795,7 @@ public class QinsLauncherActivity extends Activity {
         else if ("flashlight".equals(key)) toggleFlashlight();
         else if ("hotspot".equals(key)) openHotspotSettings();
         else if ("dnd".equals(key)) toggleDoNotDisturb();
+        else if ("dark_mode".equals(key)) { ThemeManager.toggleDarkMode(this); if (quickPanelVisible) showQuickPanel(false); else showHome(false); }
     }
 
     private QinsGlyphView pageArrow(String symbol, ThemeManager.Appearance a) {
