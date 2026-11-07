@@ -122,8 +122,9 @@ public class QinsLauncherActivity extends Activity {
     private int homeWidgetIndex = 0;
     private android.content.BroadcastReceiver notificationReceiver = new android.content.BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
-            if (quickPanelVisible && quickPanelExpanded && quickPanelPage == 1) showQuickPanel(false);
-            else if (!quickPanelVisible && !drawerVisible) showHome(false);
+            if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
+            else if (quickPanelVisible) showCompactQuickPanel(false);
+            else if (!drawerVisible) showHome(false);
         }
     };
     private TextView dateView;
@@ -1588,6 +1589,13 @@ public class QinsLauncherActivity extends Activity {
         wifiState = null; bluetoothState = null; soundState = null;
         wifiTile = null; bluetoothTile = null; soundTile = null; flashlightTile = null;
         showHome(false);
+        // Keep the system status bar hidden and dock the compact panel to the
+        // physical top edge instead of stacking it below the launcher's own top row.
+        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        if (root != null && root.getChildCount() > 0) {
+            root.getChildAt(0).setVisibility(View.GONE);
+            root.setPadding(root.getPaddingLeft(), 0, root.getPaddingRight(), root.getPaddingBottom());
+        }
         quickPanelVisible = true;
         quickPanelExpanded = false;
         ThemeManager.Appearance a = appearance();
@@ -2332,12 +2340,8 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void closeEdgePanel() {
-        if (pageContainer != null && edgePanelOverlay != null) {
-            pageContainer.removeView(edgePanelOverlay);
-        }
-        if (root != null) {
-            int sidePadding = dp(clamp(screenWidthDp() / 14, 8, 14));
-            root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), sidePadding, root.getPaddingBottom());
+        if (edgePanelOverlay != null && edgePanelOverlay.getParent() instanceof android.view.ViewGroup) {
+            ((android.view.ViewGroup) edgePanelOverlay.getParent()).removeView(edgePanelOverlay);
         }
         edgePanelOverlay = null;
         edgePanelItems.clear();
@@ -2352,10 +2356,10 @@ public class QinsLauncherActivity extends Activity {
     private void showEdgePanel() {
         if (!isEdgePanelEnabled() || pageContainer == null) return;
         closeEdgePanel();
-        if (root != null) root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), 0, root.getPaddingBottom());
         final ThemeManager.Appearance a = appearance();
         FrameLayout scrim = new FrameLayout(this);
-        scrim.setBackgroundColor(0x18000000);
+        // No dim layer: a transparent Edge Bar must reveal the actual wallpaper.
+        scrim.setBackgroundColor(0x00000000);
         scrim.setFocusable(true);
         scrim.setClickable(true);
         scrim.setOnClickListener(new View.OnClickListener() {
@@ -2365,7 +2369,8 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(4), dp(6), dp(4), dp(6));
-        panel.setBackgroundColor(a.surface);
+        boolean transparentEdge = getSharedPreferences("qins_edge_panel", MODE_PRIVATE).getBoolean("transparent", false);
+        panel.setBackgroundColor(transparentEdge ? 0x00000000 : a.surface);
         panel.setFocusable(true);
         panel.setClickable(true);
         panel.setOnClickListener(new View.OnClickListener() {
@@ -2387,9 +2392,28 @@ public class QinsLauncherActivity extends Activity {
         settings.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showEdgePanelSettings(); }
         });
-        header.addView(settings, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        header.addView(settings, new LinearLayout.LayoutParams(dp(34), dp(38)));
         edgePanelItems.add(settings);
-        panel.addView(header, new LinearLayout.LayoutParams(-1, dp(46)));
+        TextView transparency = new TextView(this);
+        transparency.setText("◌");
+        transparency.setTextSize(19);
+        transparency.setTextColor(a.text);
+        transparency.setGravity(Gravity.CENTER);
+        transparency.setFocusable(true);
+        transparency.setFocusableInTouchMode(false);
+        transparency.setContentDescription("Toggle Edge Bar transparent background");
+        styleSurface(transparency, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+        transparency.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                android.content.SharedPreferences prefs = getSharedPreferences("qins_edge_panel", MODE_PRIVATE);
+                boolean next = !prefs.getBoolean("transparent", false);
+                prefs.edit().putBoolean("transparent", next).commit();
+                showEdgePanel();
+            }
+        });
+        header.addView(transparency, new LinearLayout.LayoutParams(dp(34), dp(38)));
+        edgePanelItems.add(transparency);
+        panel.addView(header, new LinearLayout.LayoutParams(-1, dp(42)));
 
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(false);
@@ -2450,14 +2474,15 @@ public class QinsLauncherActivity extends Activity {
         scroll.addView(list, new ScrollView.LayoutParams(-1, -2));
         panel.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        int panelWidth = 54;
+        int panelWidth = 84;
         FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(dp(panelWidth), -1,
-                Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+                Gravity.RIGHT | Gravity.TOP);
         panelParams.topMargin = 0;
         panelParams.bottomMargin = 0;
         panelParams.rightMargin = 0;
         scrim.addView(panel, panelParams);
-        pageContainer.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
+        FrameLayout decor = (FrameLayout) getWindow().getDecorView();
+        decor.addView(scrim, new FrameLayout.LayoutParams(-1, -1));
         edgePanelOverlay = scrim;
         edgePanelFocusIndex = 0;
         if (!edgePanelItems.isEmpty()) edgePanelItems.get(0).requestFocus();
@@ -2607,7 +2632,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private int drawerColumns() {
-        return getSharedPreferences(DRAWER_PREFS, MODE_PRIVATE).getInt("columns", 4);
+        return getSharedPreferences(DRAWER_PREFS, MODE_PRIVATE).getInt("columns", 3);
     }
 
     private int drawerRows() {
@@ -2654,7 +2679,9 @@ public class QinsLauncherActivity extends Activity {
             });
         }
 
-        int iconSize = clamp(screenWidthDp() / Math.max(5, drawerColumns()) - 10, 28, 46);
+        int widthIconSize = clamp(screenWidthDp() / Math.max(1, drawerColumns()) - 16, 40, 64);
+        int heightIconSize = clamp((screenHeightDp() - 105) / Math.max(1, drawerRows()) - 27, 36, 62);
+        int iconSize = Math.min(widthIconSize, heightIconSize);
         if (folder) {
             LinearLayout preview = new LinearLayout(this);
             preview.setOrientation(LinearLayout.HORIZONTAL);
@@ -2677,8 +2704,9 @@ public class QinsLauncherActivity extends Activity {
             icon.setImageDrawable(info.loadIcon(getPackageManager()));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
-            int drawerIconSize = isDownloadedApp(info) ? Math.round(iconSize * 0.90f) : iconSize;
-            tile.addView(icon, new LinearLayout.LayoutParams(dp(drawerIconSize), dp(drawerIconSize)));
+            // Keep every app icon at the same full visual size; downloaded apps
+            // must not be shrunk relative to system apps.
+            tile.addView(icon, new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)));
         }
 
         TextView label = new TextView(this);
@@ -2824,7 +2852,7 @@ public class QinsLauncherActivity extends Activity {
         drawerPage = Math.max(0, Math.min(drawerPage, pageCount - 1));
         int first = drawerPage * pageSize;
         int last = Math.min(drawerApps.size(), first + pageSize);
-        int cellHeight = clamp((screenHeightDp() - 100) / rows, 48, 75);
+        int cellHeight = clamp((screenHeightDp() - 112) / rows, 76, 98);
         int firstGridChild = list.getChildCount();
         for (int rowIndex = 0; rowIndex < rows; rowIndex++) {
             LinearLayout gridRow = new LinearLayout(this);
@@ -3819,10 +3847,14 @@ public class QinsLauncherActivity extends Activity {
         TextView name = new TextView(this); name.setText(label); name.setTextColor(a.text); name.setTextSize(12); textBlock.addView(name);
         TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(10); textBlock.addView(state); tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
-        else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) styleSurface(tile, quickSurfaceColor(a, a.tile), a.border, a.focus, 4f);
-        else if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && ("sound".equals(symbol) || "settings".equals(symbol))) styleSurface(tile, a.surfaceAlt, a.border, a.focus, 8f);
-        else tile.setBackgroundColor(0x00000000);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            styleSurface(tile, a.tile, a.border, a.focus, 3f);
+        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            styleSurface(tile, quickSurfaceColor(a, a.tile), a.border, a.focus, 22f);
+        } else {
+            // One UI-inspired controls are circles only; no square tile frame.
+            tile.setBackgroundColor(0x00000000);
+        }
         registerQuickTile(symbol, tile, state); return tile;
     }
 
@@ -3974,7 +4006,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout brightness = new LinearLayout(this); brightness.setOrientation(LinearLayout.VERTICAL);
         brightness.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(brightness, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.cornerDp);
-        TextView heading = new TextView(this); heading.setText("☼  " + getString(R.string.launcher_brightness));
+        TextView heading = new TextView(this); heading.setText(getString(R.string.launcher_brightness));
         heading.setTextColor(a.text); heading.setTextSize(13); brightness.addView(heading);
         SeekBar seek = new SeekBar(this); seek.setMax(255); seek.setProgress(Math.max(0, Math.min(255, readBrightness())));
         seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -4168,27 +4200,29 @@ public class QinsLauncherActivity extends Activity {
 
     private void addQuickTileGrid(LinearLayout panel, ThemeManager.Appearance a, String[] keys, int count) {
         quickGridFirstTile = null;
+        final boolean galaxy = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
         final boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
-        final int columns = pixel ? 2 : 4;
-        final int baseHeight = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 56 :
-                (pixel ? clamp((screenWidthDp() - 20) / 2, 56, 116) : 62);
+        final boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
+        // Each preset gets a genuinely different layout, not just a different palette:
+        // Galaxy = six circular controls, Pixel = two-column Material tiles,
+        // Nothing = two-column monochrome wide switches plus vertical sliders.
+        final int columns = galaxy ? 3 : 2;
+        final int baseHeight = galaxy ? 78 : (pixel ? clamp((screenWidthDp() - 16) / 2, 84, 112) : 64);
         LinearLayout row = null; int used = 0;
         for (int i = 0; i < count; i++) {
             final String key = keys[i];
-            String defaultSize = ThemeManager.APPEARANCE_GALAXY.equals(a.id)
-                    ? (("wifi".equals(key) || "bluetooth".equals(key)) ? "2x1" : "1x1") : (pixel ? "1x1" : "2x1");
+            String defaultSize = galaxy ? "1x1" : (pixel ? "1x1" : "2x1");
             String size = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key, defaultSize);
             int[] span = parseTileSpan(size); int sx = span[0], sy = span[1];
             if (used + sx > columns) { row = null; used = 0; }
             if (row == null) { row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
                 LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, dp(baseHeight));
-                if (panel.getChildCount() > 0 && !ThemeManager.APPEARANCE_PIXEL.equals(a.id)) rp.topMargin = dp(5);
+                if (panel.getChildCount() > 0 && !pixel) rp.topMargin = dp(5);
                 panel.addView(row, rp); }
-            View tile = ThemeManager.APPEARANCE_GALAXY.equals(a.id) && ("wifi".equals(key) || "bluetooth".equals(key))
-                    ? quickConnectivityTile(key, a) : quickTile(glyphForQuickKey(key), quickLabel(key), a);
+            View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
             if (quickGridFirstTile == null) quickGridFirstTile = tile;
             LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, dp(baseHeight * sy), sx);
-            if (used > 0 && !ThemeManager.APPEARANCE_PIXEL.equals(a.id)) tp.leftMargin = dp(4);
+            if (used > 0 && !pixel) tp.leftMargin = dp(4);
             row.addView(tile, tp);
             if (sy > 1) { android.view.ViewGroup.LayoutParams rowLp = row.getLayoutParams(); rowLp.height = dp(baseHeight * sy); row.setLayoutParams(rowLp); }
             tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { performQuickAction(key); } });
@@ -4279,7 +4313,7 @@ public class QinsLauncherActivity extends Activity {
     private void addVolumeDndRow(LinearLayout panel, ThemeManager.Appearance a) {
         LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout volume = new LinearLayout(this); volume.setOrientation(LinearLayout.VERTICAL); volume.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(volume, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.cornerDp);
-        TextView heading = new TextView(this); heading.setText("◖  " + getString(R.string.launcher_volume)); heading.setTextColor(a.text); heading.setTextSize(13); volume.addView(heading);
+        TextView heading = new TextView(this); heading.setText(getString(R.string.launcher_volume)); heading.setTextColor(a.text); heading.setTextSize(13); volume.addView(heading);
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE); final int max = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)); final int current = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
         SeekBar seek = new SeekBar(this); seek.setMax(max); seek.setProgress(current); seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         float sliderRadius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 1f : (ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 14f : 10f);
