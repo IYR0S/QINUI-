@@ -3287,10 +3287,13 @@ public class QinsLauncherActivity extends Activity {
         pageContent.setBackground(new QinsWallpaperDrawable(a));
         updateNavigationButton();
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
+        final ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setFocusable(false);
+        scroll.setSmoothScrollingEnabled(true);
         scroll.setVerticalScrollBarEnabled(false);
         LinearLayout panel = new LinearLayout(this);
+        panel.setFocusable(false);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setPadding(dp(2), dp(4), dp(2), dp(10));
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
@@ -3393,7 +3396,7 @@ public class QinsLauncherActivity extends Activity {
 
         updateQuickStates();
 
-        addSlider(panel, "☼", getString(R.string.launcher_brightness), readBrightness(), 255,
+        addSlider(scroll, panel, "☼", getString(R.string.launcher_brightness), readBrightness(), 255,
                 new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int value, boolean fromUser) {
                 if (fromUser) writeBrightness(Math.max(1, value));
@@ -3405,7 +3408,7 @@ public class QinsLauncherActivity extends Activity {
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         int maxVolume = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
         int currentVolume = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
-        addSlider(panel, "♪", getString(R.string.launcher_volume), currentVolume, maxVolume,
+        addSlider(scroll, panel, "♪", getString(R.string.launcher_volume), currentVolume, maxVolume,
                 new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int value, boolean fromUser) {
                 if (fromUser) {
@@ -3484,12 +3487,18 @@ public class QinsLauncherActivity extends Activity {
         return tile;
     }
 
-    private void addSlider(LinearLayout panel, String symbol, String label, int value, int max,
-                           SeekBar.OnSeekBarChangeListener listener, ThemeManager.Appearance a) {
+    private void addSlider(final ScrollView scroll, LinearLayout panel, String symbol, String label,
+                           int value, int max, final SeekBar.OnSeekBarChangeListener listener,
+                           final ThemeManager.Appearance a) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(14), dp(8), dp(14), dp(7));
-        styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+        final boolean brightnessSlider = label.equals(getString(R.string.launcher_brightness));
+        if (brightnessSlider) {
+            applyBrightnessCardFill(card, a, value, max);
+        } else {
+            styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+        }
         LinearLayout heading = new LinearLayout(this);
         heading.setOrientation(LinearLayout.HORIZONTAL);
         heading.setGravity(Gravity.CENTER_VERTICAL);
@@ -3510,13 +3519,75 @@ public class QinsLauncherActivity extends Activity {
         seek.setProgress(Math.max(0, Math.min(max, value)));
         seek.setFocusable(true);
         seek.setFocusableInTouchMode(false);
-        seek.setOnSeekBarChangeListener(listener);
+        seek.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override public void onFocusChange(final View view, boolean hasFocus) {
+                if (hasFocus) scrollFocusedIntoView(scroll, view);
+            }
+        });
+        seek.setOnKeyListener(new View.OnKeyListener() {
+            @Override public boolean onKey(View view, int keyCode, KeyEvent event) {
+                if (event.getAction() != KeyEvent.ACTION_DOWN ||
+                        (keyCode != KeyEvent.KEYCODE_DPAD_DOWN && keyCode != KeyEvent.KEYCODE_DPAD_UP)) {
+                    return false;
+                }
+                View next = view.focusSearch(keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                        ? View.FOCUS_DOWN : View.FOCUS_UP);
+                if (next == null || next == view) return false;
+                next.requestFocus();
+                scrollFocusedIntoView(scroll, next);
+                return true;
+            }
+        });
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                listener.onProgressChanged(bar, progress, fromUser);
+                if (brightnessSlider) applyBrightnessCardFill(card, a, progress, max);
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) {
+                listener.onStartTrackingTouch(bar);
+            }
+            @Override public void onStopTrackingTouch(SeekBar bar) {
+                listener.onStopTrackingTouch(bar);
+            }
+        });
         LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, dp(34));
         seekParams.topMargin = dp(2);
         card.addView(seek, seekParams);
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(-1, -2);
         cardParams.topMargin = dp(8);
         panel.addView(card, cardParams);
+    }
+
+    private void scrollFocusedIntoView(final ScrollView scroll, final View focused) {
+        focused.post(new Runnable() {
+            @Override public void run() {
+                android.graphics.Rect bounds = new android.graphics.Rect();
+                focused.getDrawingRect(bounds);
+                scroll.offsetDescendantRectToMyCoords(focused, bounds);
+                int target = Math.max(0, bounds.bottom - scroll.getHeight() + dp(24));
+                if (bounds.top < scroll.getScrollY()) target = Math.max(0, bounds.top - dp(24));
+                scroll.smoothScrollTo(0, target);
+            }
+        });
+    }
+
+    private void applyBrightnessCardFill(View card, ThemeManager.Appearance a, int value, int max) {
+        float level = max <= 0 ? 0f : Math.max(0f, Math.min(1f, value / (float) max));
+        int fill = blendQuickColor(a.surface, a.accent, 0.08f + (0.34f * level));
+        GradientDrawable shape = new GradientDrawable();
+        shape.setColor(fill);
+        shape.setCornerRadius(dp(a.cornerDp));
+        shape.setStroke(dp(1), a.border);
+        card.setBackgroundDrawable(shape);
+    }
+
+    private int blendQuickColor(int from, int to, float amount) {
+        float t = Math.max(0f, Math.min(1f, amount));
+        int a = Math.round(((from >>> 24) & 255) * (1f - t) + ((to >>> 24) & 255) * t);
+        int r = Math.round(((from >>> 16) & 255) * (1f - t) + ((to >>> 16) & 255) * t);
+        int g = Math.round(((from >>> 8) & 255) * (1f - t) + ((to >>> 8) & 255) * t);
+        int b = Math.round((from & 255) * (1f - t) + (to & 255) * t);
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     private void addStyleButton(LinearLayout parent, final String label, final String id,
@@ -3579,9 +3650,11 @@ public class QinsLauncherActivity extends Activity {
         if (tile == null) return;
         ThemeManager.Appearance a = appearance();
         int fill = active ? a.tileActive : a.tile;
-        int stroke = (active || tile.hasFocus()) ? a.accent : a.border;
+        int stroke = active ? a.accent : a.border;
+        // Focus is deliberately not a tile state: only the actual ON/OFF state
+        // controls the tile fill and border, avoiding hover/focus color flashes.
         tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, stroke, a.accent,
-                a.cornerDp, tile.hasFocus()));
+                a.cornerDp, false));
     }
 
     private void setQuickState(String key, TextView state, View tile, String label, boolean active) {
