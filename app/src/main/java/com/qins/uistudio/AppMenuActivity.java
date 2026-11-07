@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 /** Physical-key navigable in-app menu. */
 public class AppMenuActivity extends StudioActivity {
+    private TextView homeStatus;
     private int dp(float value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
@@ -17,6 +18,17 @@ public class AppMenuActivity extends StudioActivity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         buildMenu();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (homeStatus != null) updateHomeStatus();
+    }
+
+    private void updateHomeStatus() {
+        homeStatus.setText(isQinsDefaultHome() ?
+                "Status: QINS is the default Home app." :
+                "Status: QINS is not the default Home app.");
     }
 
     private void buildMenu() {
@@ -82,8 +94,8 @@ public class AppMenuActivity extends StudioActivity {
         homeHeading.setTextColor(palette.text);
         homeHeading.setPadding(0, dp(14), 0, dp(4));
         page.addView(homeHeading);
-        TextView homeStatus = new TextView(this);
-        homeStatus.setText(isQinsDefaultHome() ? "Status: QINS is the default Home app." : "Status: QINS is not the default Home app.");
+        homeStatus = new TextView(this);
+        updateHomeStatus();
         homeStatus.setTextSize(13);
         homeStatus.setTextColor(palette.muted);
         page.addView(homeStatus);
@@ -122,13 +134,23 @@ public class AppMenuActivity extends StudioActivity {
 
     private void openDefaultHomePicker() {
         try {
-            Intent home = new Intent(Intent.ACTION_MAIN);
-            home.addCategory(Intent.CATEGORY_HOME);
-            home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(Intent.createChooser(home, "Choose QINS as your Home app"));
+            // Android 4.4 has Settings > Home, but the public ACTION_HOME_SETTINGS
+            // constant was only added later. Use the action string and fall back safely.
+            Intent settings = new Intent("android.settings.HOME_SETTINGS");
+            if (settings.resolveActivity(getPackageManager()) != null) {
+                startActivity(settings);
+                return;
+            }
+        } catch (RuntimeException ignored) { }
+        try {
+            Intent settings = new Intent(Intent.ACTION_SETTINGS);
+            startActivity(settings);
+            android.widget.Toast.makeText(this,
+                    "Android 4.4: in Settings, open Home and select QINS Home. Then return here to verify the status.",
+                    android.widget.Toast.LENGTH_LONG).show();
         } catch (RuntimeException error) {
             android.widget.Toast.makeText(this,
-                    "Android 4.4: open Settings > Apps > Default apps / Home, then select QINS Home. If no Default apps menu exists, press the physical Home key and choose QINS, then Always.",
+                    "Open Android Settings > Home and select QINS Home. Press the physical Home key if the Home screen is not listed.",
                     android.widget.Toast.LENGTH_LONG).show();
         }
     }
