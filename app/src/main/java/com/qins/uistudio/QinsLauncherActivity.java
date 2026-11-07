@@ -1646,7 +1646,10 @@ public class QinsLauncherActivity extends Activity {
                             actionLabel.contains("next") || actionLabel.contains("previous") || actionLabel.contains("skip") ||
                             actionLabel.contains("הפעל") || actionLabel.contains("השהה") || actionLabel.contains("הבא") || actionLabel.contains("הקודם"))) continue;
                     hasTransport = true; final int ix = i;
-                    TextView button = new TextView(this); button.setText(item.actionTitles[i]); button.setTextColor(a.accent);
+                    TextView button = new TextView(this);
+                    String visibleLabel = item.actionTitles[i] == null ? "" : item.actionTitles[i];
+                    button.setText(visibleLabel.length() > 0 ? visibleLabel : (i == 0 ? "‹" : (i == 1 ? "Ⅱ / ▶" : "›")));
+                    button.setTextColor(a.accent);
                     button.setGravity(Gravity.CENTER); button.setTextSize(11); button.setFocusable(true); button.setFocusableInTouchMode(false);
                     styleSurface(button, 0x00000000, a.border, a.focus, 8f);
                     controls.addView(button, new LinearLayout.LayoutParams(0, dp(28), 1));
