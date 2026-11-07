@@ -123,11 +123,40 @@ public final class NotificationBridgeService extends NotificationListenerService
         String searchable = (titleValue + " " + textValue).toLowerCase(java.util.Locale.US);
         String pkg = packageName.toLowerCase(java.util.Locale.US);
         boolean missed = searchable.contains("missed call") || searchable.contains("שיחה שלא נענתה") || searchable.contains("שיחות שלא נענו");
-        Notification.Action[] raw = notification == null ? null : notification.actions;
+        // Read notification transport actions reflectively: QINS targets API 19,
+        // where newer Notification.Action types are not guaranteed to exist.
+        Object[] raw = null;
+        try { raw = (Object[]) Notification.class.getField("actions").get(notification); }
+        catch (Exception ignored) { }
         int count = raw == null ? 0 : Math.min(3, raw.length);
-        String[] actionTitles = new String[count]; PendingIntent[] actions = new PendingIntent[count];
-        for (int i = 0; i < count; i++) { Notification.Action action = raw[i]; actionTitles[i] = action == null || action.title == null ? "" : action.title.toString(); actions[i] = action == null ? null : action.actionIntent; }
-        boolean media = !missed && count >= 2 && (pkg.contains("music") || pkg.contains("spotify") || pkg.contains("media") || pkg.contains("youtube") || pkg.contains("vlc") || pkg.contains("audio"));
+        String[] actionTitles = new String[count];
+        PendingIntent[] actions = new PendingIntent[count];
+        boolean transportAction = false;
+        for (int i = 0; i < count; i++) {
+            Object action = raw[i];
+            try {
+                Object titleObject = action == null ? null : action.getClass().getField("title").get(action);
+                actionTitles[i] = titleObject == null ? "" : titleObject.toString();
+                Object intentObject = action == null ? null : action.getClass().getField("actionIntent").get(action);
+                actions[i] = intentObject instanceof PendingIntent ? (PendingIntent) intentObject : null;
+            } catch (Exception ignored) {
+                actionTitles[i] = "";
+                actions[i] = null;
+            }
+            String actionLabel = actionTitles[i].toLowerCase(java.util.Locale.US);
+            if (actionLabel.contains("play") || actionLabel.contains("pause") ||
+                    actionLabel.contains("next") || actionLabel.contains("previous") ||
+                    actionLabel.contains("skip") || actionLabel.contains("הפעל") ||
+                    actionLabel.contains("השהה") || actionLabel.contains("הבא") ||
+                    actionLabel.contains("הקודם")) transportAction = true;
+        }
+        boolean mediaPackage = pkg.contains("music") || pkg.contains("spotify") ||
+                pkg.contains("media") || pkg.contains("youtube") || pkg.contains("vlc") ||
+                pkg.contains("audio") || pkg.contains("podcast") || pkg.contains("deezer") ||
+                pkg.contains("soundcloud") || pkg.contains("poweramp") || pkg.contains("foobar");
+        boolean mediaSession = extras != null && extras.containsKey("android.mediaSession");
+        boolean media = !missed && (transportAction || mediaSession ||
+                (mediaPackage && count > 0));
         return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, actionTitles, actions);
     }
 
