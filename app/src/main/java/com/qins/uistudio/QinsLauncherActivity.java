@@ -3586,9 +3586,10 @@ public class QinsLauncherActivity extends Activity {
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
         icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
-        int glyphSize = dp(29);
+        int quickIconSize = clamp(screenHeightDp() / 8, 30, 40);
+        int glyphSize = dp(quickIconSize * 0.64f);
         iconWrap.addView(icon, new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER));
-        LinearLayout.LayoutParams iconWrapParams = new LinearLayout.LayoutParams(dp(44), dp(44));
+        LinearLayout.LayoutParams iconWrapParams = new LinearLayout.LayoutParams(dp(quickIconSize), dp(quickIconSize));
         iconWrapParams.gravity = Gravity.CENTER_HORIZONTAL;
         tile.addView(iconWrap, iconWrapParams);
 
