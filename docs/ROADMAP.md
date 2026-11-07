@@ -18,14 +18,75 @@
 ## Milestone 2 — independently testable modules
 - [x] Home Studio grid editor: choose 2–4 columns and 2–3 rows, preview and save locally.
 - [x] QINS Home: register a no-root Android HOME activity, discover installed launchable apps, show icons/labels in a D-pad grid and launch selected apps.
-- [x] QINS Home: four pinned apps per horizontal page; app drawer is separate from the home pages.\n- [x] QINS Home: persistent pinned-app list with default suggestions and add/remove/reorder controls.\n- [x] QINS Home: physical OK/Enter long-press enters edit mode; short press still launches the selected app.\n- [x] App drawer: short press launches; long press pins an app to Home; top navigation switches Home / Apps.\n- [x] Unify Home and Quick Panel as pages inside one QINS HOME activity; bottom handle opens/closes Quick Panel.\n- [x] Replace GridLayout-based launcher app grid with API-19-safe LinearLayout rows.
+- [x] QINS Home: four pinned apps per horizontal page; app drawer is separate from the home pages.
+- [x] QINS Home: persistent pinned-app list with default suggestions and add/remove/reorder controls.
+- [x] QINS Home: physical OK/Enter long-press enters edit mode; short press still launches the selected app.
+- [x] App drawer: short press launches; long press pins an app to Home; top navigation switches Home / Apps.
+- [x] Unify Home and Quick Panel as pages inside one QINS HOME activity; bottom handle opens/closes Quick Panel.
+- [x] Replace GridLayout-based launcher app grid with API-19-safe LinearLayout rows.
 - [x] Stabilize Studio dashboard as a standalone Activity and make its launcher shortcut keyboard-activatable.
-- [ ] QINS Home: test default-home selection, boot return, firmware-specific Home key mapping and focus behavior on QINS1+.\n- [ ] Verify long-press timing and focus movement on actual QINS1+ hardware; adjust to the keypad's repeat behavior.\n- [ ] Tune four-app icon sizing and page spacing against the actual QINS1+ screen resolution.
+- [ ] QINS Home: test default-home selection, boot return, firmware-specific Home key mapping and focus behavior on QINS1+.
+- [ ] Verify long-press timing and focus movement on actual QINS1+ hardware; adjust to the keypad's repeat behavior.
+- [ ] Tune four-app icon sizing and page spacing against the actual QINS1+ screen resolution.
 - [ ] Home Studio: configurable pinned apps, folders, tile ordering and multiple home pages.
-- [x] Quick Panel visual redesign: rounded control tiles, brightness and media-volume sliders, date/time/battery and direct Wi-Fi, Bluetooth, sound controls.\n- [x] Add battery/date/time glance information and in-panel Galaxy / Pixel / Nothing appearance switcher.\n- [ ] Add media transport, reorderable quick-tile slots, and more API-19-supported toggles (hotspot/rotation only where firmware permits).
+- [x] Quick Panel visual redesign: rounded control tiles, brightness and media-volume sliders, date/time/battery and direct Wi-Fi, Bluetooth, sound controls.
+- [x] Add battery/date/time glance information and in-panel Galaxy / Pixel / Nothing appearance switcher.
+- [ ] Add media transport, reorderable quick-tile slots, and more API-19-supported toggles (hotspot/rotation only where firmware permits).
 - [ ] Edge Panel: opt-in overlay with clear permission checks and graceful fallback.
 - [ ] Theme Studio: expanded design tokens, typography, spacing, component styles and export/import.
 - [ ] Lock Studio: safe companion/customization options within public APIs.
 
+
+## Milestone 3 — modern Android UI adaptations
+
+These ideas borrow interaction patterns from current Android / One UI releases, but must remain usable on the QINS1+ keypad and API 19.
+
+- [x] QINS Home: full-screen branded header and wallpaper canvas; preserve the top of user-selected images.
+- [x] QINS Home: compact Now Bar-style cards for active media and missed calls, with physical-key actions.
+- [x] QINS Home: per-theme clock background preference (transparent by default or solid surface).
+- [ ] Now Bar cards: allow up to two compact cards (for example, media + missed call) when the available height allows; fall back to one card on short screens.
+- [ ] Add local activity cards for timer / stopwatch and file-transfer progress; expose only actions that can be activated by the physical keys.
+- [ ] Notification organizer: group by app, offer a simple priority / quiet filter, and keep direct actions available without touch.
+- [ ] Add optional icon masks (circle, squircle, rounded square) and a monochrome icon mode for the Nothing preset; keep original colors as the default.
+- [x] Quick Panel: per-tile 1×1, 2×1 and 2×2 sizing exposed in Customize Quick Settings.
+- [x] Media player card: compact/large sizing exposed in the Quick Settings size editor.
+- [x] Nothing-style vertical brightness and volume controls with physical-key adjustment.
+- [x] Samsung layout: Wi-Fi/Bluetooth top row plus four 1×1 shortcuts; boxed Sound/Settings controls; paired volume slider and quiet-mode shortcut.
+- [x] Status indicators for Bluetooth and Sound/Vibrate/Silent; Sound glyph changes with the selected mode.
+- [x] Clock position section includes left/right alignment, date placement and battery percentage placement.
+- [ ] Validate torch, hotspot settings handoff, focus glow, and physical-key navigation on QINS1+ hardware.
+- [ ] Add a configurable glance-card order for clock, battery, media, missed calls and timer; show no more than the screen can comfortably fit.
+- [ ] Add a compact visual “now playing” progress state without always-on animation; provide previous / pause / next as focusable controls.
+
+### Device-first interaction and compatibility rules
+
+- Keep a visible focus indicator and a predictable D-pad / OK / Back route for every action. Decorative elements and inert empty space should not receive focus.
+- Do not require swipe, drag-and-drop or multi-finger gestures. Provide keypad alternatives for editing, paging and dismissing.
+- Prefer static gradients and translucent surfaces over real-time blur or continuous animation on the low-power device.
+- Treat Android 16 Live Updates, AI notification summaries, and global themed-icon services as design inspiration only. Implement local equivalents inside QINS rather than relying on framework APIs unavailable on API 19 or privileged system access.
+- Verify the top edge of every wallpaper variant, Hebrew / RTL control direction, focus order, softkey mapping, minimum / maximum brightness and long-press behavior on the actual QINS1+ hardware before release.
+
 ## Release criteria
 A module is not marked complete until it builds, survives relaunch, handles denied permissions, and is tested on Android 4.4.4 hardware or a matching emulator. The release APK must be produced by CI or a documented local build and its checksum recorded.
+
+## Quick Panel follow-up fixes — 2026-11-07
+
+- Compact Quick Settings now remains fullscreen, hides the launcher header, and docks to the top edge instead of exposing the Android status bar above a second header.
+- Galaxy, Pixel and Nothing Quick Settings use separate grid structures and tile treatments; Galaxy controls use circular icon wells, Pixel uses two-column Material surfaces, and Nothing keeps monochrome wide switches with vertical sliders.
+- Brightness and volume slider headings no longer include decorative icons.
+- Edge Bar is attached to the window decor so it spans the complete app height, and its background can be toggled between solid and transparent from its header.
+- Apps drawer defaults to a 3 × 4 grid and uses consistent, full-size app icons.
+- Media notifications are recognized using transport action labels, media-session extras and ongoing player notifications; Quick Settings refreshes when media starts or stops.
+- Media action extraction uses reflection to avoid directly linking newer Notification.Action types on the API 19 target.
+
+## QINS launcher integration and Quick Settings follow-up — 2026-11-07
+
+- Keep Android's native status bar hidden in the launcher itself; the earlier home-screen path cleared FLAG_FULLSCREEN, undoing the custom header. The launcher header now shows its own Wi-Fi/cellular/Bluetooth/sound indicators, a USB-connected marker, and a best-effort Bluetooth file-transfer marker derived from notifications.
+- The USB marker listens for Android's sticky USB state broadcast. Bluetooth transfer indication depends on the notification-listener permission and the firmware's Bluetooth transfer notification; it cannot guarantee visibility for silent/system-private transfer states.
+- Nothing Quick Settings now uses six controls, compact 1×1 tile defaults, monochrome high-contrast active/inactive surfaces, circular icon wells, standard sans-serif typography rather than the prior generic monospaced text, a visible scroll bar, and a D-pad scroll fallback.
+- The Nothing media card can show notification artwork in a bounded 50dp thumbnail. If notification actions are unavailable on Android 4.4, transport controls fall back to AudioManager media-key events; apps must register media-button handling for those events to work.
+- The screen flashlight is a full-screen white overlay with per-window maximum brightness, dismissed by any physical key; it no longer turns on the camera LED.
+- Sound mode explicitly cycles Sound → Vibrate → Silent → Sound and declares the VIBRATE permission.
+- Edge Bar focus glow is inset and drawn on the app icon only, preventing the previous circle from exceeding the icon bounds.
+- App menu includes Android's Home-app chooser. The manifest already registers QINS as a HOME activity; the user must choose it and select Always / set it as the default in Android's own resolver.
+- Native Android Settings pages, permission dialogs, and system-owned menus cannot be globally recolored by an ordinary third-party launcher. Without root or a ROM/system image change, the safe route is to build QINS-owned themed settings pages for supported functions and launch Android's native settings pages only for functions that must remain system-owned. Global theme control would require system-level integration matched to the exact QINS firmware build.
