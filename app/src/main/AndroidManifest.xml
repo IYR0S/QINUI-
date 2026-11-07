@@ -22,6 +22,7 @@
             </intent-filter>
         </service>
         <activity android:name=".QuickPanelActivity" android:label="Quick Panel" />
+        <activity android:name=".MusicWidgetSettingsActivity" android:label="Music Widget settings" />
         <activity android:name=".CrashReportActivity" android:label="QINS diagnostics" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
