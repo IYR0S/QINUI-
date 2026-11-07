@@ -785,6 +785,15 @@ public class QinsLauncherActivity extends Activity {
                 if (horizontal) canvas.drawRect(r.left, r.top, r.left + r.width() * level, r.bottom, paint);
                 else canvas.drawRect(r.left, r.bottom - r.height() * level, r.right, r.bottom, paint);
                 canvas.restoreToCount(save);
+                if (horizontal) {
+                    float edge = r.left + r.width() * level;
+                    paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(dp(2)); paint.setColor(borderColor);
+                    canvas.drawLine(edge, r.top + dp(2), edge, r.bottom - dp(2), paint);
+                } else {
+                    float edge = r.bottom - r.height() * level;
+                    paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(dp(2)); paint.setColor(borderColor);
+                    canvas.drawLine(r.left + dp(2), edge, r.right - dp(2), edge, paint);
+                }
             }
             paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(dp(focused ? 2.5f : 1f));
             paint.setColor(focused ? focusColor : borderColor);
@@ -2391,7 +2400,7 @@ public class QinsLauncherActivity extends Activity {
         button.setContentDescription(description);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
-        styleSurface(button, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(button, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1);
         params.setMargins(dp(3), 0, dp(3), 0);
         editBar.addView(button, params);
@@ -4182,7 +4191,7 @@ public class QinsLauncherActivity extends Activity {
                     tile.setGravity(Gravity.CENTER);
                     tile.setPadding(dp(2), dp(2), dp(2), dp(2));
                     int fill = i == selected[0] ? a.tileActive : a.surface;
-                    styleSurface(tile, fill, i == selected[0] ? a.accent : a.border, a.focus, a.cornerDp);
+                    styleSurface(tile, fill, i == selected[0] ? a.accent : a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
                     FrameLayout iconBox = new FrameLayout(QinsLauncherActivity.this);
                     GradientDrawable iconShape = new GradientDrawable();
                     if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) iconShape.setShape(GradientDrawable.OVAL);
@@ -4387,7 +4396,7 @@ public class QinsLauncherActivity extends Activity {
         controlsTab.setTextColor(quickPanelPage == 0 ? a.text : a.muted);
         controlsTab.setFocusable(true);
         controlsTab.setFocusableInTouchMode(false);
-        styleSurface(controlsTab, quickPanelPage == 0 ? a.tileActive : a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(controlsTab, quickPanelPage == 0 ? a.tileActive : a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
         tabs.addView(controlsTab, new LinearLayout.LayoutParams(0, -1, 1));
         controlsTab.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { switchQuickPanelPage(0); }
@@ -4400,7 +4409,7 @@ public class QinsLauncherActivity extends Activity {
         notificationsTab.setTextColor(quickPanelPage == 1 ? a.text : a.muted);
         notificationsTab.setFocusable(true);
         notificationsTab.setFocusableInTouchMode(false);
-        styleSurface(notificationsTab, quickPanelPage == 1 ? a.tileActive : a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(notificationsTab, quickPanelPage == 1 ? a.tileActive : a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
         LinearLayout.LayoutParams notificationsParams = new LinearLayout.LayoutParams(0, -1, 1);
         notificationsParams.leftMargin = dp(6);
         tabs.addView(notificationsTab, notificationsParams);
@@ -4505,7 +4514,7 @@ public class QinsLauncherActivity extends Activity {
             card.setFocusable(true);
             card.setFocusableInTouchMode(false);
             card.setClickable(true);
-            styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+            styleSurface(card, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
 
             TextView app = new TextView(this);
             app.setText(notificationAppLabel(item.packageName));
