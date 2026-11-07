@@ -2868,6 +2868,7 @@ public class QinsLauncherActivity extends Activity {
                         dialog.dismiss();
                         refreshLauncherSurface();
                     }
+                })
                 .setNeutralButton(R.string.launcher_smart_colors, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) { applySmartColors(); }
                 })
