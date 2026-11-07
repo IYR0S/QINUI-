@@ -2378,7 +2378,8 @@ public class QinsLauncherActivity extends Activity {
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             item.addView(icon, new LinearLayout.LayoutParams(dp(38), dp(38)));
             item.setGravity(Gravity.CENTER);
-            styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+            if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+            else item.setBackgroundColor(0x00000000);
             item.setContentDescription(info.loadLabel(getPackageManager()));
             item.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
@@ -3793,7 +3794,7 @@ public class QinsLauncherActivity extends Activity {
         TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(10); textBlock.addView(state); tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
-        else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, 10f);
+        else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, 4f);
         else tile.setBackgroundColor(0x00000000);
         registerQuickTile(symbol, tile, state); return tile;
     }
@@ -4137,9 +4138,12 @@ public class QinsLauncherActivity extends Activity {
     private boolean isBoundRightSoftKey(KeyEvent event) {
         SharedPreferences keys = getSharedPreferences(SOFTKEY_PREFS, MODE_PRIVATE);
         int boundCode = keys.getInt("right_key_code", Integer.MIN_VALUE);
-        if (boundCode == Integer.MIN_VALUE || event.getKeyCode() != boundCode) return false;
-        // QINS firmware may report different scan codes for the same physical soft key
-        // across firmware builds and between DOWN/UP. The bound Android key code is stable.
+        int boundScan = keys.getInt("right_key_scan", 0);
+        if (boundCode == Integer.MIN_VALUE) return false;
+        // Match either the saved Android key code or the hardware scan code. Some QINS
+        // firmware revisions change one while preserving the other for the same soft key.
+        return event.getKeyCode() == boundCode ||
+                (boundScan > 0 && event.getScanCode() > 0 && event.getScanCode() == boundScan);
     }
 
     private boolean isLeftSoftKey(KeyEvent event) {
