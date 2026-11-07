@@ -3799,6 +3799,10 @@ public class QinsLauncherActivity extends Activity {
         } catch (Exception ignored) { return packageName; }
     }
 
+    private int quickSurfaceColor(ThemeManager.Appearance a, int color) {
+        return ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? ((color & 0x00FFFFFF) | 0xD8000000) : color;
+    }
+
     private View quickTile(String symbol, String label, ThemeManager.Appearance a) {
         LinearLayout tile = new LinearLayout(this); tile.setOrientation(LinearLayout.VERTICAL); tile.setGravity(Gravity.CENTER); tile.setPadding(dp(3), dp(3), dp(3), dp(3));
         FrameLayout iconWrap = new FrameLayout(this); GradientDrawable shape = new GradientDrawable();
@@ -3816,7 +3820,7 @@ public class QinsLauncherActivity extends Activity {
         TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(10); textBlock.addView(state); tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
-        else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) styleSurface(tile, a.tile, a.border, a.focus, 4f);
+        else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) styleSurface(tile, quickSurfaceColor(a, a.tile), a.border, a.focus, 4f);
         else if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && ("sound".equals(symbol) || "settings".equals(symbol))) styleSurface(tile, a.surfaceAlt, a.border, a.focus, 8f);
         else tile.setBackgroundColor(0x00000000);
         registerQuickTile(symbol, tile, state); return tile;
@@ -3951,7 +3955,7 @@ public class QinsLauncherActivity extends Activity {
         card.setPadding(dp(10), dp(6), dp(8), dp(6));
         String mediaSize = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("media_size", "2x1");
         card.setMinimumHeight(dp("2x2".equals(mediaSize) ? 108 : 62));
-        styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(card, quickSurfaceColor(a, a.surface), a.border, a.focus, a.cornerDp);
         LinearLayout textBlock = new LinearLayout(this); textBlock.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
         if (item.text != null && item.text.length() > 0) { TextView subtitle = new TextView(this); subtitle.setText(item.text); subtitle.setTextColor(a.muted); subtitle.setTextSize(9); subtitle.setSingleLine(true); subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(subtitle); }
@@ -3969,7 +3973,7 @@ public class QinsLauncherActivity extends Activity {
     private void addBrightnessSleepRow(LinearLayout panel, ThemeManager.Appearance a) {
         LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout brightness = new LinearLayout(this); brightness.setOrientation(LinearLayout.VERTICAL);
-        brightness.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(brightness, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+        brightness.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(brightness, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.cornerDp);
         TextView heading = new TextView(this); heading.setText("☼  " + getString(R.string.launcher_brightness));
         heading.setTextColor(a.text); heading.setTextSize(13); brightness.addView(heading);
         SeekBar seek = new SeekBar(this); seek.setMax(255); seek.setProgress(Math.max(0, Math.min(255, readBrightness())));
@@ -4114,7 +4118,7 @@ public class QinsLauncherActivity extends Activity {
 
     private void updateQuickTileVisual(String key, View tile, boolean active) {
         if (tile == null) return;
-        ThemeManager.Appearance a = appearance(); int fill = active ? a.tileActive : a.tile;
+        ThemeManager.Appearance a = appearance(); int fill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
         View shape = tile.findViewWithTag("quick-icon-shape");
         if (shape != null) {
             GradientDrawable bg = new GradientDrawable();
@@ -4272,7 +4276,7 @@ public class QinsLauncherActivity extends Activity {
 
     private void addVolumeDndRow(LinearLayout panel, ThemeManager.Appearance a) {
         LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout volume = new LinearLayout(this); volume.setOrientation(LinearLayout.VERTICAL); volume.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(volume, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+        LinearLayout volume = new LinearLayout(this); volume.setOrientation(LinearLayout.VERTICAL); volume.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(volume, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.cornerDp);
         TextView heading = new TextView(this); heading.setText("◖  " + getString(R.string.launcher_volume)); heading.setTextColor(a.text); heading.setTextSize(13); volume.addView(heading);
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE); final int max = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)); final int current = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
         SeekBar seek = new SeekBar(this); seek.setMax(max); seek.setProgress(current); seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -4286,7 +4290,7 @@ public class QinsLauncherActivity extends Activity {
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { @Override public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser){AudioManager m=(AudioManager)getSystemService(Context.AUDIO_SERVICE);if(m!=null)m.setStreamVolume(AudioManager.STREAM_MUSIC,value,0);}} @Override public void onStartTrackingTouch(SeekBar bar){} @Override public void onStopTrackingTouch(SeekBar bar){} });
         volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(32))); row.addView(volume, new LinearLayout.LayoutParams(0, dp(66), 1));
         final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
-        dnd.setText("⊖\\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\\nON" : "\\nOFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false); styleSurface(dnd, quiet ? a.tileActive : a.tile, a.border, a.focus, a.cornerDp);
+        dnd.setText("⊖\\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\\nON" : "\\nOFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false); styleSurface(dnd, quickSurfaceColor(a, quiet ? a.tileActive : a.tile), a.border, a.focus, a.cornerDp);
         LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(dp(82), dp(66)); dndParams.leftMargin = dp(7); row.addView(dnd, dndParams);
         dnd.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){toggleDoNotDisturb();}});
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1,-2); rp.topMargin=dp(8); panel.addView(row,rp);
