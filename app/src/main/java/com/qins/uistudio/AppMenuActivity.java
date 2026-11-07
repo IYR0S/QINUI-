@@ -143,7 +143,7 @@ public class AppMenuActivity extends StudioActivity {
             }
         } catch (RuntimeException ignored) { }
         try {
-            Intent settings = new Intent(Intent.ACTION_SETTINGS);
+            Intent settings = new Intent("android.settings.SETTINGS");
             startActivity(settings);
             android.widget.Toast.makeText(this,
                     "Android 4.4: in Settings, open Home and select QINS Home. Then return here to verify the status.",
