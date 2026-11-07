@@ -4041,7 +4041,21 @@ public class QinsLauncherActivity extends Activity {
         card.setPadding(dp(10), dp(6), dp(8), dp(6));
         String mediaSize = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("media_size", "2x1");
         card.setMinimumHeight(dp("2x2".equals(mediaSize) ? 108 : 62));
-        styleSurface(card, quickSurfaceColor(a, a.surface), a.border, a.focus, a.cornerDp);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            styleSurface(card, 0xFF1B1D1E, 0xFF1B1D1E, a.focus, 14f);
+        } else {
+            styleSurface(card, quickSurfaceColor(a, a.surface), a.border, a.focus, a.cornerDp);
+        }
+        if (item.artwork != null && !item.artwork.isRecycled()) {
+            ImageView artwork = new ImageView(this);
+            artwork.setImageBitmap(item.artwork);
+            artwork.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            artwork.setBackgroundColor(0xFF303234);
+            artwork.setContentDescription("Album artwork");
+            LinearLayout.LayoutParams artParams = new LinearLayout.LayoutParams(dp(50), dp(50));
+            artParams.rightMargin = dp(9);
+            card.addView(artwork, artParams);
+        }
         LinearLayout textBlock = new LinearLayout(this); textBlock.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
         if (item.text != null && item.text.length() > 0) { TextView subtitle = new TextView(this); subtitle.setText(item.text); subtitle.setTextColor(a.muted); subtitle.setTextSize(9); subtitle.setSingleLine(true); subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(subtitle); }
