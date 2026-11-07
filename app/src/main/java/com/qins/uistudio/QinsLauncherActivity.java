@@ -170,6 +170,16 @@ public class QinsLauncherActivity extends Activity {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 
+    private boolean isDescendantOf(View child, View parent) {
+        if (child == null || parent == null) return false;
+        android.view.ViewParent current = child.getParent();
+        while (current instanceof View) {
+            if (current == parent) return true;
+            current = ((View) current).getParent();
+        }
+        return false;
+    }
+
     private int screenWidthDp() {
         return (int) (getResources().getDisplayMetrics().widthPixels /
                 getResources().getDisplayMetrics().density);
@@ -4706,9 +4716,10 @@ public class QinsLauncherActivity extends Activity {
                 event.getAction() == KeyEvent.ACTION_DOWN &&
                 (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN || event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP)) {
             View focused = getCurrentFocus();
-            if (focused != null && focused.focusSearch(event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN
-                    ? View.FOCUS_DOWN : View.FOCUS_UP) == null) {
-                quickPanelScrollView.smoothScrollBy(0, event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ? dp(76) : -dp(76));
+            int direction = event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ? View.FOCUS_DOWN : View.FOCUS_UP;
+            View nextFocus = focused == null ? null : focused.focusSearch(direction);
+            if (nextFocus == null || !isDescendantOf(nextFocus, quickPanelScrollView)) {
+                quickPanelScrollView.smoothScrollBy(0, direction == View.FOCUS_DOWN ? dp(76) : -dp(76));
                 return true;
             }
         }
