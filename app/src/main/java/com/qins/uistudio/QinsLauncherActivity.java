@@ -4323,11 +4323,11 @@ public class QinsLauncherActivity extends Activity {
         final LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setGravity(Gravity.CENTER);
         card.setPadding(dp(4), dp(6), dp(4), dp(6));
         final boolean brightness = label.equals(getString(R.string.launcher_brightness));
-        if (brightness) { updateBrightnessCard(card, a, value, max); attachBrightnessFocus(card, seek); }
+        if (brightness) updateBrightnessCard(card, a, value, max);
         else styleSurface(card, a.surface, a.border, a.focus, 8f);
         TextView title = new TextView(this); title.setText(label); title.setTextColor(a.text); title.setTextSize(10); title.setGravity(Gravity.CENTER); card.addView(title);
         VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this); seek.setMax(max); seek.setProgress(Math.max(0, Math.min(max, value))); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        if (brightness) hideSeekBarMarker(seek);
+        if (brightness) { hideSeekBarMarker(seek); attachBrightnessFocus(card, seek); }
         else {
             GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(0);
             GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(0);
