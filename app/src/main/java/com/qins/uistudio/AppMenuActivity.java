@@ -71,6 +71,25 @@ public class AppMenuActivity extends StudioActivity {
                 }
             }
         });
+        addItem(page, "Edit Music Widget", new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(AppMenuActivity.this, MusicWidgetSettingsActivity.class));
+            }
+        });
+        TextView homeHeading = new TextView(this);
+        homeHeading.setText("Default Home Launcher");
+        homeHeading.setTextSize(18);
+        homeHeading.setTextColor(palette.text);
+        homeHeading.setPadding(0, dp(14), 0, dp(4));
+        page.addView(homeHeading);
+        TextView homeStatus = new TextView(this);
+        homeStatus.setText(isQinsDefaultHome() ? "Status: QINS is the default Home app." : "Status: QINS is not the default Home app.");
+        homeStatus.setTextSize(13);
+        homeStatus.setTextColor(palette.muted);
+        page.addView(homeStatus);
+        addItem(page, "Choose default Home app", new View.OnClickListener() {
+            @Override public void onClick(View v) { openDefaultHomePicker(); }
+        });
         addItem(page, R.string.menu_home, new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(AppMenuActivity.this, HomeStudioActivity.class));
@@ -88,6 +107,30 @@ public class AppMenuActivity extends StudioActivity {
         });
         setContentView(scroll);
         if (page.getChildCount() > 2) page.getChildAt(2).requestFocus();
+    }
+
+    private boolean isQinsDefaultHome() {
+        try {
+            Intent home = new Intent(Intent.ACTION_MAIN);
+            home.addCategory(Intent.CATEGORY_HOME);
+            android.content.pm.ResolveInfo resolved = getPackageManager().resolveActivity(home,
+                    android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+            return resolved != null && resolved.activityInfo != null &&
+                    getPackageName().equals(resolved.activityInfo.packageName);
+        } catch (RuntimeException ignored) { return false; }
+    }
+
+    private void openDefaultHomePicker() {
+        try {
+            Intent home = new Intent(Intent.ACTION_MAIN);
+            home.addCategory(Intent.CATEGORY_HOME);
+            home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(Intent.createChooser(home, "Choose QINS as your Home app"));
+        } catch (RuntimeException error) {
+            android.widget.Toast.makeText(this,
+                    "Android 4.4: open Settings > Apps > Default apps / Home, then select QINS Home. If no Default apps menu exists, press the physical Home key and choose QINS, then Always.",
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
     }
 
     private void addItem(LinearLayout page, String label, View.OnClickListener listener) {
