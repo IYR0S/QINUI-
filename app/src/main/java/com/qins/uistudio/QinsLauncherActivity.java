@@ -1477,7 +1477,9 @@ public class QinsLauncherActivity extends Activity {
         dateView.setTextSize(smallScreen == 1 ? 9 : 11);
         dateView.setSingleLine(true);
         dateView.setGravity(clockHorizontalGravity);
-        timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
+        int datePosition = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("date_position", 0);
+        if (datePosition == 1) timeBlock.addView(dateView, 0, new LinearLayout.LayoutParams(-1, -2));
+        else if (datePosition == 0) timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
         if (nothingMatrixClock) {
             top.addView(timeBlock, new LinearLayout.LayoutParams(-1, -2));
         } else {
@@ -1488,9 +1490,12 @@ public class QinsLauncherActivity extends Activity {
         batteryView.setTextColor(a.muted);
         batteryView.setTextSize(13);
         batteryView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-        top.addView(batteryView, nothingMatrixClock
-                ? new LinearLayout.LayoutParams(-1, dp(17))
-                : new LinearLayout.LayoutParams(-2, -1));
+        int batteryPosition = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("battery_position", 0);
+        LinearLayout.LayoutParams batteryParams = nothingMatrixClock
+                ? new LinearLayout.LayoutParams(-1, dp(17)) : new LinearLayout.LayoutParams(-2, -1);
+        if (batteryPosition == 1) top.addView(batteryView, 0, batteryParams);
+        else if (batteryPosition == 2) timeBlock.addView(batteryView, new LinearLayout.LayoutParams(-1, dp(18)));
+        else top.addView(batteryView, batteryParams);
         LinearLayout.LayoutParams topParams = new LinearLayout.LayoutParams(-1, -2);
         topParams.topMargin = dp(smallScreen == 1 ? 3 : 9);
         topParams.bottomMargin = dp(smallScreen == 1 ? 5 : 10);
@@ -3838,15 +3843,45 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showClockPositionPicker() {
-        final String[] positions = new String[] {getString(R.string.launcher_clock_top),
-                getString(R.string.launcher_clock_center), getString(R.string.launcher_clock_bottom)};
+        final String[] choices = new String[] {"Vertical position", "Clock side (left / right)", "Date location", "Battery percentage location"};
+        new android.app.AlertDialog.Builder(this).setTitle(R.string.launcher_clock_position)
+                .setItems(choices, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (which == 0) showClockVerticalPositionPicker();
+                        else if (which == 1) showClockAlignmentPicker();
+                        else if (which == 2) showClockDatePositionPicker();
+                        else showClockBatteryPositionPicker();
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showClockVerticalPositionPicker() {
+        final String[] positions = new String[] {getString(R.string.launcher_clock_top), getString(R.string.launcher_clock_center), getString(R.string.launcher_clock_bottom)};
         final android.content.SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
         int selected = Math.max(0, Math.min(2, prefs.getInt("clock_position", 0)));
-        new android.app.AlertDialog.Builder(this).setTitle(R.string.launcher_clock_position)
+        new android.app.AlertDialog.Builder(this).setTitle("Clock vertical position")
                 .setSingleChoiceItems(positions, selected, new android.content.DialogInterface.OnClickListener() {
-                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        prefs.edit().putInt("clock_position", which).commit(); dialog.dismiss(); showHome(false);
-                    }
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) { prefs.edit().putInt("clock_position", which).commit(); dialog.dismiss(); showHome(false); }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showClockDatePositionPicker() {
+        final String[] positions = new String[] {"Below the clock", "Above the clock", "Hide date"};
+        final android.content.SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
+        int selected = Math.max(0, Math.min(2, prefs.getInt("date_position", 0)));
+        new android.app.AlertDialog.Builder(this).setTitle("Date location")
+                .setSingleChoiceItems(positions, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) { prefs.edit().putInt("date_position", which).commit(); dialog.dismiss(); showHome(false); }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showClockBatteryPositionPicker() {
+        final String[] positions = new String[] {"Right of clock", "Left of clock", "Below clock and date"};
+        final android.content.SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
+        int selected = Math.max(0, Math.min(2, prefs.getInt("battery_position", 0)));
+        new android.app.AlertDialog.Builder(this).setTitle("Battery percentage location")
+                .setSingleChoiceItems(positions, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) { prefs.edit().putInt("battery_position", which).commit(); dialog.dismiss(); showHome(false); }
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
