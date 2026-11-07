@@ -2,6 +2,7 @@ package com.qins.uistudio;
 
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.graphics.Bitmap;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.content.Context;
@@ -32,13 +33,14 @@ public final class NotificationBridgeService extends NotificationListenerService
         public final String text;
         public final long postedAt;
         public final boolean missedCall, media;
+        public final Bitmap artwork;
         public final String[] actionTitles;
         public final PendingIntent[] actions;
         NotificationItem(String key, String packageName, String title, String text, long postedAt,
-                         boolean missedCall, boolean media, String[] actionTitles, PendingIntent[] actions) {
+                         boolean missedCall, boolean media, Bitmap artwork, String[] actionTitles, PendingIntent[] actions) {
             this.key = key; this.packageName = packageName; this.title = title; this.text = text;
             this.postedAt = postedAt; this.missedCall = missedCall; this.media = media;
-            this.actionTitles = actionTitles; this.actions = actions;
+            this.artwork = artwork; this.actionTitles = actionTitles; this.actions = actions;
         }
     }
 
@@ -155,11 +157,16 @@ public final class NotificationBridgeService extends NotificationListenerService
                 pkg.contains("audio") || pkg.contains("podcast") || pkg.contains("deezer") ||
                 pkg.contains("soundcloud") || pkg.contains("poweramp") || pkg.contains("foobar");
         boolean mediaSession = extras != null && extras.containsKey("android.mediaSession");
+        Bitmap artwork = notification == null ? null : notification.largeIcon;
+        if (artwork == null && extras != null) {
+            try { artwork = (Bitmap) extras.getParcelable("android.picture"); } catch (RuntimeException ignored) { }
+            if (artwork == null) try { artwork = (Bitmap) extras.getParcelable("android.largeIcon"); } catch (RuntimeException ignored) { }
+        }
         boolean ongoing = notification != null &&
                 (notification.flags & (Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR)) != 0;
         boolean media = !missed && (transportAction || mediaSession ||
                 (mediaPackage && (count > 0 || ongoing)));
-        return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, actionTitles, actions);
+        return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, artwork, actionTitles, actions);
     }
 
     public static void sendAction(NotificationItem item, int index) {
