@@ -3380,7 +3380,10 @@ public class QinsLauncherActivity extends Activity {
         panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
         for (int i = 0; i < 2; i++) {
             final String key = expandedKeys[i];
-            View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
+            View tile = ThemeManager.APPEARANCE_GALAXY.equals(a.id) &&
+                    ("wifi".equals(key) || "bluetooth".equals(key))
+                    ? quickConnectivityTile(key, a)
+                    : quickTile(glyphForQuickKey(key), quickLabel(key), a);
             LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
             if (i > 0) tileParams.leftMargin = dp(7);
             firstRow.addView(tile, tileParams);
@@ -3698,6 +3701,42 @@ public class QinsLauncherActivity extends Activity {
         });
     }
 
+    private View quickConnectivityTile(String key, ThemeManager.Appearance a) {
+        LinearLayout tile = new LinearLayout(this);
+        tile.setOrientation(LinearLayout.HORIZONTAL);
+        tile.setGravity(Gravity.CENTER_VERTICAL);
+        tile.setPadding(dp(9), dp(4), dp(8), dp(4));
+        tile.setTag("quick-connectivity");
+        FrameLayout iconWrap = new FrameLayout(this);
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(a.tileActive);
+        iconWrap.setBackgroundDrawable(circle);
+        QinsGlyphView icon = new QinsGlyphView(this, glyphForQuickKey(key), a.accent);
+        icon.setVisualStyle(a.id);
+        iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
+        tile.addView(iconWrap, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.setPadding(dp(8), 0, 0, 0);
+        TextView name = new TextView(this);
+        name.setText(quickLabel(key));
+        name.setTextColor(a.text);
+        name.setTextSize(11);
+        labels.addView(name);
+        TextView state = new TextView(this);
+        state.setTextColor(a.muted);
+        state.setTextSize(9);
+        labels.addView(state);
+        tile.addView(labels, new LinearLayout.LayoutParams(0, -2, 1));
+        tile.setFocusable(true);
+        tile.setFocusableInTouchMode(false);
+        tile.setClickable(true);
+        styleSurface(tile, a.tile, a.border, a.focus, 22f);
+        registerQuickTile(key, tile, state);
+        return tile;
+    }
+
     private void updateQuickTileVisual(String key, View tile, boolean active) {
         if (tile == null) return;
         ThemeManager.Appearance a = appearance(); int fill = active ? a.tileActive : a.tile;
@@ -3709,6 +3748,8 @@ public class QinsLauncherActivity extends Activity {
             bg.setColor(fill); shape.setBackgroundDrawable(bg);
         }
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, (active || tile.hasFocus()) ? a.accent : a.border, a.accent, a.cornerDp, tile.hasFocus()));
+        else if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && "quick-connectivity".equals(tile.getTag()))
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, tile.hasFocus() ? a.accent : a.border, a.accent, 22f, tile.hasFocus()));
         else if (tile.hasFocus()) tile.setBackgroundDrawable(new FocusSurfaceDrawable(0x223C8060, a.accent, a.accent, a.cornerDp, true));
         else tile.setBackgroundColor(0x00000000);
     }
