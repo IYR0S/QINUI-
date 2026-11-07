@@ -1580,7 +1580,7 @@ public class QinsLauncherActivity extends Activity {
         timeBlock.setGravity((nothingMatrixClock && clockAlignment == 0 ? Gravity.CENTER : Gravity.CENTER_VERTICAL) |
                 (clockAlignment == 1 ? Gravity.RIGHT : Gravity.LEFT));
         clockView = nothingMatrixClock ? new NothingDotMatrixClockView(this, "stacked".equals(selectedClockStyle)) :
-                (analogClock ? new AnalogClockTextView(this, a) : new TextView(this));
+                (analogClock && !compactClockInTopRow ? new AnalogClockTextView(this, a) : new TextView(this));
         if (nothingMatrixClock) {
             clockView.setGravity(Gravity.CENTER);
             clockView.setMinHeight(dp("stacked".equals(selectedClockStyle) ? (smallScreen == 1 ? 78 : 92) : (smallScreen == 1 ? 58 : 70)));
@@ -1593,7 +1593,7 @@ public class QinsLauncherActivity extends Activity {
             clockView.setTextSize(1);
         }
         clockView.setTextColor(nothingMatrixClock ? ("stacked".equals(selectedClockStyle) ? a.accent : 0xFFF7F7F5) :
-                (analogClock ? 0x00000000 : a.text));
+                (analogClock && !compactClockInTopRow ? 0x00000000 : a.text));
         clockView.setTextSize(compactClockInTopRow ? 13 : clockSizeForTheme(a, smallScreen == 1));
         if (analogClock && !compactClockInTopRow) clockView.setTextSize(1);
         if (compactClockInTopRow && analogClock) clockView.setText("◷ " + new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date()));
