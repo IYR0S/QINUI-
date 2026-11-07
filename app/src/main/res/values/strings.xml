@@ -116,4 +116,8 @@
     <string name="launcher_clock_top">Top</string>
     <string name="launcher_clock_center">Center</string>
     <string name="launcher_clock_bottom">Bottom</string>
+    <string name="launcher_edge_panel">Edge Panel</string>
+    <string name="launcher_edge_settings">Edge Panel settings</string>
+    <string name="launcher_edge_choose_apps">Choose apps for Edge Panel</string>
+    <string name="launcher_edge_disable">Turn off Edge Panel</string>
 </resources>
