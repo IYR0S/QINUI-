@@ -57,6 +57,20 @@ public class AppMenuActivity extends StudioActivity {
                 finish();
             }
         });
+        addItem(page, "Set QINS as default Home app", new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                try {
+                    Intent home = new Intent(Intent.ACTION_MAIN);
+                    home.addCategory(Intent.CATEGORY_HOME);
+                    home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(Intent.createChooser(home, "Choose QINS as your Home app"));
+                } catch (RuntimeException error) {
+                    android.widget.Toast.makeText(AppMenuActivity.this,
+                            "Open Android Settings > Apps > Default apps > Home app, then choose QINS UI.",
+                            android.widget.Toast.LENGTH_LONG).show();
+                }
+            }
+        });
         addItem(page, R.string.menu_home, new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(AppMenuActivity.this, HomeStudioActivity.class));
