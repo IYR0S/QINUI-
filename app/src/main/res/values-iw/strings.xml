@@ -89,4 +89,35 @@
     <string name="launcher_softkey_detected">המקש זוהה ונשמר</string>
     <string name="launcher_softkey_reset">איפוס זיהוי המקשים</string>
     <string name="launcher_softkey_reset_done">מיפוי המקשים אופס.</string>
+
+    <string name="launcher_compact_shortcut">קיצור דרך %1$d</string>
+    <string name="launcher_expanded_tile">אריח מורחב %1$d</string>
+    <string name="launcher_theme_colors">צבעי ערכת הנושא</string>
+    <string name="launcher_clock_design">עיצוב השעון</string>
+    <string name="launcher_upper_right_key">המקש הפיזי הימני העליון</string>
+    <string name="launcher_notification_access_explanation">יש לאפשר ל־QINS UI Studio לקרוא התראות דרך הגדרות Android. תוכן ההתראות נשאר במכשיר.</string>
+    <string name="launcher_enable_notification_access">הפעלת גישה להתראות</string>
+    <string name="launcher_no_active_notifications">אין התראות פעילות</string>
+    <string name="launcher_press_upper_right_key">לחץ פעם אחת על המקש הפיזי הימני העליון</string>
+    <string name="launcher_upper_right_key_saved">המקש הימני העליון נשמר</string>
+    <string name="launcher_controls_tab">פקדים</string>
+    <string name="launcher_notifications_tab">התראות</string>
+    <string name="launcher_missed_call">שיחה שלא נענתה</string>
+    <string name="launcher_now_playing">מתנגן כעת</string>
+    <string name="launcher_smart_colors">צבעים חכמים מהרקע</string>
+    <string name="launcher_smart_colors_applied">צבע ההדגשה החכם הוחל</string>
+    <string name="launcher_clock_background">רקע השעון</string>
+    <string name="launcher_clock_background_transparent">שקוף (נוכחי)</string>
+    <string name="launcher_clock_background_solid">צבע מלא</string>
+    <string name="launcher_dark_mode">מצב כהה / בהיר</string>
+    <string name="launcher_light_mode">מצב בהיר</string>
+    <string name="launcher_sleep_mode">מצב שינה</string>
+    <string name="launcher_clock_position">מיקום השעון</string>
+    <string name="launcher_clock_top">למעלה</string>
+    <string name="launcher_clock_center">במרכז</string>
+    <string name="launcher_clock_bottom">למטה</string>
+    <string name="launcher_edge_panel">לוח Edge</string>
+    <string name="launcher_edge_settings">הגדרות לוח Edge</string>
+    <string name="launcher_edge_choose_apps">בחר אפליקציות ללוח Edge</string>
+    <string name="launcher_edge_disable">כיבוי לוח Edge</string>
 </resources>
