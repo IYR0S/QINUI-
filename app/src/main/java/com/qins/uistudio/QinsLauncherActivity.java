@@ -144,7 +144,7 @@ public class QinsLauncherActivity extends Activity {
     private boolean flashlightEnabled;
     private View flashlightScreenOverlay;
     private float flashlightPreviousBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE;
-    private TextView usbStatusIndicator, wifiStatusIndicator, bluetoothTransferIndicator;
+    private TextView usbStatusIndicator, wifiStatusIndicator, bluetoothTransferIndicator, systemStatusExtras;
     private boolean usbConnected;
     private ScrollView quickPanelScrollView;
     private View wifiTile;
@@ -407,6 +407,12 @@ public class QinsLauncherActivity extends Activity {
         homeSoundStatus = new QinsGlyphView(this, "sound", a.muted); homeSoundStatus.setVisualStyle(a.id);
         LinearLayout.LayoutParams homeSoundParams = new LinearLayout.LayoutParams(dp(20), dp(22)); homeSoundParams.leftMargin = dp(3); homeSoundParams.rightMargin = dp(5);
         topBar.addView(homeSoundStatus, homeSoundParams);
+        systemStatusExtras = new TextView(this);
+        systemStatusExtras.setTextSize(8);
+        systemStatusExtras.setGravity(Gravity.CENTER);
+        systemStatusExtras.setSingleLine(true);
+        systemStatusExtras.setContentDescription("Additional system status indicators");
+        topBar.addView(systemStatusExtras, new LinearLayout.LayoutParams(-2, dp(22)));
 
          themeButton = new TextView(this);
         themeButton.setText("◉");
@@ -4458,6 +4464,35 @@ public class QinsLauncherActivity extends Activity {
             bluetoothTransferIndicator.setVisibility(transferring ? View.VISIBLE : View.GONE);
         }
         if (homeSoundStatus != null) { homeSoundStatus.setGlyph(glyph); homeSoundStatus.setTint(mode == AudioManager.RINGER_MODE_NORMAL ? a.accent : a.muted); }
+        if (systemStatusExtras != null) {
+            StringBuilder extras = new StringBuilder();
+            try {
+                Intent battery = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                if (battery != null && battery.getIntExtra("plugged", 0) != 0) extras.append("⚡ ");
+            } catch (RuntimeException ignored) { }
+            try {
+                if (Settings.System.getInt(getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) == 1)
+                    extras.append("✈ ");
+            } catch (RuntimeException ignored) { }
+            try {
+                if (Settings.Secure.getInt(getContentResolver(), Settings.Secure.LOCATION_MODE, 0) != 0)
+                    extras.append("⌖ ");
+            } catch (RuntimeException ignored) { }
+            try {
+                android.nfc.NfcAdapter nfc = android.nfc.NfcAdapter.getDefaultAdapter(this);
+                if (nfc != null && nfc.isEnabled()) extras.append("NFC ");
+            } catch (RuntimeException ignored) { }
+            try {
+                android.net.ConnectivityManager connectivity = (android.net.ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                android.net.NetworkInfo vpn = connectivity == null ? null :
+                        connectivity.getNetworkInfo(android.net.ConnectivityManager.TYPE_VPN);
+                if (vpn != null && vpn.isConnected()) extras.append("VPN ");
+            } catch (RuntimeException ignored) { }
+            String extraText = extras.toString().trim();
+            systemStatusExtras.setText(extraText);
+            systemStatusExtras.setTextColor(a.accent);
+            systemStatusExtras.setVisibility(extraText.length() == 0 ? View.GONE : View.VISIBLE);
+        }
         if (panelBluetoothStatus != null) panelBluetoothStatus.setTint(bt ? a.accent : a.muted);
         if (panelBluetoothLabel != null) { panelBluetoothLabel.setText(bt ? "Bluetooth on" : "Bluetooth off"); panelBluetoothLabel.setTextColor(bt ? a.accent : a.muted); }
         if (panelSoundStatus != null) { panelSoundStatus.setGlyph(glyph); panelSoundStatus.setTint(mode == AudioManager.RINGER_MODE_NORMAL ? a.accent : a.muted); }
