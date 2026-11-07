@@ -140,6 +140,10 @@ public class QinsLauncherActivity extends Activity {
         @Override public void onReceive(Context context, Intent intent) {
             updateClockAndBattery();
             updateQuickStates();
+            if (ThemeManager.isSmartProfileEnabled(QinsLauncherActivity.this)) {
+                if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
+                else if (!quickPanelVisible && !drawerVisible) showHome(false);
+            }
         }
     };
 
@@ -1789,19 +1793,19 @@ public class QinsLauncherActivity extends Activity {
 
             float iconScale = getSharedPreferences("qins_home_layout", MODE_PRIVATE)
                     .getFloat("icon_scale", 1.0f);
-            int iconFrameSize = clamp(Math.round((screenWidthDp() / 4 - 12) * iconScale), 36, 72);
-            int iconSize = iconFrameSize - 11;
+            int iconFrameSize = clamp(Math.round((screenWidthDp() / 4 - 12) * iconScale), 38, 76);
+            boolean nothingIcons = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
+            int iconSize = nothingIcons ? iconFrameSize - 11 : iconFrameSize;
             FrameLayout iconFrame = new FrameLayout(this);
-            GradientDrawable iconBackground = new GradientDrawable();
-            if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            if (nothingIcons) {
+                GradientDrawable iconBackground = new GradientDrawable();
                 iconBackground.setShape(GradientDrawable.OVAL);
+                iconBackground.setColor(isFolder(info) ? 0x55000000 : a.tile);
+                iconBackground.setStroke(dp(1), a.border);
+                iconFrame.setBackgroundDrawable(iconBackground);
             } else {
-                iconBackground.setShape(GradientDrawable.RECTANGLE);
-                iconBackground.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 18 : 14));
+                iconFrame.setBackgroundColor(0x00000000);
             }
-            iconBackground.setColor(isFolder(info) ? 0x55000000 : a.tile);
-            iconBackground.setStroke(dp(1), a.monochrome ? a.border : a.surfaceAlt);
-            iconFrame.setBackgroundDrawable(iconBackground);
             if (isFolder(info)) {
                 LinearLayout miniIcons = new LinearLayout(this);
                 miniIcons.setGravity(Gravity.CENTER);
@@ -1847,7 +1851,7 @@ public class QinsLauncherActivity extends Activity {
             label.setText(isFolder(info) ? getFolderName(info) : info.loadLabel(getPackageManager()));
             tile.setContentDescription(label.getText() + ". Long press to edit.");
             label.setTextColor(a.text);
-            label.setTextSize(screenWidthDp() < 210 ? 8 : 10);
+            label.setTextSize(screenWidthDp() < 210 ? 9 : 11);
             label.setGravity(Gravity.CENTER);
             label.setSingleLine(true);
             label.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -2392,9 +2396,18 @@ public class QinsLauncherActivity extends Activity {
         tile.setTag("drawer:" + componentKey(info));
         tile.setContentDescription((folder ? getFolderName(info) : info.loadLabel(getPackageManager())) +
                 (folder ? ". Folder. Press to open, long press for options." : ". Press to open, long press to pin."));
-        styleSurface(tile, a.surface, a.border, a.focus, a.cornerDp);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            styleSurface(tile, a.surface, a.border, a.focus, a.cornerDp);
+        } else {
+            tile.setBackgroundColor(0x00000000);
+            tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override public void onFocusChange(View v, boolean focused) {
+                    v.setBackgroundColor(focused ? 0x223C8060 : 0x00000000);
+                }
+            });
+        }
 
-        int iconSize = clamp(screenWidthDp() / Math.max(5, drawerColumns()) - 15, 24, 40);
+        int iconSize = clamp(screenWidthDp() / Math.max(5, drawerColumns()) - 10, 28, 46);
         if (folder) {
             LinearLayout preview = new LinearLayout(this);
             preview.setOrientation(LinearLayout.HORIZONTAL);
@@ -2421,7 +2434,7 @@ public class QinsLauncherActivity extends Activity {
         TextView label = new TextView(this);
         label.setText(folder ? getFolderName(info) : info.loadLabel(getPackageManager()));
         label.setTextColor(a.text);
-        label.setTextSize(screenWidthDp() < 210 ? 7 : 9);
+        label.setTextSize(screenWidthDp() < 210 ? 8 : 10);
         label.setGravity(Gravity.CENTER);
         label.setSingleLine(true);
         label.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -2845,7 +2858,16 @@ public class QinsLauncherActivity extends Activity {
                         dialog.dismiss();
                         refreshLauncherSurface();
                     }
-                }).setNeutralButton(R.string.launcher_smart_colors, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) { applySmartColors(); } }).setNegativeButton(android.R.string.cancel, null).show();
+                }) .setNeutralButton(R.string.launcher_smart_colors, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) { applySmartColors(); } })
+                .setPositiveButton(R.string.launcher_smart_profile, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                    ThemeManager.toggleSmartProfile(QinsLauncherActivity.this);
+                    refreshLauncherSurface();
+                    android.widget.Toast.makeText(QinsLauncherActivity.this, ThemeManager.isSmartProfileEnabled(QinsLauncherActivity.this) ? R.string.launcher_smart_profile_on : R.string.launcher_smart_profile_off, android.widget.Toast.LENGTH_SHORT).show();
+                } })
+                .setNegativeButton(R.string.launcher_dark_mode, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                    ThemeManager.toggleDarkMode(QinsLauncherActivity.this);
+                    refreshLauncherSurface();
+                } }).show();
     }
 
     private void applySmartColors() {
@@ -3368,14 +3390,19 @@ public class QinsLauncherActivity extends Activity {
         editMode = false;
         pageContent.removeAllViews();
         ThemeManager.Appearance a = appearance();
-        pageContent.setBackground(new QinsWallpaperDrawable(a));
+        // Draw the wallpaper once on the full root. A second drawable here
+        // cropped the image to the shorter content viewport when Quick Settings opened.
+        pageContent.setBackgroundColor(0x00000000);
         updateNavigationButton();
 
         ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(false);
+        scroll.setFillViewport(true);
+        scroll.setClipToPadding(false);
         scroll.setVerticalScrollBarEnabled(false);
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setClipChildren(false);
+        panel.setClipToPadding(false);
         panel.setPadding(dp(2), dp(4), dp(2), dp(10));
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
@@ -3446,7 +3473,7 @@ public class QinsLauncherActivity extends Activity {
         String[] expandedKeys = getExpandedQuickTileKeys();
         LinearLayout firstRow = new LinearLayout(this);
         firstRow.setOrientation(LinearLayout.HORIZONTAL);
-        int quickTileHeight = clamp((int) (screenHeightDp() * 0.27f), 64, 78);
+        int quickTileHeight = clamp((int) (screenHeightDp() * 0.22f), 54, 68);
         panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
         for (int i = 0; i < 2; i++) {
             final String key = expandedKeys[i];
@@ -3542,10 +3569,22 @@ public class QinsLauncherActivity extends Activity {
         tile.setOrientation(LinearLayout.VERTICAL);
         tile.setGravity(Gravity.CENTER);
         tile.setPadding(dp(3), dp(3), dp(3), dp(3));
+        FrameLayout iconWrap = new FrameLayout(this);
+        if (!ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(a.tile);
+            iconWrap.setBackgroundDrawable(circle);
+        }
+        iconWrap.setTag("quick-icon-circle");
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
         icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
-        tile.addView(icon, new LinearLayout.LayoutParams(-1, dp(31)));
+        int glyphSize = dp(29);
+        iconWrap.addView(icon, new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER));
+        LinearLayout.LayoutParams iconWrapParams = new LinearLayout.LayoutParams(dp(44), dp(44));
+        iconWrapParams.gravity = Gravity.CENTER_HORIZONTAL;
+        tile.addView(iconWrap, iconWrapParams);
 
         LinearLayout textBlock = new LinearLayout(this);
         textBlock.setOrientation(LinearLayout.VERTICAL);
@@ -3553,17 +3592,21 @@ public class QinsLauncherActivity extends Activity {
         TextView name = new TextView(this);
         name.setText(label);
         name.setTextColor(a.text);
-        name.setTextSize(10);
+        name.setTextSize(11);
         textBlock.addView(name);
         TextView state = new TextView(this);
         state.setTextColor(a.muted);
-        state.setTextSize(8);
+        state.setTextSize(9);
         textBlock.addView(state);
         tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
-        styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            styleSurface(tile, a.tile, a.border, a.focus, a.cornerDp);
+        } else {
+            styleSurface(tile, 0x00000000, 0x00000000, a.focus, a.cornerDp);
+        }
         registerQuickTile(symbol, tile, state);
         return tile;
     }
@@ -3665,9 +3708,21 @@ public class QinsLauncherActivity extends Activity {
         if (tile == null) return;
         ThemeManager.Appearance a = appearance();
         int fill = active ? a.tileActive : a.tile;
+        View circle = tile.findViewWithTag("quick-icon-circle");
+        if (circle != null && !ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            GradientDrawable oval = new GradientDrawable();
+            oval.setShape(GradientDrawable.OVAL);
+            oval.setColor(fill);
+            circle.setBackgroundDrawable(oval);
+        }
         int stroke = (active || tile.hasFocus()) ? a.accent : a.border;
-        tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, stroke, a.accent,
-                a.cornerDp, tile.hasFocus()));
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, stroke, a.accent,
+                    a.cornerDp, tile.hasFocus()));
+        } else {
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000,
+                    tile.hasFocus() ? a.accent : 0x00000000, a.accent, a.cornerDp, tile.hasFocus()));
+        }
     }
 
     private void setQuickState(String key, TextView state, View tile, String label, boolean active) {
