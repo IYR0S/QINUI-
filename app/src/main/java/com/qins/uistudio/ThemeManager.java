@@ -86,7 +86,7 @@ public final class ThemeManager {
         new Appearance(APPEARANCE_NOTHING, "Nothing",
             0xFF101112, 0xFF191B1D, 0xFF202224, 0xFF292C2E,
             0xFF242729, 0xFF383B3D, 0xFFE3343A, 0xFFF4F4F2, 0xFFA4A7A8,
-            0xFF3C4042, 0xFF777B7D, 12f, true, true)
+            0xFF3C4042, 0xFF777B7D, 18f, true, false)
     };
 
     public static Palette[] getPalettes() { return PALETTES.clone(); }
@@ -170,11 +170,12 @@ public final class ThemeManager {
         if (!APPEARANCE_NOTHING.equals(a.id)) return a;
         return new Appearance(a.id, a.title, 0xFFF4F4F2, 0xFFE8E8E6, 0xFFFFFFFF, 0xFFE8E8E6,
                 0xFFE2E2E0, 0xFFD2D2D0, a.accent, 0xFF171819, 0xFF666A6B,
-                0xFFD2D4D4, 0xFF8C9091, a.cornerDp, true, a.useMonoType);
+                0xFFD2D4D4, 0xFF8C9091, 18f, true, false);
     }
 
     private static Appearance darkAppearance(Appearance a) {
-        if (APPEARANCE_NOTHING.equals(a.id)) return a;
+        if (APPEARANCE_NOTHING.equals(a.id)) return new Appearance(a.id, a.title, a.background, a.backgroundAlt, a.surface, a.surfaceAlt,
+                a.tile, a.tileActive, a.accent, a.text, a.muted, a.border, a.focus, 18f, true, false);
         if (APPEARANCE_PIXEL.equals(a.id)) {
             return new Appearance(a.id, a.title, 0xFF101714, 0xFF18221C, 0xFF1D2922, 0xFF26342B,
                     0xFF26342B, 0xFF344B3D, a.accent, 0xFFF1F6F0, 0xFFAAB9AC,
