@@ -109,4 +109,8 @@
     <string name="launcher_clock_background">Clock background</string>
     <string name="launcher_clock_background_transparent">Transparent (current)</string>
     <string name="launcher_clock_background_solid">Solid color</string>
+    <string name="launcher_smart_profile">Smart Profile</string>
+    <string name="launcher_smart_profile_on">Smart Profile enabled · automatic dark mode 19:00–07:00</string>
+    <string name="launcher_smart_profile_off">Smart Profile disabled</string>
+    <string name="launcher_dark_mode">Dark / light mode</string>
 </resources>
