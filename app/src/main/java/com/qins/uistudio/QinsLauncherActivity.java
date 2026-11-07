@@ -134,6 +134,8 @@ public class QinsLauncherActivity extends Activity {
     private TextView wifiState;
     private TextView bluetoothState;
     private TextView soundState;
+    private TextView flashlightState;
+    private View flashlightTile;
     private QinsGlyphView homeBluetoothStatus, homeSoundStatus, panelBluetoothStatus, panelSoundStatus;
     private TextView panelBluetoothLabel, panelSoundLabel;
     private Camera flashlightCamera;
@@ -206,6 +208,11 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override protected void onPause() {
+        if (flashlightCamera != null) {
+            try { flashlightCamera.stopPreview(); flashlightCamera.release(); } catch (RuntimeException ignored) { }
+            flashlightCamera = null;
+            flashlightEnabled = false;
+        }
         unregisterSystemReceiver();
         try { unregisterReceiver(notificationReceiver); } catch (RuntimeException ignored) { }
         unregisterTelephonyMonitor();
@@ -1577,7 +1584,7 @@ public class QinsLauncherActivity extends Activity {
     private void showCompactQuickPanel(boolean focusFirst) {
         quickPanelPage = 0;
         wifiState = null; bluetoothState = null; soundState = null;
-        wifiTile = null; bluetoothTile = null; soundTile = null;
+        wifiTile = null; bluetoothTile = null; soundTile = null; flashlightTile = null;
         showHome(false);
         quickPanelVisible = true;
         quickPanelExpanded = false;
@@ -1668,6 +1675,7 @@ public class QinsLauncherActivity extends Activity {
         if ("wifi".equals(key)) { wifiTile = tile; wifiState = state; }
         else if ("bluetooth".equals(key)) { bluetoothTile = tile; bluetoothState = state; }
         else if ("sound".equals(key)) { soundTile = tile; soundState = state; }
+        else if ("flashlight".equals(key)) { flashlightTile = tile; flashlightState = state; }
         tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View view, boolean focused) {
                 boolean active = state != null && "ON".contentEquals(state.getText());
@@ -3533,7 +3541,7 @@ public class QinsLauncherActivity extends Activity {
         getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         removeCompactPanelOverlay();
         wifiState = null; bluetoothState = null; soundState = null;
-        wifiTile = null; bluetoothTile = null; soundTile = null;
+        wifiTile = null; bluetoothTile = null; soundTile = null; flashlightTile = null;
         quickPanelVisible = true;
         quickPanelExpanded = true;
         drawerVisible = false;
@@ -4046,6 +4054,7 @@ public class QinsLauncherActivity extends Activity {
             String modeLabel = mode == AudioManager.RINGER_MODE_SILENT ? "Silent" : (mode == AudioManager.RINGER_MODE_VIBRATE ? "Vibrate" : "Sound");
             setQuickState("sound", soundState, soundTile, modeLabel, mode == AudioManager.RINGER_MODE_NORMAL);
             updateSoundGlyph(soundTile, mode);
+            setQuickState("flashlight", flashlightState, flashlightTile, flashlightEnabled ? "ON" : "OFF", flashlightEnabled);
             BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
             updateStatusIndicators(bt != null && bt.isEnabled(), mode);
         } catch (RuntimeException ignored) { setQuickState("sound", soundState, soundTile, "", false); }
@@ -4084,7 +4093,8 @@ public class QinsLauncherActivity extends Activity {
         new android.app.AlertDialog.Builder(this).setTitle("Choose a tile to resize").setItems(labels, new android.content.DialogInterface.OnClickListener() {
             @Override public void onClick(android.content.DialogInterface dialog, int which) {
                 final String key = keys[which]; final String[] sizes = new String[] {"1 × 1 · Small", "2 × 1 · Wide", "2 × 2 · Large"};
-                String current = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key, "2x1");
+                String current = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key,
+                        ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) && which >= 2 ? "1x1" : "2x1");
                 int selected = "1x1".equals(current) ? 0 : ("2x2".equals(current) ? 2 : 1);
                 new android.app.AlertDialog.Builder(QinsLauncherActivity.this).setTitle("Tile size: " + quickLabel(key))
                         .setSingleChoiceItems(sizes, selected, new android.content.DialogInterface.OnClickListener() {
