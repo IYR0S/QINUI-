@@ -3588,6 +3588,8 @@ public class QinsLauncherActivity extends Activity {
         panelSoundLabel = new TextView(this); panelSoundLabel.setTextColor(a.muted); panelSoundLabel.setTextSize(9);
         LinearLayout.LayoutParams soundLabelParams = new LinearLayout.LayoutParams(-2, -2); soundLabelParams.leftMargin = dp(3); statusRow.addView(panelSoundLabel, soundLabelParams);
         panel.addView(statusRow, new LinearLayout.LayoutParams(-1, dp(22)));
+        panel.removeView(statusRow);
+        panel.addView(statusRow, 0, new LinearLayout.LayoutParams(-1, dp(22)));
 
         panelDate = new TextView(this);
         panelDate.setTextColor(a.muted);
@@ -3638,45 +3640,6 @@ public class QinsLauncherActivity extends Activity {
 
         String[] expandedKeys = getExpandedQuickTileKeys();
         addQuickTileGrid(panel, a, expandedKeys, ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 6 : 4);
-        LinearLayout firstRow = new LinearLayout(this);
-        firstRow.setVisibility(View.GONE);
-        firstRow.setOrientation(LinearLayout.HORIZONTAL);
-        boolean pixelQuickGrid = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
-        int quickTileHeight = pixelQuickGrid
-                ? clamp((screenWidthDp() - 12) / 2, 56, 116)
-                : clamp((int) (screenHeightDp() * 0.22f), 54, 68);
-        panel.addView(firstRow, new LinearLayout.LayoutParams(-1, dp(quickTileHeight)));
-        for (int i = 0; i < 2; i++) {
-            final String key = expandedKeys[i];
-            View tile = ThemeManager.APPEARANCE_GALAXY.equals(a.id) &&
-                    ("wifi".equals(key) || "bluetooth".equals(key))
-                    ? quickConnectivityTile(key, a)
-                    : quickTile(glyphForQuickKey(key), quickLabel(key), a);
-            LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
-            if (i > 0 && !pixelQuickGrid) tileParams.leftMargin = dp(7);
-            firstRow.addView(tile, tileParams);
-            tile.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { performQuickAction(key); }
-            });
-        }
-
-        LinearLayout secondRow = new LinearLayout(this);
-        secondRow.setVisibility(View.GONE);
-        secondRow.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams secondParams = new LinearLayout.LayoutParams(-1, dp(quickTileHeight));
-        secondParams.topMargin = pixelQuickGrid ? 0 : dp(7);
-        panel.addView(secondRow, secondParams);
-        for (int i = 2; i < 4; i++) {
-            final String key = expandedKeys[i];
-            View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
-            LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
-            if (i > 2 && !pixelQuickGrid) tileParams.leftMargin = dp(7);
-            secondRow.addView(tile, tileParams);
-            tile.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { performQuickAction(key); }
-            });
-        }
-
         updateQuickStates();
 
         addBrightnessSleepRow(panel, a);
