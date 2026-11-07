@@ -48,7 +48,11 @@ These ideas borrow interaction patterns from current Android / One UI releases, 
 - [ ] Add local activity cards for timer / stopwatch and file-transfer progress; expose only actions that can be activated by the physical keys.
 - [ ] Notification organizer: group by app, offer a simple priority / quiet filter, and keep direct actions available without touch.
 - [ ] Add optional icon masks (circle, squircle, rounded square) and a monochrome icon mode for the Nothing preset; keep original colors as the default.
-- [ ] Quick Panel: offer small and wide tile sizes, reorder by physical-key commands, and expose a visible focus path across both controls and notifications.
+- [x] Quick Panel: per-tile 1×1, 2×1 and 2×2 sizing exposed in Customize Quick Settings.
+- [x] Samsung layout: Wi-Fi/Bluetooth top row plus four 1×1 shortcuts; boxed Sound/Settings controls; paired volume slider and quiet-mode shortcut.
+- [x] Status indicators for Bluetooth and Sound/Vibrate/Silent; Sound glyph changes with the selected mode.
+- [x] Clock position section includes left/right alignment, date placement and battery percentage placement.
+- [ ] Validate torch, hotspot settings handoff, focus glow, and physical-key navigation on QINS1+ hardware.
 - [ ] Add a configurable glance-card order for clock, battery, media, missed calls and timer; show no more than the screen can comfortably fit.
 - [ ] Add a compact visual “now playing” progress state without always-on animation; provide previous / pause / next as focusable controls.
 
