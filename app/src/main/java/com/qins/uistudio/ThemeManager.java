@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import java.util.Calendar;
 
 /** Shared color palette and launcher appearance presets; API 19 compatible. */
 public final class ThemeManager {
@@ -155,29 +154,16 @@ public final class ThemeManager {
                 a.cornerDp, a.monochrome, a.useMonoType);
     }
 
-    public static boolean isSmartProfileEnabled(Context context) {
-        return context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
-                .getBoolean(SMART_PROFILE_KEY, false);
-    }
-
     public static boolean isDarkMode(Context context) {
-        android.content.SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
-        if (prefs.getBoolean(SMART_PROFILE_KEY, false)) {
-            int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-            return hour >= 19 || hour < 7;
-        }
-        return prefs.getBoolean(DARK_MODE_KEY, false);
-    }
-
-    public static boolean toggleSmartProfile(Context context) {
-        android.content.SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
-        return prefs.edit().putBoolean(SMART_PROFILE_KEY, !prefs.getBoolean(SMART_PROFILE_KEY, false)).commit();
+        return context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(DARK_MODE_KEY, false);
     }
 
     public static boolean toggleDarkMode(Context context) {
-        android.content.SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
-        prefs.edit().putBoolean(SMART_PROFILE_KEY, false).commit();
-        return prefs.edit().putBoolean(DARK_MODE_KEY, !prefs.getBoolean(DARK_MODE_KEY, false)).commit();
+        SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
+        boolean next = !prefs.getBoolean(DARK_MODE_KEY, false);
+        return prefs.edit().putBoolean(SMART_PROFILE_KEY, false)
+                .putBoolean(DARK_MODE_KEY, next).commit();
     }
 
     private static Appearance darkAppearance(Appearance a) {
