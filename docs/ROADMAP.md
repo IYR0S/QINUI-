@@ -49,6 +49,8 @@ These ideas borrow interaction patterns from current Android / One UI releases, 
 - [ ] Notification organizer: group by app, offer a simple priority / quiet filter, and keep direct actions available without touch.
 - [ ] Add optional icon masks (circle, squircle, rounded square) and a monochrome icon mode for the Nothing preset; keep original colors as the default.
 - [x] Quick Panel: per-tile 1×1, 2×1 and 2×2 sizing exposed in Customize Quick Settings.
+- [x] Media player card: compact/large sizing exposed in the Quick Settings size editor.
+- [x] Nothing-style vertical brightness and volume controls with physical-key adjustment.
 - [x] Samsung layout: Wi-Fi/Bluetooth top row plus four 1×1 shortcuts; boxed Sound/Settings controls; paired volume slider and quiet-mode shortcut.
 - [x] Status indicators for Bluetooth and Sound/Vibrate/Silent; Sound glyph changes with the selected mode.
 - [x] Clock position section includes left/right alignment, date placement and battery percentage placement.
