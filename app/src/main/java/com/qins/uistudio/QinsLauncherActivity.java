@@ -1738,8 +1738,11 @@ public class QinsLauncherActivity extends Activity {
         List<NotificationBridgeService.NotificationItem> all = NotificationBridgeService.snapshot();
         ArrayList<NotificationBridgeService.NotificationItem> items = new ArrayList<NotificationBridgeService.NotificationItem>();
         int mediaPage = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE).getInt("home_media_widget_page", 0);
+        android.content.SharedPreferences musicPrefs = getSharedPreferences("qins_music_widget", MODE_PRIVATE);
+        String selectedPlayer = musicPrefs.getString("player_package", "");
         for (NotificationBridgeService.NotificationItem item : all) {
-            if (item.missedCall || (item.media && page == mediaPage)) items.add(item);
+            if (item.missedCall || (item.media && page == mediaPage &&
+                    (selectedPlayer.length() == 0 || selectedPlayer.equals(item.packageName)))) items.add(item);
         }
         if (items.isEmpty()) return;
         homeWidgetIndex = Math.max(0, Math.min(homeWidgetIndex, items.size() - 1));
@@ -1747,20 +1750,27 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(8), dp(5), dp(8), dp(5));
         card.setFocusable(true); card.setFocusableInTouchMode(false); card.setClickable(true); card.setTag("home:widget-stack"); styleSurface(card, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
         card.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override public boolean onLongClick(View v) { showHomeWidgetPagePicker(); return true; }
+            @Override public boolean onLongClick(View v) {
+                startActivity(new Intent(QinsLauncherActivity.this, MusicWidgetSettingsActivity.class));
+                return true;
+            }
         });
         TextView label = new TextView(this); label.setText(item.missedCall ? getString(R.string.launcher_missed_call) : getString(R.string.launcher_now_playing)); label.setTextColor(a.accent); label.setTextSize(9); card.addView(label);
         LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.HORIZONTAL); content.setGravity(Gravity.CENTER_VERTICAL); content.setTag("home:widget-stack");
-        if (item.media && item.artwork != null && !item.artwork.isRecycled()) {
+        if (item.media && musicPrefs.getBoolean("show_artwork", true) && item.artwork != null && !item.artwork.isRecycled()) {
             ImageView artwork = new ImageView(this); artwork.setImageBitmap(item.artwork);
             artwork.setScaleType(ImageView.ScaleType.CENTER_CROP); artwork.setContentDescription("Album artwork"); artwork.setTag("home:widget-stack");
             LinearLayout.LayoutParams art = new LinearLayout.LayoutParams(dp(38), dp(38)); art.rightMargin = dp(7); content.addView(artwork, art);
         }
         LinearLayout textBlock = new LinearLayout(this); textBlock.setOrientation(LinearLayout.VERTICAL); textBlock.setTag("home:widget-stack");
-        TextView title = new TextView(this); title.setTag("home:widget-stack"); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
-        if (item.text != null && item.text.length() > 0) { TextView detail = new TextView(this); detail.setTag("home:widget-stack"); detail.setText(item.text); detail.setTextColor(a.muted); detail.setTextSize(9); detail.setSingleLine(true); detail.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(detail); }
+        if (musicPrefs.getBoolean("show_title", true)) {
+            TextView title = new TextView(this); title.setTag("home:widget-stack"); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
+        }
+        if (musicPrefs.getBoolean("show_artist", true) && item.text != null && item.text.length() > 0) {
+            TextView detail = new TextView(this); detail.setTag("home:widget-stack"); detail.setText(item.text); detail.setTextColor(a.muted); detail.setTextSize(9); detail.setSingleLine(true); detail.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(detail);
+        }
         content.addView(textBlock, new LinearLayout.LayoutParams(0, -2, 1)); card.addView(content);
-        if (item.media) {
+        if (item.media && musicPrefs.getBoolean("show_controls", true)) {
             LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER); controls.setTag("home:widget-stack");
             boolean hasTransport = false;
             if (item.actions != null && item.actionTitles != null) {
