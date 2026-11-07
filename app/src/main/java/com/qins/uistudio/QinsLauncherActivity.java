@@ -113,6 +113,7 @@ public class QinsLauncherActivity extends Activity {
     private TextView clockView;
     private LinearLayout homeWidgetArea;
     private int homeWidgetIndex = 0;
+    private boolean lastSmartProfileDark = false;
     private android.content.BroadcastReceiver notificationReceiver = new android.content.BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (quickPanelVisible && quickPanelExpanded && quickPanelPage == 1) showQuickPanel(false);
@@ -141,8 +142,12 @@ public class QinsLauncherActivity extends Activity {
             updateClockAndBattery();
             updateQuickStates();
             if (ThemeManager.isSmartProfileEnabled(QinsLauncherActivity.this)) {
-                if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
-                else if (!quickPanelVisible && !drawerVisible) showHome(false);
+                boolean smartDark = ThemeManager.isDarkMode(QinsLauncherActivity.this);
+                if (smartDark != lastSmartProfileDark) {
+                    lastSmartProfileDark = smartDark;
+                    if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
+                    else if (!quickPanelVisible && !drawerVisible) showHome(false);
+                }
             }
         }
     };
@@ -172,6 +177,7 @@ public class QinsLauncherActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         setTheme(R.style.AppTheme);
         super.onCreate(state);
+        lastSmartProfileDark = ThemeManager.isDarkMode(this);
         // Restore the launcher’s designed top row and use the full display.
         // QINS exposes its own signal indicator and navigation controls in this row.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -3919,6 +3925,14 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        View focusedForCenter = getCurrentFocus();
+        Object centerTag = focusedForCenter == null ? null : focusedForCenter.getTag();
+        if (!quickPanelVisible && !drawerVisible && "home:drawer-trigger".equals(centerTag) &&
+                (isSelectKey(event.getKeyCode()) || event.getKeyCode() == KeyEvent.KEYCODE_MENU ||
+                 event.getKeyCode() == KeyEvent.KEYCODE_F1)) {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) showDrawer(false);
+            return true;
+        }
         if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
                 awaitingRightKeyBind) {
             int keyCode = event.getKeyCode();
