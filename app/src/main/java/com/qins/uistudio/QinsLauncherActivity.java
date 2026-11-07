@@ -3938,20 +3938,20 @@ public class QinsLauncherActivity extends Activity {
             else if(event.getAction()==KeyEvent.ACTION_UP) rightSoftKeyGestureActive=false;
             return true;
         }
-        // On this firmware the upper-right hardware softkey is also reported as BACK.
-        // While Notifications is open, BACK must return to Controls before Home.
-        if (quickPanelVisible && quickPanelExpanded && event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) {
-                rightSoftKeyGestureActive = true;
-                if (quickPanelPage == 1) switchQuickPanelPage(0); else showHome(false);
-            } else if (event.getAction() == KeyEvent.ACTION_UP) rightSoftKeyGestureActive = false;
-            return true;
-        }
         if (handleExpandedQuickPanelSoftKey(event)) return true;
         return super.dispatchKeyEvent(event);
     }
 
     @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+        View currentFocus = getCurrentFocus();
+        Object currentTag = currentFocus == null ? null : currentFocus.getTag();
+        // The centre hardware key on QINS devices may be reported as MENU/F1,
+        // not DPAD_CENTER. Treat it as the app-drawer action while the spacer is focused.
+        if (!quickPanelVisible && !drawerVisible && "home:drawer-trigger".equals(currentTag) &&
+                (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_F1)) {
+            if (event.getRepeatCount() == 0) showDrawer(false);
+            return true;
+        }
         if (drawerVisible && !quickPanelVisible) {
             int digit = digitFromKeyCode(keyCode);
             if (digit >= 0) {
