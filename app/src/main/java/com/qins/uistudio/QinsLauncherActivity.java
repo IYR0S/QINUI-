@@ -337,7 +337,7 @@ public class QinsLauncherActivity extends Activity {
         TextView wordmark = new TextView(this);
         wordmark.setText("qins");
         wordmark.setTextColor(a.text);
-        wordmark.setTextSize(13);
+        wordmark.setTextSize(14);
         wordmark.setTypeface(a.useMonoType ? Typeface.MONOSPACE : Typeface.DEFAULT_BOLD,
                 Typeface.BOLD);
         topBar.addView(wordmark, new LinearLayout.LayoutParams(0, dp(42), 1));
@@ -365,7 +365,7 @@ public class QinsLauncherActivity extends Activity {
 
         appsNavButton = new TextView(this);
         appsNavButton.setGravity(Gravity.CENTER);
-        appsNavButton.setTextSize(12);
+        appsNavButton.setTextSize(13);
         appsNavButton.setTextColor(a.text);
         appsNavButton.setPadding(dp(15), 0, dp(15), 0);
         appsNavButton.setFocusable(true);
@@ -1467,7 +1467,7 @@ public class QinsLauncherActivity extends Activity {
 
         batteryView = new TextView(this);
         batteryView.setTextColor(a.muted);
-        batteryView.setTextSize(12);
+        batteryView.setTextSize(13);
         batteryView.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         top.addView(batteryView, nothingMatrixClock
                 ? new LinearLayout.LayoutParams(-1, dp(17))
@@ -1531,9 +1531,9 @@ public class QinsLauncherActivity extends Activity {
         final NotificationBridgeService.NotificationItem item = items.get(homeWidgetIndex);
         LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(10), dp(5), dp(10), dp(5));
         card.setFocusable(true); card.setFocusableInTouchMode(false); card.setClickable(true); card.setTag("home:widget-stack"); styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
-        TextView label = new TextView(this); label.setText(item.missedCall ? getString(R.string.launcher_missed_call) : getString(R.string.launcher_now_playing)); label.setTextColor(a.accent); label.setTextSize(9); card.addView(label);
-        TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); card.addView(title);
-        if (item.text != null && item.text.length() > 0) { TextView detail = new TextView(this); detail.setText(item.text); detail.setTextColor(a.muted); detail.setTextSize(9); detail.setSingleLine(true); detail.setEllipsize(android.text.TextUtils.TruncateAt.END); card.addView(detail); }
+        TextView label = new TextView(this); label.setText(item.missedCall ? getString(R.string.launcher_missed_call) : getString(R.string.launcher_now_playing)); label.setTextColor(a.accent); label.setTextSize(10); card.addView(label);
+        TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(13); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); card.addView(title);
+        if (item.text != null && item.text.length() > 0) { TextView detail = new TextView(this); detail.setText(item.text); detail.setTextColor(a.muted); detail.setTextSize(10); detail.setSingleLine(true); detail.setEllipsize(android.text.TextUtils.TruncateAt.END); card.addView(detail); }
         if (item.media && item.actions != null) { LinearLayout controls = new LinearLayout(this); controls.setGravity(Gravity.CENTER);
             for (int i=0;i<item.actions.length;i++) { final int ix=i; TextView button=new TextView(this); String txt=item.actionTitles[i]; button.setText(txt.length()>0?txt:(i==0?"‹":(i==1?"Ⅱ / ▶":"›"))); button.setTextColor(a.accent); button.setGravity(Gravity.CENTER); button.setFocusable(true); button.setFocusableInTouchMode(false); controls.addView(button,new LinearLayout.LayoutParams(0,dp(24),1)); button.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){NotificationBridgeService.sendAction(item,ix);}}); }
             card.addView(controls); }
@@ -1562,12 +1562,12 @@ public class QinsLauncherActivity extends Activity {
         TextView title = new TextView(this);
         title.setText(getString(R.string.launcher_quick_controls));
         title.setTextColor(a.text);
-        title.setTextSize(10);
+        title.setTextSize(11);
         header.addView(title, new LinearLayout.LayoutParams(0, dp(22), 1));
         TextView edit = new TextView(this);
         edit.setText(getString(R.string.launcher_edit_shortcuts));
         edit.setTextColor(a.accent);
-        edit.setTextSize(10);
+        edit.setTextSize(11);
         edit.setGravity(Gravity.CENTER);
         edit.setFocusable(true);
         edit.setFocusableInTouchMode(false);
@@ -1649,12 +1649,12 @@ public class QinsLauncherActivity extends Activity {
         TextView text = new TextView(this);
         text.setText(label);
         text.setTextColor(a.text);
-        text.setTextSize(8);
+        text.setTextSize(9);
         text.setGravity(Gravity.CENTER);
         tile.addView(text);
         TextView state = new TextView(this);
         state.setTextColor(a.muted);
-        state.setTextSize(7);
+        state.setTextSize(8);
         state.setGravity(Gravity.CENTER);
         tile.addView(state);
         tile.setFocusable(true);
@@ -2186,7 +2186,7 @@ public class QinsLauncherActivity extends Activity {
         TextView title = new TextView(this);
         title.setText(getFolderName(folder));
         title.setTextColor(0xFFF6F6F6);
-        title.setTextSize(13);
+        title.setTextSize(14);
         title.setGravity(Gravity.CENTER);
         titleRow.addView(title, new LinearLayout.LayoutParams(0, dp(32), 1));
         TextView close = new TextView(this);
@@ -2234,7 +2234,7 @@ public class QinsLauncherActivity extends Activity {
                 TextView label = new TextView(this);
                 label.setText(child.loadLabel(getPackageManager()));
                 label.setTextColor(0xFFF6F6F6);
-                label.setTextSize(9);
+                label.setTextSize(10);
                 label.setGravity(Gravity.CENTER);
                 label.setSingleLine(true);
                 label.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -2408,7 +2408,7 @@ public class QinsLauncherActivity extends Activity {
             tile.setBackgroundColor(0x00000000);
             tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
                 @Override public void onFocusChange(View v, boolean focused) {
-                    v.setBackgroundColor(focused ? 0x223C8060 : 0x00000000);
+                    v.setBackgroundColor(focused ? ((a.focus & 0x00FFFFFF) | 0x22000000) : 0x00000000);
                 }
             });
         }
@@ -2449,7 +2449,7 @@ public class QinsLauncherActivity extends Activity {
         TextView mark = new TextView(this);
         mark.setText(isPinned(info) ? "●" : "");
         mark.setTextColor(a.accent);
-        mark.setTextSize(8);
+        mark.setTextSize(9);
         mark.setGravity(Gravity.CENTER);
         tile.addView(mark, new LinearLayout.LayoutParams(-1, dp(10)));
 
@@ -2495,13 +2495,13 @@ public class QinsLauncherActivity extends Activity {
         searchText.setText(drawerSearchQuery.length() == 0
                 ? getString(R.string.launcher_search_hint) : "T9  ·  " + drawerSearchQuery);
         searchText.setTextColor(drawerSearchQuery.length() == 0 ? a.muted : a.text);
-        searchText.setTextSize(10);
+        searchText.setTextSize(11);
         searchText.setPadding(dp(8), 0, dp(4), 0);
         searchRow.addView(searchText, new LinearLayout.LayoutParams(0, dp(30), 1));
         TextView clearSearch = new TextView(this);
         clearSearch.setText(getString(R.string.launcher_search_clear));
         clearSearch.setTextColor(a.accent);
-        clearSearch.setTextSize(9);
+        clearSearch.setTextSize(10);
         clearSearch.setGravity(Gravity.CENTER);
         clearSearch.setFocusable(true);
         clearSearch.setFocusableInTouchMode(false);
@@ -2520,7 +2520,7 @@ public class QinsLauncherActivity extends Activity {
             TextView frequentTitle = new TextView(this);
             frequentTitle.setText(getString(R.string.launcher_frequent));
             frequentTitle.setTextColor(a.muted);
-            frequentTitle.setTextSize(10);
+            frequentTitle.setTextSize(11);
             frequentTitle.setPadding(dp(5), dp(4), dp(5), dp(5));
             list.addView(frequentTitle, new LinearLayout.LayoutParams(-1, dp(22)));
 
@@ -2541,12 +2541,12 @@ public class QinsLauncherActivity extends Activity {
         TextView allTitle = new TextView(this);
         allTitle.setText(getString(R.string.launcher_all_apps));
         allTitle.setTextColor(a.text);
-        allTitle.setTextSize(12);
+        allTitle.setTextSize(13);
         gridHeading.addView(allTitle, new LinearLayout.LayoutParams(0, dp(32), 1));
         TextView createFolder = new TextView(this);
         createFolder.setText("Folder +");
         createFolder.setTextColor(a.accent);
-        createFolder.setTextSize(9);
+        createFolder.setTextSize(10);
         createFolder.setGravity(Gravity.CENTER);
         createFolder.setFocusable(true);
         createFolder.setFocusableInTouchMode(false);
@@ -2561,7 +2561,7 @@ public class QinsLauncherActivity extends Activity {
         TextView editGrid = new TextView(this);
         editGrid.setText(getString(R.string.launcher_edit_grid));
         editGrid.setTextColor(a.accent);
-        editGrid.setTextSize(9);
+        editGrid.setTextSize(10);
         editGrid.setGravity(Gravity.CENTER);
         editGrid.setFocusable(true);
         editGrid.setFocusableInTouchMode(false);
@@ -2650,7 +2650,7 @@ public class QinsLauncherActivity extends Activity {
             noResults.setText(R.string.launcher_no_results);
             noResults.setTextColor(a.muted);
             noResults.setGravity(Gravity.CENTER);
-            noResults.setTextSize(11);
+            noResults.setTextSize(12);
             list.addView(noResults, new LinearLayout.LayoutParams(-1, dp(52)));
             clearSearch.requestFocus();
         } else editGrid.requestFocus();
@@ -2700,7 +2700,7 @@ public class QinsLauncherActivity extends Activity {
         form.addView(folderName, new LinearLayout.LayoutParams(-1, dp(48)));
         TextView hint = new TextView(this);
         hint.setText("Select two or more apps");
-        hint.setTextSize(11);
+        hint.setTextSize(12);
         hint.setPadding(0, dp(5), 0, dp(5));
         form.addView(hint);
         final android.widget.ListView choices = new android.widget.ListView(this);
@@ -2999,7 +2999,7 @@ public class QinsLauncherActivity extends Activity {
             setPadding(dp(12), dp(10), dp(12), dp(10));
             heading = new TextView(context);
             heading.setText("QINS HOME  ·  LIVE PREVIEW");
-            heading.setTextSize(10);
+            heading.setTextSize(11);
             addView(heading, new LinearLayout.LayoutParams(-1, dp(24)));
             body = new TextView(context);
             body.setText("12:45\nFriday  ·  Battery 82%");
@@ -3011,11 +3011,11 @@ public class QinsLauncherActivity extends Activity {
             activeButton = new TextView(context);
             activeButton.setText("Wi-Fi  ·  ON");
             activeButton.setGravity(Gravity.CENTER);
-            activeButton.setTextSize(10);
+            activeButton.setTextSize(11);
             inactiveButton = new TextView(context);
             inactiveButton.setText("Bluetooth  ·  OFF");
             inactiveButton.setGravity(Gravity.CENTER);
-            inactiveButton.setTextSize(10);
+            inactiveButton.setTextSize(11);
             LinearLayout.LayoutParams cell = new LinearLayout.LayoutParams(0, dp(42), 1);
             row.addView(activeButton, cell);
             LinearLayout.LayoutParams second = new LinearLayout.LayoutParams(0, dp(42), 1);
@@ -3092,7 +3092,7 @@ public class QinsLauncherActivity extends Activity {
         content.addView(preview, new LinearLayout.LayoutParams(-1, dp(126)));
         TextView hint = new TextView(this);
         hint.setText("Choose colors and a background. Preview the palette, then save.");
-        hint.setTextSize(11);
+        hint.setTextSize(12);
         hint.setTextColor(base.muted);
         hint.setPadding(dp(2), dp(8), dp(2), dp(8));
         content.addView(hint);
@@ -3102,7 +3102,7 @@ public class QinsLauncherActivity extends Activity {
             TextView option = new TextView(this);
             roleViews[i] = option;
             option.setText(roles[i] + "  ·  " + names[selectedChoices[i]]);
-            option.setTextSize(13);
+            option.setTextSize(14);
             option.setTextColor(colors[3]);
             option.setGravity(Gravity.CENTER_VERTICAL);
             option.setPadding(dp(12), 0, dp(10), 0);
@@ -3148,7 +3148,7 @@ public class QinsLauncherActivity extends Activity {
         content.addView(backgroundsTitle);
         final TextView backgroundChoice = new TextView(this);
         backgroundChoice.setText("Background style  ·  " + backgroundStyleTitle(selectedBackground[0]));
-        backgroundChoice.setTextSize(13);
+        backgroundChoice.setTextSize(14);
         backgroundChoice.setTextColor(colors[3]);
         backgroundChoice.setGravity(Gravity.CENTER_VERTICAL);
         backgroundChoice.setPadding(dp(12), 0, dp(10), 0);
@@ -3296,13 +3296,13 @@ public class QinsLauncherActivity extends Activity {
             TextView explanation = new TextView(this);
             explanation.setText(R.string.launcher_notification_access_explanation);
             explanation.setTextColor(a.muted);
-            explanation.setTextSize(10);
+            explanation.setTextSize(11);
             explanation.setPadding(dp(4), dp(10), dp(4), dp(8));
             panel.addView(explanation);
 
             Button access = new Button(this);
             access.setText(R.string.launcher_enable_notification_access);
-            access.setTextSize(10);
+            access.setTextSize(11);
             access.setFocusable(true);
             access.setFocusableInTouchMode(false);
             styleSurface(access, a.surface, a.border, a.focus, a.cornerDp);
@@ -3321,7 +3321,7 @@ public class QinsLauncherActivity extends Activity {
             empty.setText(R.string.launcher_no_active_notifications);
             empty.setTextColor(a.muted);
             empty.setGravity(Gravity.CENTER);
-            empty.setTextSize(13);
+            empty.setTextSize(14);
             panel.addView(empty, new LinearLayout.LayoutParams(-1, dp(78)));
             return;
         }
@@ -3338,13 +3338,13 @@ public class QinsLauncherActivity extends Activity {
             TextView app = new TextView(this);
             app.setText(notificationAppLabel(item.packageName));
             app.setTextColor(a.accent);
-            app.setTextSize(9);
+            app.setTextSize(10);
             card.addView(app);
 
             TextView title = new TextView(this);
             title.setText(item.title);
             title.setTextColor(a.text);
-            title.setTextSize(12);
+            title.setTextSize(13);
             title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
             title.setMaxLines(2);
             card.addView(title);
@@ -3353,7 +3353,7 @@ public class QinsLauncherActivity extends Activity {
                 TextView body = new TextView(this);
                 body.setText(item.text);
                 body.setTextColor(a.muted);
-                body.setTextSize(10);
+                body.setTextSize(11);
                 body.setMaxLines(3);
                 card.addView(body);
             }
@@ -3361,7 +3361,7 @@ public class QinsLauncherActivity extends Activity {
             TextView when = new TextView(this);
             when.setText(new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(item.postedAt)));
             when.setTextColor(a.muted);
-            when.setTextSize(8);
+            when.setTextSize(9);
             card.addView(when);
 
             LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(-1, -2);
@@ -3425,13 +3425,13 @@ public class QinsLauncherActivity extends Activity {
 
         panelBattery = new TextView(this);
         panelBattery.setTextColor(a.muted);
-        panelBattery.setTextSize(12);
+        panelBattery.setTextSize(13);
         heading.addView(panelBattery, new LinearLayout.LayoutParams(-2, -2));
         panel.addView(heading);
 
         panelDate = new TextView(this);
         panelDate.setTextColor(a.muted);
-        panelDate.setTextSize(12);
+        panelDate.setTextSize(13);
         LinearLayout.LayoutParams dateParams = new LinearLayout.LayoutParams(-1, -2);
         dateParams.bottomMargin = dp(8);
         panel.addView(panelDate, dateParams);
@@ -3443,7 +3443,7 @@ public class QinsLauncherActivity extends Activity {
         panel.addView(tabs, tabsParams);
         final TextView controlsTab = new TextView(this);
         controlsTab.setText(R.string.launcher_controls_tab);
-        controlsTab.setTextSize(10);
+        controlsTab.setTextSize(11);
         controlsTab.setGravity(Gravity.CENTER);
         controlsTab.setTextColor(quickPanelPage == 0 ? a.text : a.muted);
         controlsTab.setFocusable(true);
@@ -3456,7 +3456,7 @@ public class QinsLauncherActivity extends Activity {
         final TextView notificationsTab = new TextView(this);
         int notificationCount = NotificationBridgeService.snapshot().size();
         notificationsTab.setText(getString(R.string.launcher_notifications_tab) + "  " + (notificationCount > 0 ? "(" + notificationCount + ")" : ""));
-        notificationsTab.setTextSize(10);
+        notificationsTab.setTextSize(11);
         notificationsTab.setGravity(Gravity.CENTER);
         notificationsTab.setTextColor(quickPanelPage == 1 ? a.text : a.muted);
         notificationsTab.setFocusable(true);
@@ -3543,7 +3543,7 @@ public class QinsLauncherActivity extends Activity {
         customize.setText(getString(R.string.launcher_customize_quick));
         customize.setTextColor(a.text);
         customize.setGravity(Gravity.CENTER);
-        customize.setTextSize(10);
+        customize.setTextSize(11);
         customize.setFocusable(true);
         customize.setFocusableInTouchMode(false);
         styleSurface(customize, a.surface, a.border, a.focus, a.cornerDp);
@@ -3555,7 +3555,7 @@ public class QinsLauncherActivity extends Activity {
         themeSettings.setText(getString(R.string.launcher_theme_settings));
         themeSettings.setTextColor(a.accent);
         themeSettings.setGravity(Gravity.CENTER);
-        themeSettings.setTextSize(10);
+        themeSettings.setTextSize(11);
         themeSettings.setFocusable(true);
         themeSettings.setFocusableInTouchMode(false);
         styleSurface(themeSettings, a.surface, a.border, a.focus, a.cornerDp);
@@ -3599,11 +3599,11 @@ public class QinsLauncherActivity extends Activity {
         TextView name = new TextView(this);
         name.setText(label);
         name.setTextColor(a.text);
-        name.setTextSize(11);
+        name.setTextSize(12);
         textBlock.addView(name);
         TextView state = new TextView(this);
         state.setTextColor(a.muted);
-        state.setTextSize(9);
+        state.setTextSize(10);
         textBlock.addView(state);
         tile.addView(textBlock, new LinearLayout.LayoutParams(-1, -2));
         tile.setFocusable(true);
@@ -3635,7 +3635,7 @@ public class QinsLauncherActivity extends Activity {
         TextView title = new TextView(this);
         title.setText(label);
         title.setTextColor(a.text);
-        title.setTextSize(12);
+        title.setTextSize(13);
         heading.addView(title);
         card.addView(heading);
 
@@ -3660,7 +3660,7 @@ public class QinsLauncherActivity extends Activity {
         final ThemeManager.Appearance style = ThemeManager.getAppearanceById(id);
         TextView button = new TextView(this);
         button.setText(label);
-        button.setTextSize(8);
+        button.setTextSize(9);
         button.setGravity(Gravity.CENTER);
         button.setTextColor(style.text);
         button.setFocusable(true);
