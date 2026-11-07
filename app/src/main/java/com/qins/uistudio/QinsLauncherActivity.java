@@ -3649,12 +3649,12 @@ public class QinsLauncherActivity extends Activity {
         }
 
         String[] expandedKeys = getExpandedQuickTileKeys();
+        addQuickMediaCard(panel, a);
         addQuickTileGrid(panel, a, expandedKeys, ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 6 : 4);
         updateQuickStates();
 
-        addBrightnessSleepRow(panel, a);
-
-        addVolumeDndRow(panel, a);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) addNothingVerticalSliders(panel, a);
+        else { addBrightnessSleepRow(panel, a); addVolumeDndRow(panel, a); }
 
         LinearLayout tools = new LinearLayout(this);
         tools.setOrientation(LinearLayout.HORIZONTAL);
@@ -3871,6 +3871,84 @@ public class QinsLauncherActivity extends Activity {
                         showHome(false);
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private final class VerticalQuickSeekBar extends SeekBar {
+        VerticalQuickSeekBar(Context context) { super(context); setFocusable(true); setFocusableInTouchMode(false); }
+        @Override protected synchronized void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(heightMeasureSpec, widthMeasureSpec);
+            setMeasuredDimension(getMeasuredHeight(), getMeasuredWidth());
+        }
+        @Override protected void onDraw(Canvas canvas) {
+            canvas.save(); canvas.rotate(-90); canvas.translate(-getHeight(), 0); super.onDraw(canvas); canvas.restore();
+        }
+        @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) { setProgress(Math.min(getMax(), getProgress() + 1)); return true; }
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) { setProgress(Math.max(0, getProgress() - 1)); return true; }
+            return super.onKeyDown(keyCode, event);
+        }
+    }
+
+    private void addNothingVerticalSliderCard(LinearLayout row, String label, int value, int max,
+                                              SeekBar.OnSeekBarChangeListener listener, ThemeManager.Appearance a) {
+        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setGravity(Gravity.CENTER);
+        card.setPadding(dp(4), dp(6), dp(4), dp(6)); styleSurface(card, a.surface, a.border, a.focus, 8f);
+        TextView title = new TextView(this); title.setText(label); title.setTextColor(a.text); title.setTextSize(10); title.setGravity(Gravity.CENTER); card.addView(title);
+        VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this); seek.setMax(max); seek.setProgress(Math.max(0, Math.min(max, value))); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(0);
+        GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(0);
+        LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.BOTTOM, ClipDrawable.VERTICAL)});
+        layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
+        GradientDrawable thumb = new GradientDrawable(); thumb.setShape(GradientDrawable.RECTANGLE); thumb.setCornerRadius(dp(2)); thumb.setColor(a.accent); thumb.setSize(dp(14), dp(14)); seek.setThumb(thumb);
+        seek.setOnSeekBarChangeListener(listener);
+        card.addView(seek, new LinearLayout.LayoutParams(dp(30), dp(104)));
+        row.addView(card, new LinearLayout.LayoutParams(0, dp(132), 1));
+    }
+
+    private void addNothingVerticalSliders(LinearLayout panel, ThemeManager.Appearance a) {
+        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
+        addNothingVerticalSliderCard(row, getString(R.string.launcher_brightness), readBrightness(), 255,
+                new SeekBar.OnSeekBarChangeListener() {
+                    @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) { if (fromUser) writeBrightness(Math.max(1, value)); }
+                    @Override public void onStartTrackingTouch(SeekBar bar) { }
+                    @Override public void onStopTrackingTouch(SeekBar bar) { }
+                }, a);
+        AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        final int maxVolume = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+        final int currentVolume = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+        addNothingVerticalSliderCard(row, getString(R.string.launcher_volume), currentVolume, maxVolume,
+                new SeekBar.OnSeekBarChangeListener() {
+                    @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) { if (fromUser) { AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE); if (manager != null) manager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0); } }
+                    @Override public void onStartTrackingTouch(SeekBar bar) { }
+                    @Override public void onStopTrackingTouch(SeekBar bar) { }
+                }, a);
+        final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
+        dnd.setText("⊖\\nDND\\n" + (quiet ? "ON" : "OFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false);
+        styleSurface(dnd, quiet ? a.tileActive : a.surface, a.border, a.focus, 8f);
+        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(dp(48), dp(132)); dndParams.leftMargin = dp(4); row.addView(dnd, dndParams);
+        dnd.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleDoNotDisturb(); } });
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.topMargin = dp(8); panel.addView(row, params);
+    }
+
+    private void addQuickMediaCard(LinearLayout panel, ThemeManager.Appearance a) {
+        NotificationBridgeService.NotificationItem media = null;
+        for (NotificationBridgeService.NotificationItem item : NotificationBridgeService.snapshot()) if (item.media) { media = item; break; }
+        if (media == null) return;
+        final NotificationBridgeService.NotificationItem item = media;
+        LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.HORIZONTAL); card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(10), dp(6), dp(8), dp(6)); styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+        LinearLayout textBlock = new LinearLayout(this); textBlock.setOrientation(LinearLayout.VERTICAL);
+        TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
+        if (item.text != null && item.text.length() > 0) { TextView subtitle = new TextView(this); subtitle.setText(item.text); subtitle.setTextColor(a.muted); subtitle.setTextSize(9); subtitle.setSingleLine(true); subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(subtitle); }
+        card.addView(textBlock, new LinearLayout.LayoutParams(0, -2, 1));
+        if (item.actions != null && item.actionTitles != null) for (int i = 0; i < item.actions.length; i++) {
+            final int actionIndex = i; TextView action = new TextView(this); String label = item.actionTitles[i]; action.setText(label.length() > 0 ? label : (i == 0 ? "‹" : (i == 1 ? "Ⅱ / ▶" : "›")));
+            action.setTextColor(a.accent); action.setTextSize(12); action.setGravity(Gravity.CENTER); action.setFocusable(true); action.setFocusableInTouchMode(false);
+            card.addView(action, new LinearLayout.LayoutParams(dp(30), dp(34)));
+            action.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { NotificationBridgeService.sendAction(item, actionIndex); } });
+        }
+        card.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { try { Intent launch = getPackageManager().getLaunchIntentForPackage(item.packageName); if (launch != null) startActivity(launch); } catch (RuntimeException ignored) { } } });
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.bottomMargin = dp(6); panel.addView(card, params);
     }
 
     private void addBrightnessSleepRow(LinearLayout panel, ThemeManager.Appearance a) {
