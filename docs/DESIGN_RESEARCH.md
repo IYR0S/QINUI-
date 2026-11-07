@@ -34,3 +34,11 @@ Reviewed 2026-11-06 against current official platform and design references.
 - **One UI accessibility — interaction and control:** provide alternatives to complex gestures, clear feedback and a consistent route back. This supports QINS's physical-key-first approach. Reference: https://developer.samsung.com/one-ui/accessibility/interaction-and-control.html
 
 Compatibility note: these are design patterns, not a promise that Android 4.4.4 can expose the corresponding modern system services. Every implementation must remain inside the existing no-root API-19 boundary and degrade gracefully when a system capability is unavailable.
+
+
+## Quick Panel refresh — November 2026
+
+- **Samsung One UI 9:** current research confirms independently resizable brightness and volume sliders, resizable media player, detachable sound-mode and display-mode controls, thicker sliders, and editable/reorderable controls. References: https://www.sammobile.com/news/look-one-ui-9-design-changes-new-features/ and https://9to5google.com/2026/07/14/one-ui-9-all-the-features-you-need-to-know-video/
+- **Nothing OS 5:** official community release notes confirm Android 17 base, refreshed Geist typography, custom system/status icons, refined spacing/materials/motion, and optional separation of Notifications and Quick Settings. The release notes do not establish a new official 1×1/2×1/2×2 Quick Settings tile specification; QINS tile sizes are therefore a local adaptation, not a claim of exact Nothing behavior. Reference: https://nothing.community/d/61730-nothing-os-50-new-features-explained
+- **QINS implementation constraints:** minimum Android 4.4.4/API 19 means no platform Do Not Disturb API and no native real-time background blur. The DND control currently maps to silent ringer mode; hotspot shortcut opens wireless/tether settings instead of claiming a privileged hotspot toggle. Pixel uses translucent wallpaper-aware surfaces and active-state shape changes as an API-19-compatible approximation.
+- **QINS tile editor:** each expanded tile supports 1×1, 2×1 and 2×2 spans. Samsung layout defaults to 2×1 Wi-Fi/Bluetooth followed by four 1×1 shortcuts; the other themes default to two columns of 2×1 controls.
