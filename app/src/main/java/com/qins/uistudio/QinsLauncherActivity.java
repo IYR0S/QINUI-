@@ -2079,7 +2079,7 @@ public class QinsLauncherActivity extends Activity {
                 int miniSize = previewCount >= 4 ? 10 : (previewCount >= 3 ? 12 : 15);
                 for (int mini = 0; mini < previewCount; mini++) {
                     ImageView smallIcon = new ImageView(this);
-                    normalizeAppIcon(smallIcon.setImageDrawable(folderApps.get(mini).loadIcon(getPackageManager())));
+                    smallIcon.setImageDrawable(normalizeAppIcon(folderApps.get(mini).loadIcon(getPackageManager())));
                     smallIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     if (a.monochrome) {
                         ColorMatrix matrix = new ColorMatrix();
@@ -2094,7 +2094,7 @@ public class QinsLauncherActivity extends Activity {
                         -1, dp(22), Gravity.CENTER));
             } else {
                 final ImageView icon = new ImageView(this);
-                normalizeAppIcon(icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager()))));
+                icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) {
                     ColorMatrix matrix = new ColorMatrix();
@@ -2486,7 +2486,7 @@ public class QinsLauncherActivity extends Activity {
                 item.setFocusableInTouchMode(false);
                 item.setClickable(true);
                 final ImageView icon = new ImageView(this);
-                normalizeAppIcon(icon.setImageDrawable(child.loadIcon(getPackageManager())));
+                icon.setImageDrawable(normalizeAppIcon(child.loadIcon(getPackageManager())));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 item.addView(icon, new LinearLayout.LayoutParams(dp(32), dp(32)));
                 TextView label = new TextView(this);
@@ -2637,7 +2637,7 @@ public class QinsLauncherActivity extends Activity {
             item.setFocusableInTouchMode(false);
             item.setClickable(true);
             final ImageView icon = new ImageView(this);
-            normalizeAppIcon(icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager()))));
+            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
                 android.graphics.ColorMatrix monochrome = new android.graphics.ColorMatrix();
@@ -2913,7 +2913,7 @@ public class QinsLauncherActivity extends Activity {
             int mini = count >= 4 ? 12 : (count >= 3 ? 15 : 19);
             for (int i = 0; i < count; i++) {
                 ImageView childIcon = new ImageView(this);
-                normalizeAppIcon(childIcon.setImageDrawable(children.get(i).loadIcon(getPackageManager())));
+                childIcon.setImageDrawable(normalizeAppIcon(children.get(i).loadIcon(getPackageManager())));
                 childIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); childIcon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
                 LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(dp(mini), dp(mini));
@@ -2923,7 +2923,7 @@ public class QinsLauncherActivity extends Activity {
             tile.addView(preview, new LinearLayout.LayoutParams(-1, dp(iconSize)));
         } else {
             final ImageView icon = new ImageView(this);
-            normalizeAppIcon(icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager()))));
+            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
             // Keep every app icon at the same full visual size; downloaded apps
