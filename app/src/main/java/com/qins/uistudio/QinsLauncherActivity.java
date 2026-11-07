@@ -1741,15 +1741,16 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         TextView edit = new TextView(this);
-        edit.setText(getString(R.string.launcher_edit_shortcuts));
+        edit.setText("✎");
+        edit.setContentDescription(getString(R.string.launcher_edit_shortcuts));
         edit.setTextColor(a.accent);
-        edit.setTextSize(11);
+        edit.setTextSize(22);
         edit.setGravity(Gravity.CENTER);
         edit.setFocusable(true);
         edit.setFocusableInTouchMode(false);
-        header.addView(edit, new LinearLayout.LayoutParams(dp(48), dp(24)));
+        header.addView(edit, new LinearLayout.LayoutParams(dp(36), dp(28)));
         edit.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { showQuickSlotPicker(); }
+            @Override public void onClick(View v) { showQuickSettingsEditor(true); }
         });
         compact.addView(header);
 
@@ -2503,7 +2504,7 @@ public class QinsLauncherActivity extends Activity {
 
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
-        panel.setPadding(dp(4), dp(6), dp(4), dp(6));
+        panel.setPadding(dp(2), dp(6), dp(2), dp(6));
         boolean transparentEdge = getSharedPreferences("qins_edge_panel", MODE_PRIVATE).getBoolean("transparent", false);
         panel.setBackgroundColor(transparentEdge ? 0x00000000 : a.surface);
         panel.setFocusable(true);
@@ -2585,8 +2586,8 @@ public class QinsLauncherActivity extends Activity {
                     if (focused) {
                         GradientDrawable glow = new GradientDrawable();
                         glow.setShape(GradientDrawable.OVAL);
-                        glow.setColor(0x334F91FF);
-                        glow.setStroke(dp(2), a.accent);
+                        glow.setColor(0x554F91FF);
+                        glow.setStroke(dp(3), a.accent);
                         icon.setBackgroundDrawable(new android.graphics.drawable.InsetDrawable(glow, 0));
                     } else {
                         icon.setBackgroundColor(0x00000000);
@@ -2622,7 +2623,7 @@ public class QinsLauncherActivity extends Activity {
         scroll.addView(list, new ScrollView.LayoutParams(-1, -2));
         panel.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        int panelWidth = 96;
+        int panelWidth = 84;
         FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(dp(panelWidth), -1,
                 Gravity.RIGHT | Gravity.TOP);
         panelParams.topMargin = 0;
@@ -3783,6 +3784,18 @@ public class QinsLauncherActivity extends Activity {
         panelBattery.setTextColor(a.muted);
         panelBattery.setTextSize(13);
         heading.addView(panelBattery, new LinearLayout.LayoutParams(-2, -2));
+        TextView editQuick = new TextView(this);
+        editQuick.setText("✎");
+        editQuick.setTextColor(a.accent);
+        editQuick.setTextSize(22);
+        editQuick.setGravity(Gravity.CENTER);
+        editQuick.setContentDescription(getString(R.string.launcher_edit_shortcuts));
+        editQuick.setFocusable(true);
+        editQuick.setFocusableInTouchMode(false);
+        heading.addView(editQuick, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        editQuick.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { showQuickSettingsEditor(false); }
+        });
         panel.addView(heading);
         LinearLayout statusRow = new LinearLayout(this); statusRow.setGravity(Gravity.CENTER_VERTICAL);
         panelBluetoothStatus = new QinsGlyphView(this, "bluetooth", a.muted); panelBluetoothStatus.setVisualStyle(a.id);
@@ -3869,7 +3882,7 @@ public class QinsLauncherActivity extends Activity {
         styleSurface(customize, a.surface, a.border, a.focus, a.cornerDp);
         tools.addView(customize, new LinearLayout.LayoutParams(0, -1, 1));
         customize.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { showQuickSettingsEditor(); }
+            @Override public void onClick(View v) { showQuickSettingsEditor(false); }
         });
         TextView themeSettings = new TextView(this);
         themeSettings.setText(getString(R.string.launcher_theme_settings));
@@ -4141,10 +4154,8 @@ public class QinsLauncherActivity extends Activity {
         if (current != background) card.setBackgroundDrawable(background);
     }
 
-    private void attachBrightnessFocus(final View card) {
-        card.setFocusable(true);
-        card.setFocusableInTouchMode(false);
-        card.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+    private void attachBrightnessFocus(final View card, View focusTarget) {
+        focusTarget.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View view, boolean focused) {
                 Drawable bg = card.getBackground();
                 if (bg instanceof QuickLevelFillDrawable) ((QuickLevelFillDrawable) bg).setFocused(focused);
@@ -4169,7 +4180,7 @@ public class QinsLauncherActivity extends Activity {
         final LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setGravity(Gravity.CENTER);
         card.setPadding(dp(4), dp(6), dp(4), dp(6));
         final boolean brightness = label.equals(getString(R.string.launcher_brightness));
-        if (brightness) { updateBrightnessCard(card, a, value, max); attachBrightnessFocus(card); }
+        if (brightness) { updateBrightnessCard(card, a, value, max); attachBrightnessFocus(card, seek); }
         else styleSurface(card, a.surface, a.border, a.focus, 8f);
         TextView title = new TextView(this); title.setText(label); title.setTextColor(a.text); title.setTextSize(10); title.setGravity(Gravity.CENTER); card.addView(title);
         VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this); seek.setMax(max); seek.setProgress(Math.max(0, Math.min(max, value))); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -4293,12 +4304,12 @@ public class QinsLauncherActivity extends Activity {
         brightness.setPadding(dp(10), dp(7), dp(10), dp(5));
         final int initialBrightness = readBrightness();
         updateBrightnessCard(brightness, a, initialBrightness, 255);
-        attachBrightnessFocus(brightness);
         TextView heading = new TextView(this); heading.setText(getString(R.string.launcher_brightness));
         heading.setTextColor(a.text); heading.setTextSize(13); brightness.addView(heading);
         SeekBar seek = new SeekBar(this); seek.setMax(255); seek.setProgress(Math.max(0, Math.min(255, initialBrightness)));
         seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         hideSeekBarMarker(seek);
+        attachBrightnessFocus(brightness, seek);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
                 if (fromUser) writeBrightness(Math.max(1, value));
@@ -4437,7 +4448,7 @@ public class QinsLauncherActivity extends Activity {
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
             int fill = active ? 0xFFECEDEA : 0xFF242729;
             int foreground = active ? 0xFF171819 : 0xFFF4F4F2;
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, fill, a.accent, 16f, false));
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, a.border, a.accent, 16f, tile.hasFocus()));
             View iconSurface = tile.findViewWithTag("quick-icon-shape");
             if (iconSurface != null) {
                 GradientDrawable circle = new GradientDrawable();
@@ -4471,6 +4482,11 @@ public class QinsLauncherActivity extends Activity {
             if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) bg.setShape(GradientDrawable.OVAL);
             else { bg.setShape(GradientDrawable.RECTANGLE); bg.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? (active ? 14 : 5) : 8)); }
             bg.setColor(fill);
+            if (ThemeManager.APPEARANCE_GALAXY.equals(a.id) && tile.hasFocus()) {
+                bg.setStroke(dp(3), a.accent);
+            } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+                bg.setStroke(dp(tile.hasFocus() ? 2 : 1), tile.hasFocus() ? a.accent : a.border);
+            }
             shape.setBackgroundDrawable(bg);
         }
         if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
