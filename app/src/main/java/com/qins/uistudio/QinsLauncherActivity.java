@@ -1573,12 +1573,7 @@ public class QinsLauncherActivity extends Activity {
         styleSurface(compact, a.surface, a.border, a.focus, a.cornerDp + 3);
 
         LinearLayout header = new LinearLayout(this);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView title = new TextView(this);
-        title.setText(getString(R.string.launcher_quick_controls));
-        title.setTextColor(a.text);
-        title.setTextSize(11);
-        header.addView(title, new LinearLayout.LayoutParams(0, dp(22), 1));
+        header.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
         TextView edit = new TextView(this);
         edit.setText(getString(R.string.launcher_edit_shortcuts));
         edit.setTextColor(a.accent);
