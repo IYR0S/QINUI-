@@ -136,6 +136,7 @@ public class QinsLauncherActivity extends Activity {
     private TextView soundState;
     private TextView flashlightState;
     private View flashlightTile;
+    private View quickGridFirstTile;
     private QinsGlyphView homeBluetoothStatus, homeSoundStatus, panelBluetoothStatus, panelSoundStatus;
     private TextView panelBluetoothLabel, panelSoundLabel;
     private Camera flashlightCamera;
@@ -3687,7 +3688,7 @@ public class QinsLauncherActivity extends Activity {
         });
 
         updateClockAndBattery();
-        if (focusFirst && firstRow.getChildCount() > 0) firstRow.getChildAt(0).requestFocus();
+        if (focusFirst && quickGridFirstTile != null) quickGridFirstTile.requestFocus();
     }
 
     private void showNotificationPage(LinearLayout panel, ThemeManager.Appearance a) {
@@ -4061,6 +4062,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void addQuickTileGrid(LinearLayout panel, ThemeManager.Appearance a, String[] keys, int count) {
+        quickGridFirstTile = null;
         final int columns = 4, baseHeight = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 56 : 62;
         LinearLayout row = null; int used = 0;
         for (int i = 0; i < count; i++) {
@@ -4073,9 +4075,10 @@ public class QinsLauncherActivity extends Activity {
                 LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, dp(baseHeight)); if (panel.getChildCount() > 0) rp.topMargin = dp(5); panel.addView(row, rp); }
             View tile = ThemeManager.APPEARANCE_GALAXY.equals(a.id) && ("wifi".equals(key) || "bluetooth".equals(key))
                     ? quickConnectivityTile(key, a) : quickTile(glyphForQuickKey(key), quickLabel(key), a);
+            if (quickGridFirstTile == null) quickGridFirstTile = tile;
             LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, dp(baseHeight * sy), sx);
             if (used > 0) tp.leftMargin = dp(4); row.addView(tile, tp);
-            if (sy > 1) { ViewGroup.LayoutParams rowLp = row.getLayoutParams(); rowLp.height = dp(baseHeight * sy); row.setLayoutParams(rowLp); }
+            if (sy > 1) { android.view.ViewGroup.LayoutParams rowLp = row.getLayoutParams(); rowLp.height = dp(baseHeight * sy); row.setLayoutParams(rowLp); }
             tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { performQuickAction(key); } });
             used += sx; if (used == columns) row = null;
         }
