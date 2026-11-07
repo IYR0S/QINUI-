@@ -86,8 +86,7 @@ public final class NotificationBridgeService extends NotificationListenerService
         if (sbn == null) return;
         NotificationItem item = toItem(sbn);
         synchronized (LOCK) {
-            removeByKey(item.key);
-            CACHE.add(item);
+            addOrReplace(item);
             sortCache();
         }
         notifyChanged();
@@ -108,7 +107,7 @@ public final class NotificationBridgeService extends NotificationListenerService
                 CACHE.clear();
                 if (active != null) {
                     for (StatusBarNotification sbn : active) {
-                        if (sbn != null) CACHE.add(toItem(sbn));
+                        if (sbn != null) addOrReplace(toItem(sbn));
                     }
                 }
                 sortCache();
@@ -280,6 +279,9 @@ public final class NotificationBridgeService extends NotificationListenerService
                 else if ((titleValue.equals(packageName) || titleValue.length() == 0) && textValue.length() > 0)
                     titleValue = textValue;
             }
+            if (titleValue.equals(packageName) || titleValue.length() == 0) {
+                titleValue = applicationLabel(packageName);
+            }
         }
         return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, artwork, actionTitles, actions);
     }
@@ -303,6 +305,28 @@ public final class NotificationBridgeService extends NotificationListenerService
     private static String makeKey(StatusBarNotification sbn) {
         return sbn.getPackageName() + ":" + sbn.getId() + ":" +
                 String.valueOf(sbn.getTag()) + ":" + sbn.getPostTime();
+    }
+
+    private String applicationLabel(String packageName) {
+        try {
+            android.content.pm.ApplicationInfo info = getPackageManager().getApplicationInfo(packageName, 0);
+            CharSequence label = getPackageManager().getApplicationLabel(info);
+            if (label != null && label.length() > 0) return label.toString();
+        } catch (Exception ignored) { }
+        return packageName;
+    }
+
+    private void addOrReplace(NotificationItem item) {
+        removeByKey(item.key);
+        if (item.media) {
+            // Media players can post a second persistent transport notification
+            // with another ID. Keep one current card per player package.
+            for (int i = CACHE.size() - 1; i >= 0; i--) {
+                NotificationItem existing = CACHE.get(i);
+                if (existing.media && item.packageName.equals(existing.packageName)) CACHE.remove(i);
+            }
+        }
+        CACHE.add(item);
     }
 
     private void removeByKey(String key) {
