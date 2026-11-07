@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,6 +23,8 @@ import android.graphics.PixelFormat;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ClipDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -113,7 +116,6 @@ public class QinsLauncherActivity extends Activity {
     private TextView clockView;
     private LinearLayout homeWidgetArea;
     private int homeWidgetIndex = 0;
-    private boolean lastSmartProfileDark = false;
     private android.content.BroadcastReceiver notificationReceiver = new android.content.BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (quickPanelVisible && quickPanelExpanded && quickPanelPage == 1) showQuickPanel(false);
@@ -141,14 +143,6 @@ public class QinsLauncherActivity extends Activity {
         @Override public void onReceive(Context context, Intent intent) {
             updateClockAndBattery();
             updateQuickStates();
-            if (ThemeManager.isSmartProfileEnabled(QinsLauncherActivity.this)) {
-                boolean smartDark = ThemeManager.isDarkMode(QinsLauncherActivity.this);
-                if (smartDark != lastSmartProfileDark) {
-                    lastSmartProfileDark = smartDark;
-                    if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
-                    else if (!quickPanelVisible && !drawerVisible) showHome(false);
-                }
-            }
         }
     };
 
@@ -177,7 +171,6 @@ public class QinsLauncherActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         setTheme(R.style.AppTheme);
         super.onCreate(state);
-        lastSmartProfileDark = ThemeManager.isDarkMode(this);
         // Restore the launcher’s designed top row and use the full display.
         // QINS exposes its own signal indicator and navigation controls in this row.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
@@ -1475,7 +1468,14 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams topParams = new LinearLayout.LayoutParams(-1, -2);
         topParams.topMargin = dp(smallScreen == 1 ? 3 : 9);
         topParams.bottomMargin = dp(smallScreen == 1 ? 5 : 10);
-        pageContent.addView(top, topParams);
+        LinearLayout homeContent = new LinearLayout(this);
+        homeContent.setOrientation(LinearLayout.VERTICAL);
+        int clockPosition = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("clock_position", 0);
+        if (clockPosition > 0) {
+            View upperSpace = new View(this);
+            homeContent.addView(upperSpace, new LinearLayout.LayoutParams(-1, 0, clockPosition == 1 ? 1 : 2));
+        }
+        homeContent.addView(top, topParams);
 
         LinearLayout spacer = new LinearLayout(this);
         spacer.setOrientation(LinearLayout.VERTICAL);
@@ -1490,7 +1490,8 @@ public class QinsLauncherActivity extends Activity {
         spacer.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { drawerPage = 0; showDrawer(false); } });
         homeWidgetArea = spacer; buildHomeWidget(a);
         spacer.addView(new View(this), new LinearLayout.LayoutParams(-1, 0, 1));
-        pageContent.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1));
+        homeContent.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1));
+        pageContent.addView(homeContent, new LinearLayout.LayoutParams(-1, 0, 1));
 
         appRow = new LinearLayout(this);
         appRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1771,6 +1772,7 @@ public class QinsLauncherActivity extends Activity {
             int iconFrameSize = clamp(Math.round((screenWidthDp() / 4 - 12) * iconScale), 38, 76);
             boolean nothingIcons = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
             int iconSize = nothingIcons ? iconFrameSize - 11 : iconFrameSize;
+            if (!nothingIcons && isDownloadedApp(info)) iconSize = Math.round(iconSize * 0.90f);
             FrameLayout iconFrame = new FrameLayout(this);
             if (nothingIcons) {
                 GradientDrawable iconBackground = new GradientDrawable();
@@ -2394,6 +2396,7 @@ public class QinsLauncherActivity extends Activity {
                 ImageView childIcon = new ImageView(this);
                 childIcon.setImageDrawable(children.get(i).loadIcon(getPackageManager()));
                 childIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); childIcon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
                 LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(dp(mini), dp(mini));
                 cp.setMargins(dp(1), 0, dp(1), 0);
                 preview.addView(childIcon, cp);
@@ -2403,7 +2406,9 @@ public class QinsLauncherActivity extends Activity {
             ImageView icon = new ImageView(this);
             icon.setImageDrawable(info.loadIcon(getPackageManager()));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            tile.addView(icon, new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)));
+            if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
+            int drawerIconSize = isDownloadedApp(info) ? Math.round(iconSize * 0.90f) : iconSize;
+            tile.addView(icon, new LinearLayout.LayoutParams(dp(drawerIconSize), dp(drawerIconSize)));
         }
 
         TextView label = new TextView(this);
@@ -2833,16 +2838,17 @@ public class QinsLauncherActivity extends Activity {
                         dialog.dismiss();
                         refreshLauncherSurface();
                     }
-                }) .setNeutralButton(R.string.launcher_smart_colors, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) { applySmartColors(); } })
-                .setPositiveButton(R.string.launcher_smart_profile, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                    ThemeManager.toggleSmartProfile(QinsLauncherActivity.this);
-                    refreshLauncherSurface();
-                    android.widget.Toast.makeText(QinsLauncherActivity.this, ThemeManager.isSmartProfileEnabled(QinsLauncherActivity.this) ? R.string.launcher_smart_profile_on : R.string.launcher_smart_profile_off, android.widget.Toast.LENGTH_SHORT).show();
-                } })
-                .setNegativeButton(R.string.launcher_dark_mode, new android.content.DialogInterface.OnClickListener() { @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                    ThemeManager.toggleDarkMode(QinsLauncherActivity.this);
-                    refreshLauncherSurface();
-                } }).show();
+                .setNeutralButton(R.string.launcher_smart_colors, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) { applySmartColors(); }
+                })
+                .setPositiveButton(ThemeManager.isDarkMode(this) ? R.string.launcher_light_mode : R.string.launcher_dark_mode,
+                        new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        ThemeManager.toggleDarkMode(QinsLauncherActivity.this);
+                        refreshLauncherSurface();
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void applySmartColors() {
@@ -2911,16 +2917,15 @@ public class QinsLauncherActivity extends Activity {
         final ThemeManager.Appearance a = appearance();
         final String[] values = clockStyleOptions(a);
         String[] styleLabels = clockStyleLabels(a);
-        final String[] choices = new String[styleLabels.length + 1];
+        final String[] choices = new String[styleLabels.length + 2];
         System.arraycopy(styleLabels, 0, choices, 0, styleLabels.length);
         choices[styleLabels.length] = getString(R.string.launcher_clock_background);
+        choices[styleLabels.length + 1] = getString(R.string.launcher_clock_position);
         new android.app.AlertDialog.Builder(this).setTitle("Clock design · " + a.title)
                 .setItems(choices, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        if (which == values.length) {
-                            showClockBackgroundPicker();
-                            return;
-                        }
+                        if (which == values.length) { showClockBackgroundPicker(); return; }
+                        if (which == values.length + 1) { showClockPositionPicker(); return; }
                         getSharedPreferences("qins_clock", MODE_PRIVATE).edit()
                                 .putString(clockStyleKey(a), values[which]).commit();
                         showHome(false);
@@ -3390,14 +3395,7 @@ public class QinsLauncherActivity extends Activity {
 
         updateQuickStates();
 
-        addSlider(panel, "☼", getString(R.string.launcher_brightness), readBrightness(), 255,
-                new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int value, boolean fromUser) {
-                if (fromUser) writeBrightness(Math.max(1, value));
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
-        }, a);
+        addBrightnessSleepRow(panel, a);
 
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         int maxVolume = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
@@ -3496,6 +3494,71 @@ public class QinsLauncherActivity extends Activity {
         }
         registerQuickTile(symbol, tile, state);
         return tile;
+    }
+
+    private boolean isDownloadedApp(ResolveInfo info) {
+        try { return info != null && info.activityInfo != null && info.activityInfo.applicationInfo != null &&
+                (info.activityInfo.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0; }
+        catch (RuntimeException ignored) { return false; }
+    }
+
+    private void showClockPositionPicker() {
+        final String[] positions = new String[] {getString(R.string.launcher_clock_top),
+                getString(R.string.launcher_clock_center), getString(R.string.launcher_clock_bottom)};
+        final android.content.SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
+        int selected = Math.max(0, Math.min(2, prefs.getInt("clock_position", 0)));
+        new android.app.AlertDialog.Builder(this).setTitle(R.string.launcher_clock_position)
+                .setSingleChoiceItems(positions, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        prefs.edit().putInt("clock_position", which).commit(); dialog.dismiss(); showHome(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void addBrightnessSleepRow(LinearLayout panel, ThemeManager.Appearance a) {
+        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout brightness = new LinearLayout(this); brightness.setOrientation(LinearLayout.VERTICAL);
+        brightness.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(brightness, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+        TextView heading = new TextView(this); heading.setText("☼  " + getString(R.string.launcher_brightness));
+        heading.setTextColor(a.text); heading.setTextSize(13); brightness.addView(heading);
+        SeekBar seek = new SeekBar(this); seek.setMax(255); seek.setProgress(Math.max(0, Math.min(255, readBrightness())));
+        seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(8));
+        GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(8));
+        LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL)});
+        layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
+        GradientDrawable thumb = new GradientDrawable(); thumb.setShape(GradientDrawable.OVAL); thumb.setColor(a.accent); thumb.setSize(dp(16), dp(16)); seek.setThumb(thumb);
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) { if (fromUser) writeBrightness(Math.max(1, value)); }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        brightness.addView(seek, new LinearLayout.LayoutParams(-1, dp(32)));
+        row.addView(brightness, new LinearLayout.LayoutParams(0, dp(66), 1));
+        final TextView sleep = new TextView(this);
+        sleep.setText(getString(R.string.launcher_sleep_mode) + (isSleepModeActive() ? "\nON" : "\nOFF"));
+        sleep.setTextColor(a.text); sleep.setTextSize(12); sleep.setGravity(Gravity.CENTER); sleep.setFocusable(true); sleep.setFocusableInTouchMode(false);
+        sleep.setBackgroundDrawable(new FocusSurfaceDrawable(isSleepModeActive() ? a.tileActive : a.tile, a.border, a.accent, a.cornerDp, false));
+        LinearLayout.LayoutParams sleepParams = new LinearLayout.LayoutParams(dp(76), dp(66)); sleepParams.leftMargin = dp(7); row.addView(sleep, sleepParams);
+        sleep.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleSleepMode(); showQuickPanel(false); } });
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.topMargin = dp(8); panel.addView(row, params);
+    }
+
+    private boolean isSleepModeActive() { return getSharedPreferences("qins_sleep", MODE_PRIVATE).getBoolean("enabled", false); }
+
+    private void toggleSleepMode() {
+        android.content.SharedPreferences prefs = getSharedPreferences("qins_sleep", MODE_PRIVATE);
+        AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        if (!prefs.getBoolean("enabled", false)) {
+            int brightness = readBrightness(); int ringer = audio == null ? AudioManager.RINGER_MODE_NORMAL : audio.getRingerMode();
+            prefs.edit().putInt("brightness_before", brightness).putInt("ringer_before", ringer).putBoolean("enabled", true).commit();
+            writeBrightness(Math.max(12, brightness / 5));
+            if (audio != null) audio.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+        } else {
+            writeBrightness(prefs.getInt("brightness_before", 128));
+            if (audio != null) audio.setRingerMode(prefs.getInt("ringer_before", AudioManager.RINGER_MODE_NORMAL));
+            prefs.edit().putBoolean("enabled", false).commit();
+        }
     }
 
     private void addSlider(LinearLayout panel, String symbol, String label, int value, int max,
