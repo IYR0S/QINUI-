@@ -1779,7 +1779,9 @@ public class QinsLauncherActivity extends Activity {
         else if ("flashlight".equals(key)) { flashlightTile = tile; flashlightState = state; }
         tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View view, boolean focused) {
-                boolean active = state != null && "ON".contentEquals(state.getText());
+                String currentState = state == null ? "" : state.getText().toString();
+                boolean active = "ON".equals(currentState) ||
+                        ("sound".equals(key) && "Sound".equals(currentState));
                 updateQuickTileVisual(key, tile, active);
             }
         });
