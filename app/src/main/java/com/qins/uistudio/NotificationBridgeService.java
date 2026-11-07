@@ -10,11 +10,13 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
+import android.provider.MediaStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -159,6 +161,46 @@ public final class NotificationBridgeService extends NotificationListenerService
         return null;
     }
 
+    /**
+     * On Android 4.4, many local music players publish title/artist metadata
+     * but omit the playing file URI. Resolve that exact track in MediaStore and
+     * use DISPLAY_NAME, which is the real filename including its extension.
+     */
+    private static String fileNameFromMediaStore(Context context, Bundle extras) {
+        if (context == null || extras == null) return null;
+        CharSequence titleValue = extras.getCharSequence("android.media.metadata.TITLE");
+        if (titleValue == null) titleValue = extras.getCharSequence("android.media.metadata.DISPLAY_TITLE");
+        if (titleValue == null) titleValue = extras.getCharSequence(Notification.EXTRA_TITLE);
+        if (titleValue == null || titleValue.toString().trim().length() == 0) return null;
+        CharSequence artistValue = extras.getCharSequence("android.media.metadata.ARTIST");
+        if (artistValue == null) artistValue = extras.getCharSequence(Notification.EXTRA_SUB_TEXT);
+        String trackTitle = titleValue.toString().trim();
+        String artist = artistValue == null ? "" : artistValue.toString().trim();
+        Cursor cursor = null;
+        try {
+            String[] projection = new String[] {MediaStore.Audio.Media.DISPLAY_NAME};
+            String selection = MediaStore.Audio.Media.TITLE + "=?";
+            String[] args;
+            if (artist.length() > 0) {
+                selection += " AND " + MediaStore.Audio.Media.ARTIST + "=?";
+                args = new String[] {trackTitle, artist};
+            } else {
+                args = new String[] {trackTitle};
+            }
+            cursor = context.getContentResolver().query(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    projection, selection, args, MediaStore.Audio.Media._ID + " DESC");
+            if (cursor != null && cursor.moveToFirst()) {
+                String name = cursor.getString(0);
+                if (name != null && name.trim().length() > 0) return name.trim();
+            }
+        } catch (RuntimeException ignored) {
+        } finally {
+            if (cursor != null) try { cursor.close(); } catch (RuntimeException ignored) { }
+        }
+        return null;
+    }
+
     private NotificationItem toItem(StatusBarNotification sbn) {
         Notification notification = sbn.getNotification();
         Bundle extras = notification == null ? null : notification.extras;
@@ -227,6 +269,7 @@ public final class NotificationBridgeService extends NotificationListenerService
             // If the media player exposes a path/URI, show its basename rather than
             // attempting to infer or identify the song from its audio content.
             String fileName = fileNameFromExtras(extras);
+            if (fileName == null) fileName = fileNameFromMediaStore(this, extras);
             if (fileName != null) {
                 titleValue = fileName;
             } else if (extras != null) {
