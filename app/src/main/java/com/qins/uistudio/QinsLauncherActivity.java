@@ -2475,13 +2475,26 @@ public class QinsLauncherActivity extends Activity {
             item.setGravity(Gravity.CENTER);
             if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
             else item.setBackgroundColor(0x00000000);
+            item.setClipChildren(true);
+            item.setClipToPadding(true);
+            item.setPadding(dp(4), dp(2), dp(4), dp(2));
+            icon.setPadding(dp(3), dp(3), dp(3), dp(3));
             item.setOnFocusChangeListener(new View.OnFocusChangeListener() {
                 @Override public void onFocusChange(View v, boolean focused) {
+                    // Keep the focus glow confined to the app icon itself, not the
+                    // full-height edge row where it was clipped/overflowing.
                     if (focused) {
-                        GradientDrawable glow = new GradientDrawable(); glow.setShape(GradientDrawable.OVAL);
-                        glow.setColor(0x334F9BFF); glow.setStroke(dp(2), a.accent); v.setBackgroundDrawable(glow);
-                    } else if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(v, a.surfaceAlt, a.border, a.focus, a.cornerDp);
-                    else v.setBackgroundColor(0x00000000);
+                        GradientDrawable glow = new GradientDrawable();
+                        glow.setShape(GradientDrawable.OVAL);
+                        glow.setColor(0x223F8CFF);
+                        glow.setStroke(dp(2), a.accent);
+                        icon.setBackgroundDrawable(new android.graphics.drawable.InsetDrawable(glow, dp(3)));
+                    } else {
+                        icon.setBackgroundColor(0x00000000);
+                        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id))
+                            styleSurface(v, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+                        else v.setBackgroundColor(0x00000000);
+                    }
                 }
             });
             item.setContentDescription(info.loadLabel(getPackageManager()));
