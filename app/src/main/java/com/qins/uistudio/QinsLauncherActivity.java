@@ -3936,7 +3936,10 @@ public class QinsLauncherActivity extends Activity {
         if (media == null) return;
         final NotificationBridgeService.NotificationItem item = media;
         LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.HORIZONTAL); card.setGravity(Gravity.CENTER_VERTICAL);
-        card.setPadding(dp(10), dp(6), dp(8), dp(6)); styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+        card.setPadding(dp(10), dp(6), dp(8), dp(6));
+        String mediaSize = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("media_size", "2x1");
+        card.setMinimumHeight(dp("2x2".equals(mediaSize) ? 108 : 62));
+        styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
         LinearLayout textBlock = new LinearLayout(this); textBlock.setOrientation(LinearLayout.VERTICAL);
         TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
         if (item.text != null && item.text.length() > 0) { TextView subtitle = new TextView(this); subtitle.setText(item.text); subtitle.setTextColor(a.muted); subtitle.setTextSize(9); subtitle.setSingleLine(true); subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(subtitle); }
@@ -4182,11 +4185,13 @@ public class QinsLauncherActivity extends Activity {
         int visibleCount = ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) ? 6 : 4;
         final String[] keys = new String[visibleCount];
         System.arraycopy(allKeys, 0, keys, 0, visibleCount);
-        final String[] labels = new String[keys.length];
-        for (int i = 0; i < keys.length; i++) labels[i] = quickLabel(keys[i]);
+        final String[] labels = new String[keys.length + 1];
+        labels[0] = "Media player";
+        for (int i = 0; i < keys.length; i++) labels[i + 1] = quickLabel(keys[i]);
         new android.app.AlertDialog.Builder(this).setTitle("Choose a tile to resize").setItems(labels, new android.content.DialogInterface.OnClickListener() {
             @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                final String key = keys[which]; final String[] sizes = new String[] {"1 × 1 · Small", "2 × 1 · Wide", "2 × 2 · Large"};
+                if (which == 0) { showMediaSizePicker(); return; }
+                final String key = keys[which - 1]; final String[] sizes = new String[] {"1 × 1 · Small", "2 × 1 · Wide", "2 × 2 · Large"};
                 String current = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key,
                         ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) &&
                                 !("wifi".equals(key) || "bluetooth".equals(key)) ? "1x1" : "2x1");
@@ -4201,6 +4206,19 @@ public class QinsLauncherActivity extends Activity {
                         }).setNegativeButton(android.R.string.cancel, null).show();
             }
         }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showMediaSizePicker() {
+        final String[] sizes = new String[] {"2 × 1 · Compact", "2 × 2 · Large"};
+        String current = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("media_size", "2x1");
+        int selected = "2x2".equals(current) ? 1 : 0;
+        new android.app.AlertDialog.Builder(this).setTitle("Media player size")
+                .setSingleChoiceItems(sizes, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).edit().putString("media_size", which == 1 ? "2x2" : "2x1").commit();
+                        dialog.dismiss(); showQuickPanel(false);
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void updateStatusIndicators(boolean bt, int mode) {
