@@ -3723,6 +3723,30 @@ public class QinsLauncherActivity extends Activity {
         actions.setOrientation(LinearLayout.HORIZONTAL);
         actions.setPadding(0, dp(8), 0, 0);
         content.addView(actions);
+        LinearLayout extras = new LinearLayout(this);
+        extras.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams extrasParams = new LinearLayout.LayoutParams(-1, dp(34));
+        extrasParams.topMargin = dp(5);
+        content.addView(extras, extrasParams);
+        TextView tileSizes = quickEditorButton("Sizes", a, new View.OnClickListener() {
+            @Override public void onClick(View v) { showQuickTileSizePicker(); }
+        });
+        extras.addView(tileSizes, new LinearLayout.LayoutParams(0, -1, 1));
+        TextView colors = quickEditorButton("Colors", a, new View.OnClickListener() {
+            @Override public void onClick(View v) { showThemeEditor(); }
+        });
+        LinearLayout.LayoutParams colorsParams = new LinearLayout.LayoutParams(0, -1, 1);
+        colorsParams.leftMargin = dp(4); extras.addView(colors, colorsParams);
+        TextView clock = quickEditorButton("Clock", a, new View.OnClickListener() {
+            @Override public void onClick(View v) { showClockStylePicker(); }
+        });
+        LinearLayout.LayoutParams clockParams = new LinearLayout.LayoutParams(0, -1, 1);
+        clockParams.leftMargin = dp(4); extras.addView(clock, clockParams);
+        TextView rightKey = quickEditorButton("Right key", a, new View.OnClickListener() {
+            @Override public void onClick(View v) { requestRightKeyBinding(); }
+        });
+        LinearLayout.LayoutParams rightKeyParams = new LinearLayout.LayoutParams(0, -1, 1);
+        rightKeyParams.leftMargin = dp(4); extras.addView(rightKey, rightKeyParams);
 
         final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Edit Quick Settings")
@@ -4315,9 +4339,10 @@ public class QinsLauncherActivity extends Activity {
         invisible.setColor(0x00000000);
         invisible.setSize(dp(1), dp(1));
         seek.setThumb(invisible);
-        GradientDrawable empty = new GradientDrawable(); empty.setColor(0x00000000);
-        LayerDrawable layers = new LayerDrawable(new Drawable[] {empty,
-                new ClipDrawable(empty, Gravity.LEFT, ClipDrawable.HORIZONTAL)});
+        GradientDrawable emptyTrack = new GradientDrawable(); emptyTrack.setColor(0x00000000);
+        GradientDrawable emptyProgress = new GradientDrawable(); emptyProgress.setColor(0x00000000);
+        LayerDrawable layers = new LayerDrawable(new Drawable[] {emptyTrack,
+                new ClipDrawable(emptyProgress, Gravity.LEFT, ClipDrawable.HORIZONTAL)});
         layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
     }
