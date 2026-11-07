@@ -178,6 +178,14 @@ public final class NotificationBridgeService extends NotificationListenerService
                 (notification.flags & (Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR)) != 0;
         boolean media = !missed && (transportAction || mediaSession ||
                 (mediaPackage && (count > 0 || ongoing)));
+        if (media && extras != null) {
+            CharSequence trackTitle = extras.getCharSequence("android.media.metadata.TITLE");
+            if (trackTitle == null) trackTitle = extras.getCharSequence("android.media.metadata.DISPLAY_TITLE");
+            if (trackTitle != null && trackTitle.toString().trim().length() > 0)
+                titleValue = trackTitle.toString().trim();
+            else if ((titleValue.equals(packageName) || titleValue.length() == 0) && textValue.length() > 0)
+                titleValue = textValue;
+        }
         return new NotificationItem(makeKey(sbn), packageName, titleValue, textValue, sbn.getPostTime(), missed, media, artwork, actionTitles, actions);
     }
 
