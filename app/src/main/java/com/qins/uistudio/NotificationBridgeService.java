@@ -2,6 +2,8 @@ package com.qins.uistudio;
 
 import android.app.Notification;
 import android.app.PendingIntent;
+import android.media.AudioManager;
+import android.view.KeyEvent;
 import android.graphics.Bitmap;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -173,6 +175,16 @@ public final class NotificationBridgeService extends NotificationListenerService
         if (item == null || item.actions == null || index < 0 || index >= item.actions.length) return;
         PendingIntent action = item.actions[index];
         if (action != null) try { action.send(); } catch (PendingIntent.CanceledException ignored) { }
+    }
+
+    /** API 19 fallback for music apps that expose transport controls via AudioManager. */
+    public static void sendMediaKey(Context context, int keyCode) {
+        try {
+            AudioManager audio = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (audio == null) return;
+            audio.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+            audio.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+        } catch (RuntimeException ignored) { }
     }
 
     private static String makeKey(StatusBarNotification sbn) {
