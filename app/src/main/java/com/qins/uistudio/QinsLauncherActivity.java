@@ -4168,14 +4168,15 @@ public class QinsLauncherActivity extends Activity {
 
     private void addQuickTileGrid(LinearLayout panel, ThemeManager.Appearance a, String[] keys, int count) {
         quickGridFirstTile = null;
-        final int columns = 4;
+        final boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
+        final int columns = pixel ? 2 : 4;
         final int baseHeight = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 56 :
-                (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? clamp((screenWidthDp() - 20) / 2, 56, 116) : 62);
+                (pixel ? clamp((screenWidthDp() - 20) / 2, 56, 116) : 62);
         LinearLayout row = null; int used = 0;
         for (int i = 0; i < count; i++) {
             final String key = keys[i];
             String defaultSize = ThemeManager.APPEARANCE_GALAXY.equals(a.id)
-                    ? (("wifi".equals(key) || "bluetooth".equals(key)) ? "2x1" : "1x1") : "2x1";
+                    ? (("wifi".equals(key) || "bluetooth".equals(key)) ? "2x1" : "1x1") : (pixel ? "1x1" : "2x1");
             String size = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key, defaultSize);
             int[] span = parseTileSpan(size); int sx = span[0], sy = span[1];
             if (used + sx > columns) { row = null; used = 0; }
@@ -4214,8 +4215,9 @@ public class QinsLauncherActivity extends Activity {
                 if (which == 0) { showMediaSizePicker(); return; }
                 final String key = keys[which - 1]; final String[] sizes = new String[] {"1 × 1 · Small", "2 × 1 · Wide", "2 × 2 · Large"};
                 String current = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("tile_size:" + key,
-                        ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) &&
-                                !("wifi".equals(key) || "bluetooth".equals(key)) ? "1x1" : "2x1");
+                        ThemeManager.APPEARANCE_GALAXY.equals(appearance().id)
+                                ? (("wifi".equals(key) || "bluetooth".equals(key)) ? "2x1" : "1x1")
+                                : (ThemeManager.APPEARANCE_PIXEL.equals(appearance().id) ? "1x1" : "2x1"));
                 int selected = "1x1".equals(current) ? 0 : ("2x2".equals(current) ? 2 : 1);
                 new android.app.AlertDialog.Builder(QinsLauncherActivity.this).setTitle("Tile size: " + quickLabel(key))
                         .setSingleChoiceItems(sizes, selected, new android.content.DialogInterface.OnClickListener() {
