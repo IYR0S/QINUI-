@@ -68,3 +68,13 @@ These ideas borrow interaction patterns from current Android / One UI releases, 
 
 ## Release criteria
 A module is not marked complete until it builds, survives relaunch, handles denied permissions, and is tested on Android 4.4.4 hardware or a matching emulator. The release APK must be produced by CI or a documented local build and its checksum recorded.
+
+## Quick Panel follow-up fixes — 2026-11-07
+
+- Compact Quick Settings now remains fullscreen, hides the launcher header, and docks to the top edge instead of exposing the Android status bar above a second header.
+- Galaxy, Pixel and Nothing Quick Settings use separate grid structures and tile treatments; Galaxy controls use circular icon wells, Pixel uses two-column Material surfaces, and Nothing keeps monochrome wide switches with vertical sliders.
+- Brightness and volume slider headings no longer include decorative icons.
+- Edge Bar is attached to the window decor so it spans the complete app height, and its background can be toggled between solid and transparent from its header.
+- Apps drawer defaults to a 3 × 4 grid and uses consistent, full-size app icons.
+- Media notifications are recognized using transport action labels, media-session extras and ongoing player notifications; Quick Settings refreshes when media starts or stops.
+- Media action extraction uses reflection to avoid directly linking newer Notification.Action types on the API 19 target.
