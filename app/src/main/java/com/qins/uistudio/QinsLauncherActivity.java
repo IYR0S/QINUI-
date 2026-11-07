@@ -3451,7 +3451,15 @@ public class QinsLauncherActivity extends Activity {
         if (saved.length() == 0) return defaults;
         String[] parts = saved.split(",");
         String[] result = new String[6];
-        for (int i = 0; i < 6; i++) result[i] = i < parts.length && isQuickOption(parts[i]) ? parts[i] : defaults[i];
+        if (ThemeManager.APPEARANCE_GALAXY.equals(appearance().id)) {
+            result[0] = "wifi"; result[1] = "bluetooth";
+            for (int i = 2; i < 6; i++) {
+                String candidate = i < parts.length && isQuickOption(parts[i]) ? parts[i] : defaults[i];
+                result[i] = ("wifi".equals(candidate) || "bluetooth".equals(candidate)) ? defaults[i] : candidate;
+            }
+        } else {
+            for (int i = 0; i < 6; i++) result[i] = i < parts.length && isQuickOption(parts[i]) ? parts[i] : defaults[i];
+        }
         return result;
     }
 
@@ -3462,6 +3470,10 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showExpandedQuickTileEditor(final int index) {
+        if (ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) && index < 2) {
+            android.widget.Toast.makeText(this, "Wi-Fi and Bluetooth stay in the first row", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
         final String[] keys = getExpandedQuickTileKeys();
         new android.app.AlertDialog.Builder(this)
                 .setTitle("Choose expanded tile " + (index + 1))
@@ -3480,8 +3492,8 @@ public class QinsLauncherActivity extends Activity {
                 getString(R.string.launcher_compact_shortcut, 2),
                 getString(R.string.launcher_compact_shortcut, 3),
                 getString(R.string.launcher_compact_shortcut, 4),
-                getString(R.string.launcher_expanded_tile, 1),
-                getString(R.string.launcher_expanded_tile, 2),
+                ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) ? "Wi-Fi (fixed)" : getString(R.string.launcher_expanded_tile, 1),
+                ThemeManager.APPEARANCE_GALAXY.equals(appearance().id) ? "Bluetooth (fixed)" : getString(R.string.launcher_expanded_tile, 2),
                 getString(R.string.launcher_expanded_tile, 3),
                 getString(R.string.launcher_expanded_tile, 4),
                 getString(R.string.launcher_expanded_tile, 5),
