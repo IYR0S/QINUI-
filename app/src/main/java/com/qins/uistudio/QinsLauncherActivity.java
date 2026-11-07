@@ -124,7 +124,7 @@ public class QinsLauncherActivity extends Activity {
         @Override public void onReceive(Context context, Intent intent) {
             if (quickPanelVisible && quickPanelExpanded) showQuickPanel(false);
             else if (quickPanelVisible) showCompactQuickPanel(false);
-            else if (!drawerVisible) showHome(false);
+            else if (!drawerVisible) { showHome(false); updateQuickStates(); }
         }
     };
     private TextView dateView;
@@ -4204,34 +4204,40 @@ public class QinsLauncherActivity extends Activity {
 
     private void updateQuickTileVisual(String key, View tile, boolean active) {
         if (tile == null) return;
-        ThemeManager.Appearance a = appearance(); int fill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
+        ThemeManager.Appearance a = appearance();
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            int fill = active ? 0xFFECEDEA : 0xFF242729;
+            int foreground = active ? 0xFF171819 : 0xFFF4F4F2;
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill,
+                    tile.hasFocus() ? a.accent : fill, a.accent, 16f, tile.hasFocus()));
+            QinsGlyphView glyph = findQuickGlyph(tile);
+            if (glyph != null) glyph.setTint(foreground);
+            if (tile instanceof android.view.ViewGroup) {
+                android.view.ViewGroup group = (android.view.ViewGroup) tile;
+                for (int i = 0; i < group.getChildCount(); i++) {
+                    View child = group.getChildAt(i);
+                    if (child instanceof LinearLayout) {
+                        android.view.ViewGroup labels = (android.view.ViewGroup) child;
+                        for (int j = 0; j < labels.getChildCount(); j++) {
+                            View label = labels.getChildAt(j);
+                            if (label instanceof TextView) ((TextView) label).setTextColor(foreground);
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        int fill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
         View shape = tile.findViewWithTag("quick-icon-shape");
         if (shape != null) {
             GradientDrawable bg = new GradientDrawable();
             if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) bg.setShape(GradientDrawable.OVAL);
             else { bg.setShape(GradientDrawable.RECTANGLE); bg.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? (active ? 14 : 5) : 8)); }
-            bg.setColor(fill); shape.setBackgroundDrawable(bg);
+            bg.setColor(fill);
+            shape.setBackgroundDrawable(bg);
         }
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, (active || tile.hasFocus()) ? a.accent : a.border, a.accent, 3f, tile.hasFocus()));
-        } else if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            int fill = active ? 0xFFECEDEA : 0xFF242729;
-            int text = active ? 0xFF171819 : 0xFFF4F4F2;
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? 0xFFECEDEA : 0xFF242729,
-                    a.accent, 16f, tile.hasFocus()));
-            QinsGlyphView glyph = findQuickGlyph(tile);
-            if (glyph != null) glyph.setTint(text);
-            for (int i = 0; i < ((android.view.ViewGroup) tile).getChildCount(); i++) {
-                View child = ((android.view.ViewGroup) tile).getChildAt(i);
-                if (child instanceof LinearLayout) {
-                    android.view.ViewGroup block = (android.view.ViewGroup) child;
-                    for (int j = 0; j < block.getChildCount(); j++) if (block.getChildAt(j) instanceof TextView)
-                        ((TextView) block.getChildAt(j)).setTextColor(text);
-                }
-            }
-        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
-            int pixelFill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(pixelFill,
+        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill,
                     tile.hasFocus() ? a.accent : a.border, a.accent, active ? 22f : 16f, tile.hasFocus()));
         } else if (tile.hasFocus()) {
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, a.accent, a.accent, 0f, true));
@@ -4931,7 +4937,9 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
-        if (folderOverlay != null) {
+        if (flashlightScreenOverlay != null) {
+            closeScreenFlashlight();
+        } else if (folderOverlay != null) {
             closeHomeFolder();
         } else if (editMode) {
             editMode = false;
