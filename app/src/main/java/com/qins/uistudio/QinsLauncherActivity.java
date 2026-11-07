@@ -120,6 +120,7 @@ public class QinsLauncherActivity extends Activity {
     private TextView themeButton;
     private Bitmap wallpaperBitmap;
     private TextView clockView;
+    private View clockEditorPreviewCard;
     private LinearLayout homeWidgetArea;
     private int homeWidgetIndex = 0;
     private android.content.BroadcastReceiver notificationReceiver = new android.content.BroadcastReceiver() {
@@ -218,7 +219,7 @@ public class QinsLauncherActivity extends Activity {
 
     private void showFirstRunGuideIfNeeded() {
         final SharedPreferences prefs = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE);
-        if (prefs.getBoolean("first_run_guide_shown", false)) return;
+        if (prefs.getBoolean("first_run_guide_shown_hebrew", false)) return;
         prefs.edit().putBoolean("first_run_guide_shown", true).commit();
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -1705,7 +1706,7 @@ public class QinsLauncherActivity extends Activity {
         pageDots = new LinearLayout(this);
         pageDots.setGravity(Gravity.CENTER);
         pageDots.setOrientation(LinearLayout.HORIZONTAL);
-        pages.addView(pageDots, new LinearLayout.LayoutParams(-2, dp(32)));
+        pages.addView(pageDots, new LinearLayout.LayoutParams(-2, dp(20)));
         LinearLayout.LayoutParams pageParams = new LinearLayout.LayoutParams(-1,
                 dp(screenHeightDp() < 280 ? 18 : 22));
         pageParams.topMargin = 0;
@@ -3065,7 +3066,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showDrawerAppActions(final ResolveInfo info) {
-        final String[] actions = new String[] {"Pin to Home", "Hide from Apps"};
+        final String[] actions = new String[] {"הוספה למסך הבית", "הסתרה מיישומים"};
         new android.app.AlertDialog.Builder(this).setTitle(info.loadLabel(getPackageManager()))
                 .setItems(actions, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
@@ -3079,12 +3080,12 @@ public class QinsLauncherActivity extends Activity {
         final List<ResolveInfo> hidden = new ArrayList<ResolveInfo>();
         for (ResolveInfo info : installedApps) if (isDrawerAppHidden(info)) hidden.add(info);
         if (hidden.isEmpty()) {
-            android.widget.Toast.makeText(this, "No hidden apps", android.widget.Toast.LENGTH_SHORT).show();
+            android.widget.Toast.makeText(this, "אין יישומים מוסתרים", android.widget.Toast.LENGTH_SHORT).show();
             return;
         }
         String[] labels = new String[hidden.size()];
         for (int i = 0; i < hidden.size(); i++) labels[i] = hidden.get(i).loadLabel(getPackageManager()).toString();
-        new android.app.AlertDialog.Builder(this).setTitle("Hidden apps · select to restore")
+        new android.app.AlertDialog.Builder(this).setTitle("יישומים מוסתרים · בחרו לשחזור")
                 .setItems(labels, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
                         setDrawerAppHidden(hidden.get(which), false);
@@ -3182,7 +3183,7 @@ public class QinsLauncherActivity extends Activity {
         createFolderParams.rightMargin = dp(5);
         gridHeading.addView(createFolder, createFolderParams);
         TextView hiddenApps = new TextView(this);
-        hiddenApps.setText("Hidden");
+        hiddenApps.setText("מוסתרים");
         hiddenApps.setTextColor(a.accent);
         hiddenApps.setTextSize(10);
         hiddenApps.setGravity(Gravity.CENTER);
@@ -3588,7 +3589,7 @@ public class QinsLauncherActivity extends Activity {
                         if (which != 0) edit.putInt("clock_background_color_" + a.id, colors[which]);
                         edit.commit();
                         dialog.dismiss();
-                        showClockStylePicker();
+                        if (clockEditorPreviewCard != null) clockEditorPreviewCard.setBackgroundColor(which == 0 ? 0x00000000 : colors[which]);
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
@@ -3611,6 +3612,7 @@ public class QinsLauncherActivity extends Activity {
         content.addView(previewCaption);
 
         final LinearLayout previewCard = new LinearLayout(this);
+        clockEditorPreviewCard = previewCard;
         previewCard.setOrientation(LinearLayout.VERTICAL);
         previewCard.setGravity(Gravity.CENTER);
         previewCard.setPadding(dp(8), dp(6), dp(8), dp(6));
@@ -5175,7 +5177,7 @@ public class QinsLauncherActivity extends Activity {
         // Galaxy = six circular controls, Pixel = two-column Material tiles,
         // Nothing = two-column monochrome wide switches plus vertical sliders.
         final int columns = galaxy ? 3 : 2;
-        final int baseHeight = galaxy ? 78 : (pixel
+        final int baseHeight = galaxy ? 100 : (pixel
                 ? clamp((screenWidthDp() - 24) / 2, 66, 82) : 72);
         LinearLayout row = null; int used = 0;
         for (int i = 0; i < count; i++) {
