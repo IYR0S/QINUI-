@@ -210,7 +210,41 @@ public class QinsLauncherActivity extends Activity {
         loadApps();
         buildShell();
         if (getIntent().getBooleanExtra("open_quick_panel", false)) showQuickPanel(false);
-        else showHome(false);
+        else {
+            showHome(false);
+            showFirstRunGuideIfNeeded();
+        }
+    }
+
+    private void showFirstRunGuideIfNeeded() {
+        final SharedPreferences prefs = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE);
+        if (prefs.getBoolean("first_run_guide_shown", false)) return;
+        prefs.edit().putBoolean("first_run_guide_shown", true).commit();
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(18), dp(8), dp(18), dp(8));
+        String[] tips = new String[] {
+                "Navigation: use the physical arrow keys to move between items.",
+                "Select: press the centre key or Enter to open an app or control.",
+                "Long press: hold Select on an app to edit it; hold Select on the music widget to move it to another home page.",
+                "Quick Settings: press Down once for the compact panel and again to expand it.",
+                "Themes: choose Galaxy, Pixel or Nothing from the Theme shortcut in Quick Settings.",
+                "Home pages: use Left / Right to move between pages. Open Apps to see all installed apps."
+        };
+        for (String tip : tips) {
+            TextView line = new TextView(this);
+            line.setText("• " + tip);
+            line.setTextColor(appearance().text);
+            line.setTextSize(12);
+            line.setPadding(0, dp(5), 0, dp(5));
+            content.addView(line, new LinearLayout.LayoutParams(-1, -2));
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Welcome to QINS Home")
+                .setView(content)
+                .setPositiveButton("Start using QINS", null)
+                .setCancelable(false)
+                .show();
     }
 
     @Override protected void onResume() {
@@ -1524,7 +1558,9 @@ public class QinsLauncherActivity extends Activity {
         updateNavigationButton();
 
         final String selectedClockStyle = clockStyle(a);
-        final int clockAlignment = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("clock_alignment", 0);
+        final SharedPreferences clockPrefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
+        final boolean compactClockInTopRow = clockPrefs.getBoolean("clock_compact_top", false);
+        final int clockAlignment = clockPrefs.getInt("clock_alignment", 0);
         final int clockHorizontalGravity = clockAlignment == 1 ? Gravity.RIGHT : Gravity.LEFT;
         final boolean nothingMatrixClock = ThemeManager.APPEARANCE_NOTHING.equals(a.id) &&
                 ("dot".equals(selectedClockStyle) || "stacked".equals(selectedClockStyle));
@@ -1534,7 +1570,7 @@ public class QinsLauncherActivity extends Activity {
         top.setGravity(nothingMatrixClock ? Gravity.CENTER_HORIZONTAL : Gravity.CENTER_VERTICAL);
         int smallScreen = screenWidthDp() < 210 || screenHeightDp() < 280 ? 1 : 0;
         int topSide = smallScreen == 1 ? 10 : 18;
-        int topVertical = smallScreen == 1 ? 6 : 12;
+        int topVertical = compactClockInTopRow ? 2 : (smallScreen == 1 ? 6 : 12);
         top.setPadding(dp(topSide), dp(topVertical), dp(topSide), dp(topVertical));
         // Keep the clock area continuous with the wallpaper rather than masking it with a card.
         top.setBackgroundColor(0x00000000);
@@ -1558,8 +1594,9 @@ public class QinsLauncherActivity extends Activity {
         }
         clockView.setTextColor(nothingMatrixClock ? ("stacked".equals(selectedClockStyle) ? a.accent : 0xFFF7F7F5) :
                 (analogClock ? 0x00000000 : a.text));
-        clockView.setTextSize(clockSizeForTheme(a, smallScreen == 1));
-        if (analogClock) clockView.setTextSize(1);
+        clockView.setTextSize(compactClockInTopRow ? 13 : clockSizeForTheme(a, smallScreen == 1));
+        if (analogClock && !compactClockInTopRow) clockView.setTextSize(1);
+        if (compactClockInTopRow && analogClock) clockView.setText("◷ " + new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date()));
         clockView.setIncludeFontPadding(false);
         clockView.setTypeface(clockTypefaceForTheme(a), clockTypefaceStyle());
         clockView.setFocusable(true);
@@ -1587,9 +1624,11 @@ public class QinsLauncherActivity extends Activity {
         dateView.setTextSize(smallScreen == 1 ? 9 : 11);
         dateView.setSingleLine(true);
         dateView.setGravity(clockHorizontalGravity);
-        int datePosition = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("date_position", 0);
-        if (datePosition == 1) timeBlock.addView(dateView, 0, new LinearLayout.LayoutParams(-1, -2));
-        else if (datePosition == 0) timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
+        int datePosition = clockPrefs.getInt("date_position", 0);
+        if (!compactClockInTopRow) {
+            if (datePosition == 1) timeBlock.addView(dateView, 0, new LinearLayout.LayoutParams(-1, -2));
+            else if (datePosition == 0) timeBlock.addView(dateView, new LinearLayout.LayoutParams(-1, -2));
+        }
         if (nothingMatrixClock) {
             top.addView(timeBlock, new LinearLayout.LayoutParams(-1, -2));
         } else {
@@ -1607,8 +1646,8 @@ public class QinsLauncherActivity extends Activity {
         else if (batteryPosition == 2) timeBlock.addView(batteryView, new LinearLayout.LayoutParams(-1, dp(18)));
         else top.addView(batteryView, batteryParams);
         LinearLayout.LayoutParams topParams = new LinearLayout.LayoutParams(-1, -2);
-        topParams.topMargin = dp(smallScreen == 1 ? 3 : 9);
-        topParams.bottomMargin = dp(smallScreen == 1 ? 5 : 10);
+        topParams.topMargin = dp(compactClockInTopRow ? 0 : (smallScreen == 1 ? 3 : 9));
+        topParams.bottomMargin = dp(compactClockInTopRow ? 2 : (smallScreen == 1 ? 5 : 10));
         LinearLayout homeContent = new LinearLayout(this);
         homeContent.setOrientation(LinearLayout.VERTICAL);
         int clockPosition = getSharedPreferences("qins_clock", MODE_PRIVATE).getInt("clock_position", 0);
@@ -1636,7 +1675,8 @@ public class QinsLauncherActivity extends Activity {
 
         appRow = new LinearLayout(this);
         appRow.setOrientation(LinearLayout.HORIZONTAL);
-        appRow.setGravity(Gravity.CENTER);
+        appRow.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        appRow.setPadding(0, 0, 0, dp(2));
         homeAppRowHeightDp = clamp((int) (screenHeightDp() * 0.34f), 64, 112);
         pageContent.addView(appRow, new LinearLayout.LayoutParams(-1, dp(homeAppRowHeightDp)));
         populateHomeApps(a);
@@ -4496,14 +4536,29 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showClockPositionPicker() {
-        final String[] choices = new String[] {"Vertical position", "Clock side (left / right)", "Date location", "Battery percentage location"};
+        final String[] choices = new String[] {"Clock display · Large / top row", "Vertical position", "Clock side (left / right)", "Date location", "Battery percentage location"};
         new android.app.AlertDialog.Builder(this).setTitle(R.string.launcher_clock_position)
                 .setItems(choices, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface dialog, int which) {
-                        if (which == 0) showClockVerticalPositionPicker();
-                        else if (which == 1) showClockAlignmentPicker();
-                        else if (which == 2) showClockDatePositionPicker();
+                        if (which == 0) showClockDisplayPicker();
+                        else if (which == 1) showClockVerticalPositionPicker();
+                        else if (which == 2) showClockAlignmentPicker();
+                        else if (which == 3) showClockDatePositionPicker();
                         else showClockBatteryPositionPicker();
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void showClockDisplayPicker() {
+        final SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
+        final String[] choices = new String[] {"Large clock on Home", "Compact clock in the top row"};
+        int selected = prefs.getBoolean("clock_compact_top", false) ? 1 : 0;
+        new android.app.AlertDialog.Builder(this).setTitle("Clock display")
+                .setSingleChoiceItems(choices, selected, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        prefs.edit().putBoolean("clock_compact_top", which == 1).commit();
+                        dialog.dismiss();
+                        showHome(false);
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
@@ -4926,13 +4981,9 @@ public class QinsLauncherActivity extends Activity {
             if (iconSurface != null) iconSurface.setBackgroundColor(0x00000000);
             QinsGlyphView glyph = findQuickGlyph(tile);
             if (glyph != null) glyph.setTint(active ? a.text : a.accent);
-            if (tile instanceof android.view.ViewGroup && ((android.view.ViewGroup) tile).getChildCount() > 1) {
-                android.view.ViewGroup labels = (android.view.ViewGroup) ((android.view.ViewGroup) tile).getChildAt(1);
-                for (int i = 0; i < labels.getChildCount(); i++) {
-                    View label = labels.getChildAt(i);
-                    if (label instanceof TextView) ((TextView) label).setTextColor(i == 0 ? a.text : a.muted);
-                }
-            }
+            // Compact tiles have direct TextView children; expanded tiles wrap
+            // them in a LinearLayout. Traverse safely to support both structures.
+            applyPixelQuickTextColors(tile, new int[] {0});
             return;
         }
         View shape = tile.findViewWithTag("quick-icon-shape");
@@ -4960,6 +5011,18 @@ public class QinsLauncherActivity extends Activity {
             }
         } else {
             tile.setBackgroundColor(0x00000000);
+        }
+    }
+
+    private void applyPixelQuickTextColors(View view, int[] textIndex) {
+        if (view instanceof TextView) {
+            ((TextView) view).setTextColor(textIndex[0] == 0 ? appearance().text : appearance().muted);
+            textIndex[0]++;
+            return;
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) applyPixelQuickTextColors(group.getChildAt(i), textIndex);
         }
     }
 
