@@ -1552,10 +1552,10 @@ public class QinsLauncherActivity extends Activity {
         else { shape.setShape(GradientDrawable.RECTANGLE); shape.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 9 : 8)); }
         shape.setColor(a.tile); iconWrap.setBackgroundDrawable(shape); iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, glyph, a.accent); icon.setVisualStyle(a.id);
-        iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(23), dp(23), Gravity.CENTER));
-        tile.addView(iconWrap, new LinearLayout.LayoutParams(dp(34), dp(34)));
-        TextView text = new TextView(this); text.setText(label); text.setTextColor(a.text); text.setTextSize(10); text.setGravity(Gravity.CENTER); tile.addView(text);
-        TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(9); state.setGravity(Gravity.CENTER); tile.addView(state);
+        iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(19), dp(19), Gravity.CENTER));
+        tile.addView(iconWrap, new LinearLayout.LayoutParams(dp(28), dp(28)));
+        TextView text = new TextView(this); text.setText(label); text.setTextColor(a.text); text.setTextSize(9); text.setGravity(Gravity.CENTER); tile.addView(text);
+        TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(8); state.setGravity(Gravity.CENTER); tile.addView(state);
         tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.surface, a.border, a.focus, a.cornerDp); else tile.setBackgroundColor(0x00000000);
         registerQuickTile(key, tile, state); return tile;
