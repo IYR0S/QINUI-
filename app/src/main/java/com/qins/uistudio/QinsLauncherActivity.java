@@ -4074,11 +4074,36 @@ public class QinsLauncherActivity extends Activity {
         TextView title = new TextView(this); title.setText(item.title); title.setTextColor(a.text); title.setTextSize(12); title.setSingleLine(true); title.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(title);
         if (item.text != null && item.text.length() > 0) { TextView subtitle = new TextView(this); subtitle.setText(item.text); subtitle.setTextColor(a.muted); subtitle.setTextSize(9); subtitle.setSingleLine(true); subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END); textBlock.addView(subtitle); }
         card.addView(textBlock, new LinearLayout.LayoutParams(0, -2, 1));
-        if (item.actions != null && item.actionTitles != null) for (int i = 0; i < item.actions.length; i++) {
-            final int actionIndex = i; TextView action = new TextView(this); String label = item.actionTitles[i]; action.setText(label.length() > 0 ? label : (i == 0 ? "‹" : (i == 1 ? "Ⅱ / ▶" : "›")));
-            action.setTextColor(a.accent); action.setTextSize(12); action.setGravity(Gravity.CENTER); action.setFocusable(true); action.setFocusableInTouchMode(false);
-            card.addView(action, new LinearLayout.LayoutParams(dp(30), dp(34)));
-            action.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { NotificationBridgeService.sendAction(item, actionIndex); } });
+        boolean hasNotificationControls = false;
+        if (item.actions != null && item.actionTitles != null) {
+            for (int i = 0; i < item.actions.length; i++) {
+                if (item.actions[i] == null) continue;
+                hasNotificationControls = true;
+                final int actionIndex = i;
+                TextView action = new TextView(this);
+                String label = item.actionTitles[i];
+                action.setText(label.length() > 0 ? label : (i == 0 ? "‹" : (i == 1 ? "Ⅱ / ▶" : "›")));
+                action.setTextColor(a.accent); action.setTextSize(12); action.setGravity(Gravity.CENTER);
+                action.setFocusable(true); action.setFocusableInTouchMode(false);
+                card.addView(action, new LinearLayout.LayoutParams(dp(30), dp(34)));
+                action.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) { NotificationBridgeService.sendAction(item, actionIndex); }
+                });
+            }
+        }
+        if (!hasNotificationControls) {
+            final int[] mediaKeys = new int[] {KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_MEDIA_NEXT};
+            final String[] mediaLabels = new String[] {"‹", "Ⅱ / ▶", "›"};
+            for (int i = 0; i < mediaKeys.length; i++) {
+                final int mediaKey = mediaKeys[i];
+                TextView action = new TextView(this);
+                action.setText(mediaLabels[i]); action.setTextColor(a.accent); action.setTextSize(15);
+                action.setGravity(Gravity.CENTER); action.setFocusable(true); action.setFocusableInTouchMode(false);
+                card.addView(action, new LinearLayout.LayoutParams(dp(30), dp(34)));
+                action.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) { NotificationBridgeService.sendMediaKey(QinsLauncherActivity.this, mediaKey); }
+                });
+            }
         }
         card.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { try { Intent launch = getPackageManager().getLaunchIntentForPackage(item.packageName); if (launch != null) startActivity(launch); } catch (RuntimeException ignored) { } } });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.bottomMargin = dp(6); panel.addView(card, params);
@@ -4469,7 +4494,7 @@ public class QinsLauncherActivity extends Activity {
             attrs.screenBrightness = flashlightPreviousBrightness;
             getWindow().setAttributes(attrs);
         } catch (RuntimeException ignored) { }
-        if (quickPanelVisible && quickPanelExpanded) updateQuickStates();
+        if (quickPanelVisible) updateQuickStates();
     }
 
     private void openHotspotSettings() {
