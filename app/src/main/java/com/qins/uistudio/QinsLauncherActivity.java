@@ -1925,7 +1925,7 @@ public class QinsLauncherActivity extends Activity {
                 iconFrame.addView(miniIcons, new FrameLayout.LayoutParams(
                         -1, dp(22), Gravity.CENTER));
             } else {
-                ImageView icon = new ImageView(this);
+                final ImageView icon = new ImageView(this);
                 icon.setImageDrawable(info.loadIcon(getPackageManager()));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) {
@@ -2317,7 +2317,7 @@ public class QinsLauncherActivity extends Activity {
                 item.setFocusable(true);
                 item.setFocusableInTouchMode(false);
                 item.setClickable(true);
-                ImageView icon = new ImageView(this);
+                final ImageView icon = new ImageView(this);
                 icon.setImageDrawable(child.loadIcon(getPackageManager()));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 item.addView(icon, new LinearLayout.LayoutParams(dp(32), dp(32)));
@@ -2468,7 +2468,7 @@ public class QinsLauncherActivity extends Activity {
             item.setFocusable(true);
             item.setFocusableInTouchMode(false);
             item.setClickable(true);
-            ImageView icon = new ImageView(this);
+            final ImageView icon = new ImageView(this);
             icon.setImageDrawable(info.loadIcon(getPackageManager()));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             item.addView(icon, new LinearLayout.LayoutParams(dp(38), dp(38)));
@@ -2749,7 +2749,7 @@ public class QinsLauncherActivity extends Activity {
             }
             tile.addView(preview, new LinearLayout.LayoutParams(-1, dp(iconSize)));
         } else {
-            ImageView icon = new ImageView(this);
+            final ImageView icon = new ImageView(this);
             icon.setImageDrawable(info.loadIcon(getPackageManager()));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
@@ -3652,7 +3652,8 @@ public class QinsLauncherActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         quickPanelScrollView = scroll;
         scroll.setSmoothScrollingEnabled(true);
-        scroll.setFillViewport(true);
+        scroll.setFillViewport(false);
+        scroll.setVerticalScrollBarEnabled(ThemeManager.APPEARANCE_NOTHING.equals(a.id));
         scroll.setFocusable(false);
         scroll.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
         scroll.setPadding(0, 0, 0, 0);
@@ -4237,6 +4238,13 @@ public class QinsLauncherActivity extends Activity {
             int foreground = active ? 0xFF171819 : 0xFFF4F4F2;
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill,
                     tile.hasFocus() ? a.accent : fill, a.accent, 16f, tile.hasFocus()));
+            View iconSurface = tile.findViewWithTag("quick-icon-shape");
+            if (iconSurface != null) {
+                GradientDrawable circle = new GradientDrawable();
+                circle.setShape(GradientDrawable.OVAL);
+                circle.setColor(active ? 0xFF242729 : 0xFF3A3D3F);
+                iconSurface.setBackgroundDrawable(circle);
+            }
             QinsGlyphView glyph = findQuickGlyph(tile);
             if (glyph != null) glyph.setTint(foreground);
             if (tile instanceof android.view.ViewGroup) {
@@ -4390,7 +4398,9 @@ public class QinsLauncherActivity extends Activity {
         if (homeBluetoothStatus != null) homeBluetoothStatus.setTint(bt ? a.accent : a.muted);
         if (wifiStatusIndicator != null) {
             WifiManager wifi = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            boolean wifiOn = wifi != null && wifi.isWifiEnabled();
+            boolean wifiOn = false;
+            try { wifiOn = wifi != null && wifi.isWifiEnabled() && wifi.getConnectionInfo() != null &&
+                    wifi.getConnectionInfo().getNetworkId() >= 0; } catch (RuntimeException ignored) { }
             wifiStatusIndicator.setTextColor(wifiOn ? a.accent : a.muted);
             wifiStatusIndicator.setVisibility(wifiOn ? View.VISIBLE : View.GONE);
         }
@@ -4666,6 +4676,17 @@ public class QinsLauncherActivity extends Activity {
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if (quickPanelVisible && quickPanelExpanded && quickPanelScrollView != null &&
+                ThemeManager.APPEARANCE_NOTHING.equals(appearance().id) &&
+                event.getAction() == KeyEvent.ACTION_DOWN &&
+                (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN || event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP)) {
+            View focused = getCurrentFocus();
+            if (focused != null && focused.focusSearch(event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN
+                    ? View.FOCUS_DOWN : View.FOCUS_UP) == null) {
+                quickPanelScrollView.smoothScrollBy(0, event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ? dp(76) : -dp(76));
+                return true;
+            }
+        }
         if (flashlightScreenOverlay != null) {
             if (event.getAction() == KeyEvent.ACTION_DOWN) {
                 closeScreenFlashlight();
