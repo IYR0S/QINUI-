@@ -2133,25 +2133,34 @@ public class QinsLauncherActivity extends Activity {
             if (isFolder(info)) {
                 LinearLayout miniIcons = new LinearLayout(this);
                 miniIcons.setGravity(Gravity.CENTER);
-                miniIcons.setOrientation(LinearLayout.HORIZONTAL);
+                miniIcons.setOrientation(LinearLayout.VERTICAL);
                 List<ResolveInfo> folderApps = getFolderApps(info);
                 int previewCount = Math.min(4, folderApps.size());
                 int miniSize = previewCount >= 4 ? 10 : (previewCount >= 3 ? 12 : 15);
-                for (int mini = 0; mini < previewCount; mini++) {
-                    ImageView smallIcon = new ImageView(this);
-                    smallIcon.setImageDrawable(normalizeAppIcon(folderApps.get(mini).loadIcon(getPackageManager())));
-                    smallIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                    if (a.monochrome) {
-                        ColorMatrix matrix = new ColorMatrix();
-                        matrix.setSaturation(0f);
-                        smallIcon.setColorFilter(new ColorMatrixColorFilter(matrix));
+                for (int miniRow = 0; miniRow < (previewCount + 1) / 2; miniRow++) {
+                    LinearLayout miniRowView = new LinearLayout(this);
+                    miniRowView.setGravity(Gravity.CENTER);
+                    for (int miniCol = 0; miniCol < 2; miniCol++) {
+                        int mini = miniRow * 2 + miniCol;
+                        if (mini >= previewCount) {
+                            miniRowView.addView(new View(this), new LinearLayout.LayoutParams(dp(miniSize), dp(miniSize)));
+                            continue;
+                        }
+                        ImageView smallIcon = new ImageView(this);
+                        smallIcon.setImageDrawable(normalizeAppIcon(folderApps.get(mini).loadIcon(getPackageManager())));
+                        smallIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                        if (a.monochrome) {
+                            ColorMatrix matrix = new ColorMatrix();
+                            matrix.setSaturation(0f);
+                            smallIcon.setColorFilter(new ColorMatrixColorFilter(matrix));
+                        }
+                        LinearLayout.LayoutParams miniParams = new LinearLayout.LayoutParams(dp(miniSize), dp(miniSize));
+                        miniParams.setMargins(dp(1), dp(1), dp(1), dp(1));
+                        miniRowView.addView(smallIcon, miniParams);
                     }
-                    LinearLayout.LayoutParams miniParams = new LinearLayout.LayoutParams(dp(miniSize), dp(miniSize));
-                    miniParams.setMargins(dp(1), 0, dp(1), 0);
-                    miniIcons.addView(smallIcon, miniParams);
+                    miniIcons.addView(miniRowView, new LinearLayout.LayoutParams(-2, -2));
                 }
-                iconFrame.addView(miniIcons, new FrameLayout.LayoutParams(
-                        -1, dp(22), Gravity.CENTER));
+                iconFrame.addView(miniIcons, new FrameLayout.LayoutParams(-1, dp(28), Gravity.CENTER));
             } else {
                 final ImageView icon = new ImageView(this);
                 icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
@@ -3039,7 +3048,7 @@ public class QinsLauncherActivity extends Activity {
         if (info == null) return false;
         String hidden = getSharedPreferences(DRAWER_PREFS, MODE_PRIVATE).getString("hidden_apps", "");
         String key = componentKey(info);
-        for (String item : hidden.split("\\n")) if (key.equals(item)) return true;
+        for (String item : hidden.split(";")) if (key.equals(item)) return true;
         return false;
     }
 
@@ -3048,10 +3057,10 @@ public class QinsLauncherActivity extends Activity {
         SharedPreferences prefs = getSharedPreferences(DRAWER_PREFS, MODE_PRIVATE);
         java.util.LinkedHashSet<String> values = new java.util.LinkedHashSet<String>();
         String raw = prefs.getString("hidden_apps", "");
-        for (String item : raw.split("\\n")) if (item.length() > 0 && !item.equals(componentKey(info))) values.add(item);
+        for (String item : raw.split(";")) if (item.length() > 0 && !item.equals(componentKey(info))) values.add(item);
         if (hidden) values.add(componentKey(info));
         StringBuilder out = new StringBuilder();
-        for (String item : values) { if (out.length() > 0) out.append("\\n"); out.append(item); }
+        for (String item : values) { if (out.length() > 0) out.append(";"); out.append(item); }
         prefs.edit().putString("hidden_apps", out.toString()).commit();
     }
 
