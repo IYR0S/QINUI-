@@ -1616,7 +1616,7 @@ public class QinsLauncherActivity extends Activity {
         clockView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override public boolean onLongClick(View v) { showClockStylePicker(); return true; }
         });
-        if (analogClock) timeBlock.addView(clockView, new LinearLayout.LayoutParams(dp(68), dp(68)));
+        if (analogClock && !compactClockInTopRow) timeBlock.addView(clockView, new LinearLayout.LayoutParams(dp(68), dp(68)));
         else timeBlock.addView(clockView, new LinearLayout.LayoutParams(-1, -2));
 
         dateView = new TextView(this);
@@ -2087,8 +2087,8 @@ public class QinsLauncherActivity extends Activity {
             final Intent launch = launchIntent(info);
             LinearLayout tile = new LinearLayout(this);
             tile.setOrientation(LinearLayout.VERTICAL);
-            tile.setGravity(Gravity.CENTER);
-            tile.setPadding(dp(2), dp(4), dp(2), dp(4));
+            tile.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+            tile.setPadding(dp(2), dp(4), dp(2), dp(2));
             tile.setClickable(true);
             tile.setFocusable(true);
             tile.setFocusableInTouchMode(false);
@@ -4551,7 +4551,7 @@ public class QinsLauncherActivity extends Activity {
 
     private void showClockDisplayPicker() {
         final SharedPreferences prefs = getSharedPreferences("qins_clock", MODE_PRIVATE);
-        final String[] choices = new String[] {"Large clock on Home", "Compact clock in the top row"};
+        final String[] choices = new String[] {"Large clock on Home", "Remove large clock · keep time in top row"};
         int selected = prefs.getBoolean("clock_compact_top", false) ? 1 : 0;
         new android.app.AlertDialog.Builder(this).setTitle("Clock display")
                 .setSingleChoiceItems(choices, selected, new android.content.DialogInterface.OnClickListener() {
