@@ -109,4 +109,8 @@
     <string name="launcher_clock_background">רקע השעון</string>
     <string name="launcher_clock_background_transparent">שקוף (נוכחי)</string>
     <string name="launcher_clock_background_solid">צבע מלא</string>
+    <string name="launcher_smart_profile">פרופיל חכם</string>
+    <string name="launcher_smart_profile_on">הפרופיל החכם הופעל · מצב חשוך אוטומטי 19:00–07:00</string>
+    <string name="launcher_smart_profile_off">הפרופיל החכם כובה</string>
+    <string name="launcher_dark_mode">מצב כהה / בהיר</string>
 </resources>
