@@ -230,6 +230,7 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
                 .putBoolean("show_controls", controls.isChecked())
                 .commit();
         if (saved) {
+            sendBroadcast(new Intent(NotificationBridgeService.ACTION_SETTINGS_CHANGED).setPackage(getPackageName()));
             sendBroadcast(new Intent(NotificationBridgeService.ACTION_CHANGED).setPackage(getPackageName()));
             android.widget.Toast.makeText(this, "Music Widget settings saved.", android.widget.Toast.LENGTH_SHORT).show();
             finish();
