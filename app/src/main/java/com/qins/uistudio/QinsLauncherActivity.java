@@ -119,6 +119,7 @@ public class QinsLauncherActivity extends Activity {
     private TextView appsNavButton;
     private TextView wallpaperButton;
     private TextView themeButton;
+    private TextView settingsButton;
     private Bitmap wallpaperBitmap;
     private TextView clockView;
     private View clockEditorPreviewCard;
@@ -475,7 +476,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams wallpaperParams = new LinearLayout.LayoutParams(dp(36), dp(36));
         wallpaperParams.rightMargin = dp(5);
         topBar.addView(wallpaperButton, wallpaperParams);
-        TextView settingsButton = new TextView(this);
+        settingsButton = new TextView(this);
         settingsButton.setText("⚙");
         settingsButton.setTextSize(18);
         settingsButton.setGravity(Gravity.CENTER);
@@ -530,6 +531,10 @@ public class QinsLauncherActivity extends Activity {
         if (themeButton != null) {
             themeButton.setTextColor(a.text);
             themeButton.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, 0x00000000, a.accent, 8f, themeButton.hasFocus()));
+        }
+        if (settingsButton != null) {
+            settingsButton.setTextColor(a.text);
+            settingsButton.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, 0x00000000, a.accent, 8f, settingsButton.hasFocus()));
         }
         root.setBackground(new QinsWallpaperDrawable(a));
     }
@@ -1736,6 +1741,7 @@ public class QinsLauncherActivity extends Activity {
                     (selectedPlayer.length() == 0 || selectedPlayer.equals(item.packageName)))) items.add(item);
         }
         if (items.isEmpty()) {
+            if (page != mediaPage) return;
             LinearLayout emptyCard = new LinearLayout(this);
             emptyCard.setOrientation(LinearLayout.VERTICAL);
             emptyCard.setGravity(Gravity.CENTER_VERTICAL);
