@@ -98,6 +98,7 @@ public class QinsLauncherActivity extends Activity {
     private boolean longPressPerformed = false;
      private View folderOverlay;
     private View edgePanelOverlay;
+    private ScrollView edgePanelScrollView;
     private final List<View> edgePanelItems = new ArrayList<View>();
     private int edgePanelFocusIndex = 0;
     private String drawerSearchQuery = "";
@@ -213,39 +214,7 @@ public class QinsLauncherActivity extends Activity {
         if (getIntent().getBooleanExtra("open_quick_panel", false)) showQuickPanel(false);
         else {
             showHome(false);
-            showFirstRunGuideIfNeeded();
         }
-    }
-
-    private void showFirstRunGuideIfNeeded() {
-        final SharedPreferences prefs = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE);
-        if (prefs.getBoolean("first_run_guide_shown_hebrew", false)) return;
-        prefs.edit().putBoolean("first_run_guide_shown", true).commit();
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(18), dp(8), dp(18), dp(8));
-        String[] tips = new String[] {
-                "ניווט: השתמשו במקשי החצים הפיזיים כדי לעבור בין הפריטים.",
-                "בחירה: לחצו על המקש המרכזי או Enter כדי לפתוח יישום או פקד.",
-                "לחיצה ארוכה: החזיקו את מקש הבחירה על יישום כדי לערוך אותו; על ווידג׳ט המוזיקה כדי להעביר אותו לעמוד בית אחר.",
-                "הגדרות מהירות: לחצו למטה פעם אחת לפתיחת החלונית המצומצמת ופעם נוספת להרחבה.",
-                "ערכות נושא: בחרו Galaxy, Pixel או Nothing מקיצור ערכת הנושא בהגדרות המהירות.",
-                "עמודי הבית: השתמשו בחצים שמאלה וימינה למעבר בין עמודים. לחצו על ״יישומים״ להצגת כל היישומים."
-        };
-        for (String tip : tips) {
-            TextView line = new TextView(this);
-            line.setText("• " + tip);
-            line.setTextColor(appearance().text);
-            line.setTextSize(12);
-            line.setPadding(0, dp(5), 0, dp(5));
-            content.addView(line, new LinearLayout.LayoutParams(-1, -2));
-        }
-        new android.app.AlertDialog.Builder(this)
-                .setTitle("ברוכים הבאים ל־QINS Home")
-                .setView(content)
-                .setPositiveButton("מתחילים", null)
-                .setCancelable(false)
-                .show();
     }
 
     @Override protected void onResume() {
@@ -506,6 +475,28 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams wallpaperParams = new LinearLayout.LayoutParams(dp(36), dp(36));
         wallpaperParams.rightMargin = dp(5);
         topBar.addView(wallpaperButton, wallpaperParams);
+        TextView settingsButton = new TextView(this);
+        settingsButton.setText("⚙");
+        settingsButton.setTextSize(18);
+        settingsButton.setGravity(Gravity.CENTER);
+        settingsButton.setTextColor(a.text);
+        settingsButton.setFocusable(true);
+        settingsButton.setFocusableInTouchMode(false);
+        settingsButton.setContentDescription("QINS Settings");
+        settingsButton.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, 0x00000000, a.accent, 8f, false));
+        settingsButton.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override public void onFocusChange(View v, boolean focused) {
+                v.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, 0x00000000, a.accent, 8f, focused));
+            }
+        });
+        settingsButton.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                startActivity(new Intent(QinsLauncherActivity.this, AppMenuActivity.class));
+            }
+        });
+        LinearLayout.LayoutParams settingsParams = new LinearLayout.LayoutParams(dp(34), dp(36));
+        settingsParams.rightMargin = dp(2);
+        topBar.addView(settingsButton, settingsParams);
         topBar.addView(appsNavButton, new LinearLayout.LayoutParams(-2, dp(36)));
         root.addView(topBar, new LinearLayout.LayoutParams(-1, dp(44)));
 
@@ -1744,17 +1735,50 @@ public class QinsLauncherActivity extends Activity {
             if (item.missedCall || (item.media && page == mediaPage &&
                     (selectedPlayer.length() == 0 || selectedPlayer.equals(item.packageName)))) items.add(item);
         }
-        if (items.isEmpty()) return;
+        if (items.isEmpty()) {
+            LinearLayout emptyCard = new LinearLayout(this);
+            emptyCard.setOrientation(LinearLayout.VERTICAL);
+            emptyCard.setGravity(Gravity.CENTER_VERTICAL);
+            emptyCard.setPadding(dp(12), dp(9), dp(12), dp(9));
+            emptyCard.setFocusable(true);
+            emptyCard.setFocusableInTouchMode(false);
+            emptyCard.setClickable(true);
+            emptyCard.setTag("home:widget-stack");
+            styleSurface(emptyCard, a.surface, a.border, a.focus, a.cornerDp);
+            TextView emptyTitle = new TextView(this);
+            emptyTitle.setText("MUSIC WIDGET");
+            emptyTitle.setTextColor(a.accent);
+            emptyTitle.setTextSize(9);
+            emptyCard.addView(emptyTitle);
+            TextView emptyText = new TextView(this);
+            boolean access = NotificationBridgeService.isAccessEnabled(this);
+            emptyText.setText(access ? "No active player  ·  Open music widget settings" :
+                    "Music data permission needed  ·  Open settings");
+            emptyText.setTextColor(a.text);
+            emptyText.setTextSize(12);
+            emptyText.setSingleLine(true);
+            emptyText.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            emptyCard.addView(emptyText);
+            emptyCard.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) {
+                    startActivity(new Intent(QinsLauncherActivity.this, MusicWidgetSettingsActivity.class));
+                }
+            });
+            emptyCard.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override public boolean onLongClick(View v) {
+                    startActivity(new Intent(QinsLauncherActivity.this, MusicWidgetSettingsActivity.class));
+                    return true;
+                }
+            });
+            LinearLayout.LayoutParams emptyParams = new LinearLayout.LayoutParams(-1, -2);
+            emptyParams.leftMargin = dp(4); emptyParams.rightMargin = dp(4); emptyParams.topMargin = dp(4);
+            homeWidgetArea.addView(emptyCard, emptyParams);
+            return;
+        }
         homeWidgetIndex = Math.max(0, Math.min(homeWidgetIndex, items.size() - 1));
         final NotificationBridgeService.NotificationItem item = items.get(homeWidgetIndex);
         LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(8), dp(5), dp(8), dp(5));
         card.setFocusable(true); card.setFocusableInTouchMode(false); card.setClickable(true); card.setTag("home:widget-stack"); styleSurface(card, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
-        card.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override public boolean onLongClick(View v) {
-                startActivity(new Intent(QinsLauncherActivity.this, MusicWidgetSettingsActivity.class));
-                return true;
-            }
-        });
         TextView label = new TextView(this); label.setText(item.missedCall ? getString(R.string.launcher_missed_call) : getString(R.string.launcher_now_playing)); label.setTextColor(a.accent); label.setTextSize(9); card.addView(label);
         LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.HORIZONTAL); content.setGravity(Gravity.CENTER_VERTICAL); content.setTag("home:widget-stack");
         if (item.media && musicPrefs.getBoolean("show_artwork", true) && item.artwork != null && !item.artwork.isRecycled()) {
@@ -1808,10 +1832,22 @@ public class QinsLauncherActivity extends Activity {
         card.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){try{Intent launch=getPackageManager().getLaunchIntentForPackage(item.packageName);if(launch!=null)startActivity(launch);}catch(RuntimeException ignored){}}});
         card.setOnLongClickListener(new View.OnLongClickListener() {
             @Override public boolean onLongClick(View v) {
-                showHomeWidgetPagePicker();
+                showMusicWidgetActions();
                 return true;
             }
         });
+    }
+
+    private void showMusicWidgetActions() {
+        final String[] actions = new String[] {"Edit Music Widget", "Move widget to another Home page"};
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Music Widget")
+                .setItems(actions, new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        if (which == 0) startActivity(new Intent(QinsLauncherActivity.this, MusicWidgetSettingsActivity.class));
+                        else showHomeWidgetPagePicker();
+                    }
+                }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
     private void showHomeWidgetPagePicker() {
@@ -2643,6 +2679,7 @@ public class QinsLauncherActivity extends Activity {
             ((android.view.ViewGroup) edgePanelOverlay.getParent()).removeView(edgePanelOverlay);
         }
         edgePanelOverlay = null;
+        edgePanelScrollView = null;
         edgePanelItems.clear();
     }
 
@@ -2680,7 +2717,7 @@ public class QinsLauncherActivity extends Activity {
         header.setGravity(Gravity.CENTER);
         header.setOrientation(LinearLayout.HORIZONTAL);
         TextView settings = new TextView(this);
-        settings.setText("⚙");
+        settings.setText("✎");
         settings.setTextSize(18);
         settings.setTextColor(a.text);
         settings.setGravity(Gravity.CENTER);
@@ -2693,30 +2730,12 @@ public class QinsLauncherActivity extends Activity {
         });
         header.addView(settings, new LinearLayout.LayoutParams(dp(34), dp(38)));
         edgePanelItems.add(settings);
-        TextView transparency = new TextView(this);
-        transparency.setText("◌");
-        transparency.setTextSize(19);
-        transparency.setTextColor(a.text);
-        transparency.setGravity(Gravity.CENTER);
-        transparency.setFocusable(true);
-        transparency.setFocusableInTouchMode(false);
-        transparency.setContentDescription("Toggle Edge Bar transparent background");
-        styleSurface(transparency, a.surfaceAlt, a.border, a.focus, a.cornerDp);
-        transparency.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                android.content.SharedPreferences prefs = getSharedPreferences("qins_edge_panel", MODE_PRIVATE);
-                boolean next = !prefs.getBoolean("transparent", false);
-                prefs.edit().putBoolean("transparent", next).commit();
-                showEdgePanel();
-            }
-        });
-        header.addView(transparency, new LinearLayout.LayoutParams(dp(34), dp(38)));
-        edgePanelItems.add(transparency);
         panel.addView(header, new LinearLayout.LayoutParams(-1, dp(42)));
 
         ScrollView scroll = new ScrollView(this);
+        edgePanelScrollView = scroll;
         scroll.setFillViewport(false);
-        scroll.setVerticalScrollBarEnabled(false);
+        scroll.setVerticalScrollBarEnabled(true);
         LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         int selectedCount = 0;
@@ -2808,34 +2827,60 @@ public class QinsLauncherActivity extends Activity {
 
     private void showEdgePanelSettings() {
         final List<ResolveInfo> choices = new ArrayList<ResolveInfo>();
-        final List<String> labelsList = new ArrayList<String>();
-        for (ResolveInfo info : installedApps) {
-            if (isFolder(info)) continue;
-            choices.add(info);
-            labelsList.add(info.loadLabel(getPackageManager()).toString());
-        }
-        final String[] labels = labelsList.toArray(new String[labelsList.size()]);
-        final boolean[] checked = new boolean[choices.size()];
-        for (int i = 0; i < choices.size(); i++) checked[i] = isEdgeAppSelected(choices.get(i), i);
+        for (ResolveInfo info : installedApps) if (!isFolder(info)) choices.add(info);
         final java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<String>();
-        for (int i = 0; i < choices.size(); i++) if (checked[i]) selected.add(componentKey(choices.get(i)));
+        for (int i = 0; i < choices.size(); i++) {
+            if (isEdgeAppSelected(choices.get(i), i)) selected.add(componentKey(choices.get(i)));
+        }
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(8), dp(4), dp(8), dp(4));
+        final android.widget.CheckBox transparent = new android.widget.CheckBox(this);
+        transparent.setText("Transparent Edge Bar background");
+        transparent.setTextSize(13);
+        transparent.setChecked(getSharedPreferences("qins_edge_panel", MODE_PRIVATE).getBoolean("transparent", false));
+        transparent.setFocusable(true);
+        transparent.setFocusableInTouchMode(false);
+        content.addView(transparent, new LinearLayout.LayoutParams(-1, dp(46)));
+
+        TextView appsTitle = new TextView(this);
+        appsTitle.setText("Choose applications");
+        appsTitle.setTextColor(appearance().text);
+        appsTitle.setTextSize(14);
+        appsTitle.setPadding(dp(4), dp(6), dp(4), dp(6));
+        content.addView(appsTitle);
+        final ArrayList<android.widget.CheckBox> appChecks = new ArrayList<android.widget.CheckBox>();
+        for (int i = 0; i < choices.size(); i++) {
+            final ResolveInfo info = choices.get(i);
+            android.widget.CheckBox check = new android.widget.CheckBox(this);
+            check.setText(info.loadLabel(getPackageManager()));
+            check.setTextSize(13);
+            check.setChecked(selected.contains(componentKey(info)));
+            check.setFocusable(true);
+            check.setFocusableInTouchMode(false);
+            appChecks.add(check);
+            content.addView(check, new LinearLayout.LayoutParams(-1, dp(44)));
+        }
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(false);
+        scroll.setVerticalScrollBarEnabled(true);
+        scroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         final android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle(R.string.launcher_edge_panel)
-                .setMultiChoiceItems(labels, checked, new android.content.DialogInterface.OnMultiChoiceClickListener() {
-                    @Override public void onClick(android.content.DialogInterface d, int which, boolean isChecked) {
-                        String key = componentKey(choices.get(which));
-                        if (isChecked) selected.add(key); else selected.remove(key);
-                    }
-                })
-                .setPositiveButton(android.R.string.ok, new android.content.DialogInterface.OnClickListener() {
+                .setTitle("Edit Edge Bar")
+                .setView(scroll)
+                .setPositiveButton("Save", new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, int which) {
                         StringBuilder value = new StringBuilder();
-                        for (String key : selected) {
+                        for (int i = 0; i < choices.size(); i++) {
+                            if (!appChecks.get(i).isChecked()) continue;
                             if (value.length() > 0) value.append('|');
-                            value.append(key);
+                            value.append(componentKey(choices.get(i)));
                         }
                         getSharedPreferences("qins_edge_panel", MODE_PRIVATE).edit()
-                                .putString("apps", value.toString()).putBoolean("enabled", true).commit();
+                                .putString("apps", value.toString())
+                                .putBoolean("transparent", transparent.isChecked())
+                                .putBoolean("enabled", true).commit();
                         showEdgePanel();
                     }
                 })
@@ -5105,33 +5150,23 @@ public class QinsLauncherActivity extends Activity {
         if (tile == null) return;
         ThemeManager.Appearance a = appearance();
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            int fill = active ? 0xFFECEDEA : 0xFF242729;
-            int foreground = active ? 0xFF171819 : 0xFFF4F4F2;
+            // Nothing dark mode: keep the active control black with a white glyph.
+            // Inactive controls use a neutral grey surface and white text.
+            int fill = active ? 0xFF050505 : 0xFF55585A;
+            int textColor = active ? 0xFF050505 : 0xFFF4F4F2;
+            int iconColor = 0xFFF7F7F5;
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, a.border, a.accent, 16f, tile.hasFocus()));
             View iconSurface = tile.findViewWithTag("quick-icon-shape");
             if (iconSurface != null) {
                 GradientDrawable circle = new GradientDrawable();
                 circle.setShape(GradientDrawable.OVAL);
-                int iconFill = active ? 0xFF242729 : 0xFF3A3D3F;
-                circle.setColor(iconFill);
-                circle.setStroke(dp(tile.hasFocus() ? 2 : 0), tile.hasFocus() ? a.accent : iconFill);
+                circle.setColor(fill);
+                circle.setStroke(dp(tile.hasFocus() ? 2 : 0), tile.hasFocus() ? a.accent : fill);
                 iconSurface.setBackgroundDrawable(circle);
             }
             QinsGlyphView glyph = findQuickGlyph(tile);
-            if (glyph != null) glyph.setTint(foreground);
-            if (tile instanceof android.view.ViewGroup) {
-                android.view.ViewGroup group = (android.view.ViewGroup) tile;
-                for (int i = 0; i < group.getChildCount(); i++) {
-                    View child = group.getChildAt(i);
-                    if (child instanceof LinearLayout) {
-                        android.view.ViewGroup labels = (android.view.ViewGroup) child;
-                        for (int j = 0; j < labels.getChildCount(); j++) {
-                            View label = labels.getChildAt(j);
-                            if (label instanceof TextView) ((TextView) label).setTextColor(foreground);
-                        }
-                    }
-                }
-            }
+            if (glyph != null) glyph.setTint(iconColor);
+            applyNothingQuickTextColors(tile, textColor);
             return;
         }
         int fill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
@@ -5171,6 +5206,19 @@ public class QinsLauncherActivity extends Activity {
             }
         } else {
             tile.setBackgroundColor(0x00000000);
+        }
+    }
+
+    private void applyNothingQuickTextColors(View view, int color) {
+        if (view instanceof TextView) {
+            ((TextView) view).setTextColor(color);
+            return;
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyNothingQuickTextColors(group.getChildAt(i), color);
+            }
         }
     }
 
@@ -5605,14 +5653,14 @@ public class QinsLauncherActivity extends Activity {
         if (target == null) return false;
         View current = target;
         while (current != null) {
-            if ("home:widget-stack".equals(current.getTag())) { showHomeWidgetPagePicker(); return true; }
+            if ("home:widget-stack".equals(current.getTag())) { showMusicWidgetActions(); return true; }
             android.view.ViewParent parent = current.getParent();
             current = parent instanceof View ? (View) parent : null;
         }
         if (!(target.getTag() instanceof String)) return false;
         String tag = (String) target.getTag();
         if ("home:clock".equals(tag)) { showClockStylePicker(); return true; }
-        if ("home:widget-stack".equals(tag)) { showHomeWidgetPagePicker(); return true; }
+        if ("home:widget-stack".equals(tag)) { showMusicWidgetActions(); return true; }
         if ("pages".equals(tag) || tag.startsWith("page-dot:")) { showAddPageDialog(); return true; }
         if (tag.startsWith("home:")) {
             try { enterEditMode(Integer.parseInt(tag.substring(5))); return true; }
@@ -5755,14 +5803,15 @@ public class QinsLauncherActivity extends Activity {
                 if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0) closeEdgePanel();
                 return true;
             }
-            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
-                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN) {
-                moveEdgePanelFocus(1);
-                return true;
-            }
-            if (event.getAction() == KeyEvent.ACTION_DOWN && event.getRepeatCount() == 0 &&
-                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP) {
-                moveEdgePanelFocus(-1);
+            if (event.getAction() == KeyEvent.ACTION_DOWN &&
+                    (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ||
+                     event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP)) {
+                int direction = event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ? 1 : -1;
+                if (event.getRepeatCount() == 0) {
+                    moveEdgePanelFocus(direction);
+                } else if (edgePanelScrollView != null) {
+                    edgePanelScrollView.smoothScrollBy(0, direction * dp(88));
+                }
                 return true;
             }
             if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT ||
