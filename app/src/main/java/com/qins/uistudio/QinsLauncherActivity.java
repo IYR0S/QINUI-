@@ -2672,8 +2672,10 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private boolean isEdgeAppSelected(ResolveInfo info, int fallbackIndex) {
-        String selected = edgePanelSelection();
-        if (selected.length() == 0) return fallbackIndex < 5;
+        android.content.SharedPreferences prefs = getSharedPreferences("qins_edge_panel", MODE_PRIVATE);
+        if (!prefs.contains("apps")) return fallbackIndex < 5;
+        String selected = prefs.getString("apps", "");
+        if (selected.length() == 0) return false;
         String key = componentKey(info);
         String[] values = selected.split("\\|");
         for (String value : values) if (key.equals(value)) return true;
@@ -2836,7 +2838,8 @@ public class QinsLauncherActivity extends Activity {
         for (ResolveInfo info : installedApps) if (!isFolder(info)) choices.add(info);
         final java.util.LinkedHashSet<String> selected = new java.util.LinkedHashSet<String>();
         for (int i = 0; i < choices.size(); i++) {
-            if (isEdgeAppSelected(choices.get(i), i)) selected.add(componentKey(choices.get(i)));
+            if (isEdgeAppSelected(choices.get(i), installedApps.indexOf(choices.get(i))))
+                selected.add(componentKey(choices.get(i)));
         }
 
         LinearLayout content = new LinearLayout(this);
