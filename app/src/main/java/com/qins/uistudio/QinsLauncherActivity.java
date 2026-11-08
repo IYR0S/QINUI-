@@ -1736,10 +1736,18 @@ public class QinsLauncherActivity extends Activity {
         int mediaPage = getSharedPreferences(LAUNCHER_PREFS, MODE_PRIVATE).getInt("home_media_widget_page", 0);
         android.content.SharedPreferences musicPrefs = getSharedPreferences("qins_music_widget", MODE_PRIVATE);
         String selectedPlayer = musicPrefs.getString("player_package", "");
+        NotificationBridgeService.NotificationItem missedCallItem = null;
         for (NotificationBridgeService.NotificationItem item : all) {
-            if (item.missedCall || (item.media && page == mediaPage &&
-                    (selectedPlayer.length() == 0 || selectedPlayer.equals(item.packageName)))) items.add(item);
+            if (item.media && page == mediaPage &&
+                    (selectedPlayer.length() == 0 || selectedPlayer.equals(item.packageName))) {
+                items.add(item);
+            } else if (item.missedCall && missedCallItem == null) {
+                missedCallItem = item;
+            }
         }
+        // Prefer active media over a missed-call card so an unrelated notification
+        // cannot hide the music widget or make its editor unreachable.
+        if (items.isEmpty() && missedCallItem != null) items.add(missedCallItem);
         if (items.isEmpty()) {
             if (page != mediaPage) return;
             LinearLayout emptyCard = new LinearLayout(this);
@@ -1772,7 +1780,7 @@ public class QinsLauncherActivity extends Activity {
             });
             emptyCard.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override public boolean onLongClick(View v) {
-                    startActivity(new Intent(QinsLauncherActivity.this, MusicWidgetSettingsActivity.class));
+                    showMusicWidgetActions();
                     return true;
                 }
             });
