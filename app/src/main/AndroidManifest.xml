@@ -5,7 +5,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="19" />
     <application android:name=".QinsApplication" android:allowBackup="true" android:label="QINS UI Studio"
@@ -19,6 +22,7 @@
             </intent-filter>
         </service>
         <activity android:name=".QuickPanelActivity" android:label="Quick Panel" />
+        <activity android:name=".MusicWidgetSettingsActivity" android:label="Music Widget settings" />
         <activity android:name=".CrashReportActivity" android:label="QINS diagnostics" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
