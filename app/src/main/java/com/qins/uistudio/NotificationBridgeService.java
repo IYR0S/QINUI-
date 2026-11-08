@@ -10,6 +10,8 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.content.Context;
 import android.content.Intent;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
@@ -28,6 +30,7 @@ import java.util.List;
  */
 public final class NotificationBridgeService extends NotificationListenerService {
     public static final String ACTION_CHANGED = "com.qins.uistudio.NOTIFICATIONS_CHANGED";
+    public static final String ACTION_SETTINGS_CHANGED = "com.qins.uistudio.MUSIC_WIDGET_SETTINGS_CHANGED";
     private static final Object LOCK = new Object();
     private static final ArrayList<NotificationItem> CACHE = new ArrayList<NotificationItem>();
 
@@ -47,6 +50,23 @@ public final class NotificationBridgeService extends NotificationListenerService
             this.postedAt = postedAt; this.missedCall = missedCall; this.media = media;
             this.artwork = artwork; this.actionTitles = actionTitles; this.actions = actions;
         }
+    }
+
+    private final BroadcastReceiver settingsReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (ACTION_SETTINGS_CHANGED.equals(intent.getAction())) refreshActiveNotifications();
+        }
+    };
+
+    @Override public void onCreate() {
+        super.onCreate();
+        try { registerReceiver(settingsReceiver, new IntentFilter(ACTION_SETTINGS_CHANGED)); }
+        catch (RuntimeException ignored) { }
+    }
+
+    @Override public void onDestroy() {
+        try { unregisterReceiver(settingsReceiver); } catch (RuntimeException ignored) { }
+        super.onDestroy();
     }
 
     public static List<NotificationItem> snapshot() {
@@ -261,6 +281,9 @@ public final class NotificationBridgeService extends NotificationListenerService
                 pkg.contains("media") || pkg.contains("youtube") || pkg.contains("vlc") ||
                 pkg.contains("audio") || pkg.contains("podcast") || pkg.contains("deezer") ||
                 pkg.contains("soundcloud") || pkg.contains("poweramp") || pkg.contains("foobar");
+        String selectedPlayer = getSharedPreferences("qins_music_widget", MODE_PRIVATE)
+                .getString("player_package", "");
+        boolean selectedPlayerNotification = selectedPlayer.length() > 0 && selectedPlayer.equals(packageName);
         boolean mediaSession = extras != null && extras.containsKey("android.mediaSession");
         Bitmap artwork = notification == null ? null : notification.largeIcon;
         if (artwork == null && extras != null) {
@@ -270,7 +293,7 @@ public final class NotificationBridgeService extends NotificationListenerService
         boolean ongoing = notification != null &&
                 (notification.flags & (Notification.FLAG_ONGOING_EVENT | Notification.FLAG_NO_CLEAR)) != 0;
         boolean media = !missed && (transportAction || mediaSession ||
-                (mediaPackage && (count > 0 || ongoing)));
+                ((mediaPackage || selectedPlayerNotification) && (count > 0 || ongoing)));
         if (media) {
             // If the media player exposes a path/URI, show its basename rather than
             // attempting to infer or identify the song from its audio content.
