@@ -5149,12 +5149,11 @@ public class QinsLauncherActivity extends Activity {
     private void updateQuickTileVisual(String key, View tile, boolean active) {
         if (tile == null) return;
         ThemeManager.Appearance a = appearance();
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            // Nothing dark mode: keep the active control black with a white glyph.
-            // Inactive controls use a neutral grey surface and white text.
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id) && ThemeManager.isDarkMode(this)) {
+            // Nothing dark mode: active controls stay black with white glyphs;
+            // inactive controls use a neutral grey surface with white glyphs/text.
             int fill = active ? 0xFF050505 : 0xFF55585A;
             int textColor = active ? 0xFF050505 : 0xFFF4F4F2;
-            int iconColor = 0xFFF7F7F5;
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, a.border, a.accent, 16f, tile.hasFocus()));
             View iconSurface = tile.findViewWithTag("quick-icon-shape");
             if (iconSurface != null) {
@@ -5165,8 +5164,26 @@ public class QinsLauncherActivity extends Activity {
                 iconSurface.setBackgroundDrawable(circle);
             }
             QinsGlyphView glyph = findQuickGlyph(tile);
-            if (glyph != null) glyph.setTint(iconColor);
+            if (glyph != null) glyph.setTint(0xFFF7F7F5);
             applyNothingQuickTextColors(tile, textColor);
+            return;
+        }
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            int fill = active ? 0xFFECEDEA : 0xFF242729;
+            int foreground = active ? 0xFF171819 : 0xFFF4F4F2;
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, a.border, a.accent, 16f, tile.hasFocus()));
+            View iconSurface = tile.findViewWithTag("quick-icon-shape");
+            if (iconSurface != null) {
+                GradientDrawable circle = new GradientDrawable();
+                circle.setShape(GradientDrawable.OVAL);
+                int iconFill = active ? 0xFF242729 : 0xFF3A3D3F;
+                circle.setColor(iconFill);
+                circle.setStroke(dp(tile.hasFocus() ? 2 : 0), tile.hasFocus() ? a.accent : iconFill);
+                iconSurface.setBackgroundDrawable(circle);
+            }
+            QinsGlyphView glyph = findQuickGlyph(tile);
+            if (glyph != null) glyph.setTint(foreground);
+            applyNothingQuickTextColors(tile, foreground);
             return;
         }
         int fill = quickSurfaceColor(a, active ? a.tileActive : a.tile);
