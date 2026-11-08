@@ -5130,6 +5130,7 @@ public class QinsLauncherActivity extends Activity {
         circle.setShape(GradientDrawable.OVAL);
         circle.setColor(a.tileActive);
         iconWrap.setBackgroundDrawable(circle);
+        iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, glyphForQuickKey(key), a.accent);
         icon.setVisualStyle(a.id);
         iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
