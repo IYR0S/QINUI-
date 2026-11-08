@@ -1,6 +1,8 @@
 package com.qins.uistudio;
 
 import android.content.Intent;
+import android.net.Uri;
+import android.provider.Settings;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -69,24 +71,13 @@ public class AppMenuActivity extends StudioActivity {
                 finish();
             }
         });
-        addItem(page, "Set QINS as default Home app", new View.OnClickListener() {
-            @Override public void onClick(View v) {
-                try {
-                    Intent home = new Intent(Intent.ACTION_MAIN);
-                    home.addCategory(Intent.CATEGORY_HOME);
-                    home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(Intent.createChooser(home, "Choose QINS as your Home app"));
-                } catch (RuntimeException error) {
-                    android.widget.Toast.makeText(AppMenuActivity.this,
-                            "Open Android Settings > Apps > Default apps > Home app, then choose QINS UI.",
-                            android.widget.Toast.LENGTH_LONG).show();
-                }
-            }
-        });
-        addItem(page, "Edit Music Widget", new View.OnClickListener() {
+        addItem(page, "Music Widget settings", new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(AppMenuActivity.this, MusicWidgetSettingsActivity.class));
             }
+        });
+        addItem(page, "Set QINS as default Home launcher", new View.OnClickListener() {
+            @Override public void onClick(View v) { chooseDefaultHome(); }
         });
         TextView homeHeading = new TextView(this);
         homeHeading.setText("Default Home Launcher");
@@ -100,7 +91,7 @@ public class AppMenuActivity extends StudioActivity {
         homeStatus.setTextColor(palette.muted);
         page.addView(homeStatus);
         addItem(page, "Choose default Home app", new View.OnClickListener() {
-            @Override public void onClick(View v) { openDefaultHomePicker(); }
+            @Override public void onClick(View v) { chooseDefaultHome(); }
         });
         addItem(page, R.string.menu_home, new View.OnClickListener() {
             @Override public void onClick(View v) {
@@ -132,25 +123,50 @@ public class AppMenuActivity extends StudioActivity {
         } catch (RuntimeException ignored) { return false; }
     }
 
-    private void openDefaultHomePicker() {
+    private void chooseDefaultHome() {
+        if (isQinsDefaultHome()) {
+            android.widget.Toast.makeText(this, "QINS is already the default Home launcher.",
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent home = new Intent(Intent.ACTION_MAIN);
+        home.addCategory(Intent.CATEGORY_HOME);
+        home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
-            // Android 4.4 has Settings > Home, but the public ACTION_HOME_SETTINGS
-            // constant was only added later. Use the action string and fall back safely.
-            Intent settings = new Intent("android.settings.HOME_SETTINGS");
-            if (settings.resolveActivity(getPackageManager()) != null) {
-                startActivity(settings);
+            Intent homeSettings = new Intent("android.settings.HOME_SETTINGS");
+            if (homeSettings.resolveActivity(getPackageManager()) != null) {
+                startActivity(homeSettings);
                 return;
             }
         } catch (RuntimeException ignored) { }
+
+        android.content.pm.ResolveInfo current = null;
         try {
-            Intent settings = new Intent("android.settings.SETTINGS");
-            startActivity(settings);
-            android.widget.Toast.makeText(this,
-                    "Android 4.4: in Settings, open Home and select QINS Home. Then return here to verify the status.",
-                    android.widget.Toast.LENGTH_LONG).show();
+            current = getPackageManager().resolveActivity(home,
+                    android.content.pm.PackageManager.MATCH_DEFAULT_ONLY);
+        } catch (RuntimeException ignored) { }
+        if (current != null && current.activityInfo != null &&
+                !getPackageName().equals(current.activityInfo.packageName) &&
+                !"android".equals(current.activityInfo.packageName)) {
+            // Android 4.4 has no public Home-settings action on every firmware.
+            // Open the currently preferred launcher's App info so its Clear defaults
+            // button is one step away; then the physical Home key presents the chooser.
+            try {
+                Intent details = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + current.activityInfo.packageName));
+                startActivity(details);
+                android.widget.Toast.makeText(this,
+                        "In App info, choose Clear defaults. Then press the physical Home key and select QINS Home (Always).",
+                        android.widget.Toast.LENGTH_LONG).show();
+                return;
+            } catch (RuntimeException ignored) { }
+        }
+        try {
+            // Without a preferred Home app, Android itself presents its Home resolver.
+            startActivity(home);
         } catch (RuntimeException error) {
             android.widget.Toast.makeText(this,
-                    "Open Android Settings > Home and select QINS Home. Press the physical Home key if the Home screen is not listed.",
+                    "Press the physical Home key, choose QINS Home, then select Always.",
                     android.widget.Toast.LENGTH_LONG).show();
         }
     }
