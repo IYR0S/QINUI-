@@ -22,6 +22,7 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
     private String selectedLabel = "Automatic (active player)";
     private CheckBox artwork, title, artist, controls;
     private TextView playerSummary;
+    private TextView accessSummary;
     private int dp(float v) { return (int)(v * getResources().getDisplayMetrics().density + 0.5f); }
 
     @Override public void onCreate(Bundle state) {
@@ -30,6 +31,11 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
         selectedPackage = p.getString("player_package", "");
         artwork = null;
         buildPage();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        refreshAccessSummary();
     }
 
     private void buildPage() {
@@ -51,6 +57,14 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
         hint.setTextColor(palette.muted);
         hint.setTextSize(13);
         page.addView(hint);
+
+        accessSummary = new TextView(this);
+        accessSummary.setTextSize(13);
+        accessSummary.setPadding(0, dp(12), 0, dp(4));
+        page.addView(accessSummary);
+        addButton(page, "Enable / manage music notification access", new View.OnClickListener() {
+            @Override public void onClick(View v) { openNotificationAccessSettings(); }
+        });
 
         playerSummary = new TextView(this);
         playerSummary.setTextColor(palette.text);
@@ -78,7 +92,36 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
         });
         setContentView(scroll);
         refreshPlayerSummary();
+        refreshAccessSummary();
         if (page.getChildCount() > 2) page.getChildAt(2).requestFocus();
+    }
+
+    private void refreshAccessSummary() {
+        if (accessSummary == null) return;
+        boolean enabled = NotificationBridgeService.isAccessEnabled(this);
+        accessSummary.setText(enabled
+                ? "Notification access: enabled. Music players can appear when they publish a media notification."
+                : "Notification access: OFF. Enable QINS here or the widget cannot detect the currently playing track.");
+        accessSummary.setTextColor(enabled ? ThemeManager.getPalette(this).muted : 0xFFE06B61);
+    }
+
+    private void openNotificationAccessSettings() {
+        try {
+            Intent settings = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+            if (settings.resolveActivity(getPackageManager()) != null) {
+                startActivity(settings);
+                return;
+            }
+        } catch (RuntimeException ignored) { }
+        try {
+            startActivity(new Intent("android.settings.SETTINGS"));
+            android.widget.Toast.makeText(this,
+                    "Open Security > Notification access and enable QINS UI Studio.",
+                    android.widget.Toast.LENGTH_LONG).show();
+        } catch (RuntimeException error) {
+            android.widget.Toast.makeText(this, "Notification access settings are unavailable on this firmware.",
+                    android.widget.Toast.LENGTH_LONG).show();
+        }
     }
 
     private CheckBox addCheck(LinearLayout page, String label, boolean checked) {
