@@ -90,9 +90,12 @@ public class AppMenuActivity extends StudioActivity {
         homeStatus.setTextSize(13);
         homeStatus.setTextColor(palette.muted);
         page.addView(homeStatus);
-        addItem(page, "Choose default Home app", new View.OnClickListener() {
-            @Override public void onClick(View v) { chooseDefaultHome(); }
-        });
+        TextView homeHelp = new TextView(this);
+        homeHelp.setText("Android 4.4: if another launcher is already selected, clear its defaults in App info, then press the physical Home key and choose QINS Home → Always.");
+        homeHelp.setTextSize(12);
+        homeHelp.setTextColor(palette.muted);
+        homeHelp.setPadding(0, dp(5), 0, dp(8));
+        page.addView(homeHelp);
         addItem(page, R.string.menu_home, new View.OnClickListener() {
             @Override public void onClick(View v) {
                 startActivity(new Intent(AppMenuActivity.this, HomeStudioActivity.class));
