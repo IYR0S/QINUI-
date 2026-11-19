@@ -4317,6 +4317,7 @@ public class QinsLauncherActivity extends Activity {
                 .create();
 
         final Runnable[] render = new Runnable[1];
+        final View[] selectedPreviewTile = new View[1];
         final Runnable save = new Runnable() {
             @Override public void run() {
                 if (compactMode[0]) saveQuickTileKeys(working[0]);
@@ -4336,6 +4337,7 @@ public class QinsLauncherActivity extends Activity {
                 compactTab.setTextColor(compactMode[0] ? a.accent : a.text);
                 expandedTab.setTextColor(compactMode[0] ? a.text : a.accent);
                 preview.removeAllViews();
+                selectedPreviewTile[0] = null;
                 String[] keys = working[compactMode[0] ? 0 : 1];
                 int count = compactMode[0] ? 4 : expandedVisibleCount;
                 int columns = compactMode[0] ? 4 :
@@ -4380,10 +4382,13 @@ public class QinsLauncherActivity extends Activity {
                     tile.setOnClickListener(new View.OnClickListener() {
                         @Override public void onClick(View v) { selected[0] = index; render[0].run(); }
                     });
+                    if (i == selected[0]) selectedPreviewTile[0] = tile;
                     LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, -1, 1);
                     if (i % columns > 0) tileParams.leftMargin = dp(3);
                     row.addView(tile, tileParams);
                 }
+                // Preserve keypad focus when the preview is rebuilt after selection or edits.
+                if (selectedPreviewTile[0] != null) selectedPreviewTile[0].requestFocus();
                 actions.removeAllViews();
                 TextView change = quickEditorButton("Change", a, new View.OnClickListener() {
                     @Override public void onClick(View v) {
