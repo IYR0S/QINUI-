@@ -2000,6 +2000,13 @@ public class QinsLauncherActivity extends Activity {
                 updateQuickTileVisual(key, tile, active);
             }
         });
+        // Apply the initial state as well as later focus changes. The compact panel
+        // is rebuilt often, so relying only on a focus transition can leave its
+        // first selected tile without a visible indicator.
+        String currentState = state == null ? "" : state.getText().toString();
+        boolean active = "ON".equals(currentState) ||
+                ("sound".equals(key) && "Sound".equals(currentState));
+        updateQuickTileVisual(key, tile, active);
     }
 
     private View compactQuickTile(String key, ThemeManager.Appearance a) {
@@ -5240,7 +5247,12 @@ public class QinsLauncherActivity extends Activity {
                 shape.setBackgroundDrawable(bg);
             }
         } else {
-            tile.setBackgroundColor(0x00000000);
+            // Galaxy's compact strip previously indicated focus only with a small
+            // ring around the icon. Add a clear card-level focus outline so the
+            // selected control remains obvious on the physical-key interface.
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(
+                    0x00000000, tile.hasFocus() ? a.accent : a.border,
+                    a.accent, 12f, tile.hasFocus()));
         }
     }
 
