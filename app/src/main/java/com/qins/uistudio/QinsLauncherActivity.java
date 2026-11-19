@@ -4935,13 +4935,14 @@ public class QinsLauncherActivity extends Activity {
             canvas.save(); canvas.rotate(-90); canvas.translate(-getHeight(), 0); super.onDraw(canvas); canvas.restore();
         }
         @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
-            // Up/Down move focus between the rail dock and tile grid; Left/Right adjust level.
+            // Nothing's vertical rails are operated with the physical Up/Down keys.
+            // Left/Right remain available for moving between brightness and volume.
             int step = getMax() > 100 ? Math.max(1, getMax() / 32) : 1;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && getProgress() < getMax()) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP && getProgress() < getMax()) {
                 setProgress(Math.min(getMax(), getProgress() + step));
                 return true;
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && getProgress() > 0) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && getProgress() > 0) {
                 setProgress(Math.max(0, getProgress() - step));
                 return true;
             }
@@ -5002,7 +5003,7 @@ public class QinsLauncherActivity extends Activity {
             thumb.setShape(GradientDrawable.RECTANGLE);
             thumb.setCornerRadius(dp(6));
             thumb.setColor(a.accent);
-            thumb.setSize(dp(20), dp(20));
+            thumb.setSize(dp(26), dp(10));
             seek.setThumb(thumb);
         } else {
             GradientDrawable hiddenThumb = new GradientDrawable();
@@ -5124,7 +5125,7 @@ public class QinsLauncherActivity extends Activity {
         controls.setOrientation(LinearLayout.HORIZONTAL);
         controls.setGravity(Gravity.CENTER_VERTICAL);
         controls.setPadding(dp(4), dp(5), dp(4), dp(5));
-        controls.setMinimumHeight(dp(154));
+        controls.setMinimumHeight(dp(222));
         controls.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         styleSurface(controls, 0xFF1B1D1F, 0xFF383C3E, a.accent, a.cardCornerDp);
         addNothingVerticalSliderCard(controls, getString(R.string.launcher_brightness),
@@ -5155,7 +5156,7 @@ public class QinsLauncherActivity extends Activity {
                     @Override public void onStartTrackingTouch(SeekBar bar) { }
                     @Override public void onStopTrackingTouch(SeekBar bar) { }
                 }, a);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(104), dp(154));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(104), dp(222));
         params.leftMargin = dp(6);
         parent.addView(controls, params);
     }
@@ -5251,7 +5252,7 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar bar) { }
             @Override public void onStopTrackingTouch(SeekBar bar) { }
         });
-        brightness.addView(seek, new LinearLayout.LayoutParams(-1, dp(32)));
+        brightness.addView(seek, new LinearLayout.LayoutParams(-1, dp(34)));
         row.addView(brightness, new LinearLayout.LayoutParams(0, dp(66), 1));
         final TextView sleep = new TextView(this);
         sleep.setText(getString(R.string.launcher_sleep_mode) + (isSleepModeActive() ? "\nON" : "\nOFF"));
@@ -5553,7 +5554,7 @@ public class QinsLauncherActivity extends Activity {
             firstGridIndex = 2;
         }
 
-        final int columns = galaxy ? 4 : (nothing ? 3 : 2);
+        final int columns = galaxy ? 4 : 2;
         final int baseHeight = galaxy ? 66 : (pixel ? 72 : 70);
         LinearLayout row = null;
         int used = 0;
@@ -5771,7 +5772,7 @@ public class QinsLauncherActivity extends Activity {
         float sliderRadius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 1f : (ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 14f : 10f);
         GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(sliderRadius));
         GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(sliderRadius));
-        int sliderThickness = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 8 : 4;
+        int sliderThickness = 6;
         track.setSize(dp(1), dp(sliderThickness)); progress.setSize(dp(1), dp(sliderThickness));
         LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL)}); layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
         if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
