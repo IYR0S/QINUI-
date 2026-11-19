@@ -1994,7 +1994,23 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout compact = new LinearLayout(this);
         compact.setOrientation(LinearLayout.VERTICAL);
         compact.setPadding(dp(5), dp(4), dp(5), dp(4));
-        styleSurface(compact, a.surface, a.border, a.focus, a.cardCornerDp);
+        // Theme-specific compact-panel silhouettes rather than one generic frame.
+        GradientDrawable compactShape = new GradientDrawable();
+        compactShape.setShape(GradientDrawable.RECTANGLE);
+        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) {
+            compactShape.setColor(0xF5FCFCFE);
+            compactShape.setCornerRadius(dp(28));
+            compactShape.setStroke(dp(1), 0xFFD7DDE8);
+        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            compactShape.setColor(0xF5E5EEE4);
+            compactShape.setCornerRadius(dp(24));
+            compactShape.setStroke(dp(1), 0xFFCAD8CC);
+        } else {
+            compactShape.setColor(0xF51B1D1F);
+            compactShape.setCornerRadius(dp(7));
+            compactShape.setStroke(dp(1), 0xFF494D4F);
+        }
+        compact.setBackgroundDrawable(compactShape);
 
         compact.setContentDescription("Quick settings. Long press to edit shortcuts.");
         compact.setOnLongClickListener(new View.OnLongClickListener() {
@@ -2259,9 +2275,9 @@ public class QinsLauncherActivity extends Activity {
 
     private Drawable loadThemedAppIcon(ResolveInfo info) {
         if (info == null) return null;
-        Drawable mapped = ThemedIconResolver.loadMappedIcon(this, info, appearance().id);
-        Drawable source = mapped != null ? mapped : info.loadIcon(getPackageManager());
-        return normalizeAppIcon(source);
+        // OEM-inspired glyphs are scoped to Quick Settings only. Home and app drawer
+        // retain the installed application's own icon artwork.
+        return normalizeAppIcon(info.loadIcon(getPackageManager()));
     }
 
     private Drawable normalizeAppIcon(Drawable source) {
@@ -2295,9 +2311,7 @@ public class QinsLauncherActivity extends Activity {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         canvas.drawBitmap(sample, sourceRect, destRect, paint);
         sample.recycle();
-        Bitmap themed = ThemedIconResolver.applyTheme(normalized, appearance().id);
-        if (themed != normalized && !normalized.isRecycled()) normalized.recycle();
-        return new BitmapDrawable(getResources(), themed);
+        return new BitmapDrawable(getResources(), normalized);
     }
 
     private void populateHomeApps(ThemeManager.Appearance a) {
@@ -4945,7 +4959,7 @@ public class QinsLauncherActivity extends Activity {
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
         icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
-        int iconSize = galaxy ? 30 : (pixel ? 25 : 21);
+        int iconSize = galaxy ? 32 : (pixel ? 29 : 26);
         iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(iconSize), dp(iconSize), Gravity.CENTER));
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
                 dp(galaxy ? 44 : (nothing ? 30 : 32)),
@@ -5278,8 +5292,11 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.HORIZONTAL);
         controls.setGravity(Gravity.CENTER_VERTICAL);
-        controls.setPadding(dp(6), dp(4), dp(6), dp(4));
-        controls.setMinimumHeight(dp(230));
+        controls.setPadding(dp(4), 0, dp(4), 0);
+        int availableHeightDp = (int) (getResources().getDisplayMetrics().heightPixels /
+                getResources().getDisplayMetrics().density);
+        final int dockHeightDp = Math.max(220, Math.min(280, availableHeightDp - 105));
+        controls.setMinimumHeight(dp(dockHeightDp));
         controls.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         styleSurface(controls, 0xFF1B1D1F, 0xFF383C3E, a.accent, a.cardCornerDp);
         addNothingVerticalSliderCard(controls, getString(R.string.launcher_brightness),
@@ -5312,8 +5329,10 @@ public class QinsLauncherActivity extends Activity {
                     @Override public void onStartTrackingTouch(SeekBar bar) { }
                     @Override public void onStopTrackingTouch(SeekBar bar) { }
                 }, a);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(122), dp(230));
-        params.leftMargin = dp(8);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(126), dp(dockHeightDp));
+        params.leftMargin = dp(6);
+        params.topMargin = 0;
+        params.bottomMargin = 0;
         parent.addView(controls, params);
     }
 
@@ -5424,6 +5443,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     /** Pixel-inspired vertical rail controls, sized for the physical-key display. */
+    /** Pixel-inspired horizontal Material slider with a slim vertical grip. */
     private void addPixelVerticalSliderRow(LinearLayout panel, ThemeManager.Appearance a,
                                            final boolean brightnessMode) {
         LinearLayout row = new LinearLayout(this);
@@ -5431,23 +5451,25 @@ public class QinsLauncherActivity extends Activity {
         row.setGravity(Gravity.CENTER_VERTICAL);
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setGravity(Gravity.CENTER_HORIZONTAL);
-        card.setPadding(dp(8), dp(5), dp(8), dp(5));
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(dp(12), dp(6), dp(12), dp(5));
         styleSurface(card, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.sliderCornerDp);
         TextView title = new TextView(this);
-        title.setText(brightnessMode ? getString(R.string.launcher_brightness) : getString(R.string.launcher_volume));
+        title.setText(brightnessMode ? getString(R.string.launcher_brightness) :
+                getString(R.string.launcher_volume));
         title.setTextColor(a.text);
         title.setTextSize(11);
-        title.setGravity(Gravity.CENTER);
-        card.addView(title, new LinearLayout.LayoutParams(-1, dp(20)));
+        card.addView(title, new LinearLayout.LayoutParams(-1, dp(18)));
         final AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         final int max = brightnessMode ? 255 : (audio == null ? 15 :
                 Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)));
         final int current = brightnessMode ? readBrightness() :
                 (audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC));
-        final VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this);
+        final SeekBar seek = new SeekBar(this);
         seek.setMax(max);
         seek.setProgress(Math.max(0, Math.min(max, current)));
+        seek.setFocusable(true);
+        seek.setFocusableInTouchMode(false);
         seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         GradientDrawable track = new GradientDrawable();
         track.setColor(0x553C8060);
@@ -5461,17 +5483,16 @@ public class QinsLauncherActivity extends Activity {
         layers.setId(0, android.R.id.background);
         layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
+        // The rail and fill are horizontal; only the grip is a narrow upright marker.
         GradientDrawable thumb = new GradientDrawable();
         thumb.setShape(GradientDrawable.RECTANGLE);
-        thumb.setCornerRadius(dp(5));
+        thumb.setCornerRadius(dp(2));
         thumb.setColor(a.accent);
-        thumb.setSize(dp(18), dp(8));
+        thumb.setSize(dp(4), dp(22));
         seek.setThumb(thumb);
-        seek.setPadding(0, 0, 0, 0);
-        seek.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(28), 0, 1f);
-        seekParams.topMargin = dp(2);
-        seekParams.bottomMargin = dp(1);
+        seek.setPadding(dp(3), 0, dp(3), 0);
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(-1, dp(34));
+        seekParams.topMargin = dp(1);
         card.addView(seek, seekParams);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
@@ -5485,7 +5506,7 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar bar) { }
             @Override public void onStopTrackingTouch(SeekBar bar) { }
         });
-        row.addView(card, new LinearLayout.LayoutParams(0, dp(112), 1f));
+        row.addView(card, new LinearLayout.LayoutParams(0, dp(66), 1f));
         final TextView action = new TextView(this);
         boolean active = brightnessMode ? isSleepModeActive() :
                 (audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT);
@@ -5499,7 +5520,7 @@ public class QinsLauncherActivity extends Activity {
         action.setFocusableInTouchMode(false);
         styleSurface(action, quickSurfaceColor(a, active ? a.tileActive : a.tile),
                 a.border, a.focus, a.tileCornerDp);
-        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(dp(68), dp(68));
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(dp(68), dp(66));
         actionParams.leftMargin = dp(7);
         row.addView(action, actionParams);
         action.setOnClickListener(new View.OnClickListener() {
@@ -5512,7 +5533,7 @@ public class QinsLauncherActivity extends Activity {
                 }
             }
         });
-        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(66));
         rowParams.topMargin = dp(7);
         panel.addView(row, rowParams);
     }
