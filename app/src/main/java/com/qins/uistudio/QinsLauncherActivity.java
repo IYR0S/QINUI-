@@ -1702,9 +1702,32 @@ public class QinsLauncherActivity extends Activity {
         appRow = new LinearLayout(this);
         appRow.setOrientation(LinearLayout.HORIZONTAL);
         appRow.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        appRow.setPadding(0, 0, 0, dp(2));
+        appRow.setPadding(dp(4), dp(5), dp(4), dp(3));
         homeAppRowHeightDp = clamp((int) (screenHeightDp() * 0.34f), 64, 112);
-        pageContent.addView(appRow, new LinearLayout.LayoutParams(-1, dp(homeAppRowHeightDp)));
+
+        // Give the pinned-app row a deliberate dock surface instead of leaving
+        // four icons floating in an unstructured strip. The geometry follows
+        // each preset while staying light enough for the QINS1+ GPU.
+        GradientDrawable dock = new GradientDrawable();
+        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) {
+            dock.setColor(quickSurfaceColor(a, a.surface));
+            dock.setCornerRadius(dp(26));
+            dock.setStroke(dp(1), a.border);
+        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            dock.setColor(quickSurfaceColor(a, a.surfaceAlt));
+            dock.setCornerRadius(dp(30));
+            dock.setStroke(dp(1), a.border);
+        } else {
+            dock.setColor(0xCC17191A);
+            dock.setCornerRadius(dp(18));
+            dock.setStroke(dp(1), 0xFF3C4042);
+        }
+        appRow.setBackgroundDrawable(dock);
+        LinearLayout.LayoutParams dockParams = new LinearLayout.LayoutParams(-1, dp(homeAppRowHeightDp));
+        dockParams.leftMargin = dp(3);
+        dockParams.rightMargin = dp(3);
+        dockParams.bottomMargin = dp(2);
+        pageContent.addView(appRow, dockParams);
         populateHomeApps(a);
 
         LinearLayout pages = new LinearLayout(this);
