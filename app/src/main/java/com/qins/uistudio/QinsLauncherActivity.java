@@ -4063,7 +4063,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showThemeEditor() {
-        final String editingAppearanceId = editingAppearanceId;
+        final String editingAppearanceId = appearance().id;
         final ThemeManager.Appearance base = ThemeManager.getAppearanceById(editingAppearanceId);
         final ThemeManager.Appearance current = appearance();
         final int[] colors = themeDefaultColors(current);
