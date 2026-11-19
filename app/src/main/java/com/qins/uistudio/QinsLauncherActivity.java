@@ -5141,6 +5141,7 @@ public class QinsLauncherActivity extends Activity {
             focusPaint.setColor(0xFFD71921);
             focusPaint.setStyle(Paint.Style.STROKE);
             focusPaint.setStrokeWidth(dp(1.5f));
+            updateDescription();
         }
 
         void setOnNothingSliderChangeListener(NothingSliderChangeListener value) {
@@ -5224,6 +5225,8 @@ public class QinsLauncherActivity extends Activity {
             switch (event.getAction()) {
                 case android.view.MotionEvent.ACTION_DOWN:
                     requestFocus();
+                    android.view.ViewParent parent = getParent();
+                    if (parent != null) parent.requestDisallowInterceptTouchEvent(true);
                     tracking = true;
                     setPressed(true);
                     if (listener != null) listener.onStartTrackingTouch();
@@ -5237,12 +5240,16 @@ public class QinsLauncherActivity extends Activity {
                     tracking = false;
                     setPressed(false);
                     if (listener != null) listener.onStopTrackingTouch();
+                    android.view.ViewParent upParent = getParent();
+                    if (upParent != null) upParent.requestDisallowInterceptTouchEvent(false);
                     performClick();
                     return true;
                 case android.view.MotionEvent.ACTION_CANCEL:
                     tracking = false;
                     setPressed(false);
                     if (listener != null) listener.onStopTrackingTouch();
+                    android.view.ViewParent cancelParent = getParent();
+                    if (cancelParent != null) cancelParent.requestDisallowInterceptTouchEvent(false);
                     return true;
                 default:
                     return true;
