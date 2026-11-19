@@ -4178,7 +4178,9 @@ public class QinsLauncherActivity extends Activity {
 
     private String[] getExpandedQuickTileKeys() {
         String saved = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("expanded_order", "");
-        String[] defaults = new String[] {"wifi", "bluetooth", "sound", "settings", "flashlight", "hotspot"};
+        String[] defaults = ThemeManager.APPEARANCE_NOTHING.equals(appearance().id)
+                ? new String[] {"wifi", "bluetooth", "sound", "dnd", "flashlight", "hotspot"}
+                : new String[] {"wifi", "bluetooth", "sound", "settings", "flashlight", "hotspot"};
         if (saved.length() == 0) return defaults;
         String[] parts = saved.split(",");
         String[] result = new String[6];
@@ -4740,9 +4742,13 @@ public class QinsLauncherActivity extends Activity {
         final boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
         final boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
         LinearLayout tile = new LinearLayout(this);
-        tile.setOrientation(galaxy ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        tile.setGravity(Gravity.CENTER_VERTICAL);
-        tile.setPadding(dp(galaxy ? 2 : 10), dp(galaxy ? 3 : 6), dp(galaxy ? 2 : 10), dp(galaxy ? 3 : 6));
+        boolean stackedTile = galaxy || nothing;
+        tile.setOrientation(stackedTile ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        tile.setGravity(stackedTile ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
+        tile.setPadding(dp(galaxy ? 2 : (nothing ? 4 : 10)),
+                dp(galaxy ? 3 : (nothing ? 5 : 6)),
+                dp(galaxy ? 2 : (nothing ? 4 : 10)),
+                dp(galaxy ? 3 : (nothing ? 5 : 6)));
 
         FrameLayout iconWrap = new FrameLayout(this);
         if (galaxy) {
@@ -4760,46 +4766,50 @@ public class QinsLauncherActivity extends Activity {
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
         icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
-        int iconSize = galaxy ? 30 : (pixel ? 25 : 22);
+        int iconSize = galaxy ? 30 : (pixel ? 25 : 21);
         iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(iconSize), dp(iconSize), Gravity.CENTER));
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(galaxy ? 44 : 32),
-                dp(galaxy ? 44 : 32));
-        if (!galaxy) iconParams.rightMargin = dp(9);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+                dp(galaxy ? 44 : (nothing ? 30 : 32)),
+                dp(galaxy ? 44 : (nothing ? 30 : 32)));
+        if (!galaxy && !nothing) iconParams.rightMargin = dp(9);
         tile.addView(iconWrap, iconParams);
 
         LinearLayout labels = new LinearLayout(this);
         labels.setOrientation(LinearLayout.VERTICAL);
-        labels.setGravity(galaxy ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
-        if (galaxy) labels.setPadding(0, dp(2), 0, 0);
+        labels.setGravity(stackedTile ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
+        if (stackedTile) labels.setPadding(0, dp(nothing ? 2 : 2), 0, 0);
         TextView name = new TextView(this);
         name.setText(nothing ? label.toUpperCase(Locale.US) : label);
         name.setTextColor(a.text);
-        name.setTextSize(galaxy ? 9 : (pixel ? 12 : 10));
+        name.setTextSize(galaxy ? 9 : (pixel ? 12 : 9));
         name.setSingleLine(true);
-        name.setGravity(galaxy ? Gravity.CENTER : Gravity.LEFT);
+        name.setGravity(stackedTile ? Gravity.CENTER : Gravity.LEFT);
         labels.addView(name);
         TextView state = new TextView(this);
         state.setTextColor(a.muted);
-        state.setTextSize(galaxy ? 8 : (pixel ? 10 : 9));
+        state.setTextSize(galaxy ? 8 : (pixel ? 10 : 8));
         state.setSingleLine(true);
-        state.setGravity(galaxy ? Gravity.CENTER : Gravity.LEFT);
+        state.setGravity(stackedTile ? Gravity.CENTER : Gravity.LEFT);
         labels.addView(state);
-        tile.addView(labels, new LinearLayout.LayoutParams(galaxy ? -1 : 0, -2, galaxy ? 0 : 1));
+        tile.addView(labels, new LinearLayout.LayoutParams(stackedTile ? -1 : 0, -2,
+                stackedTile ? 0 : 1));
 
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
         if (galaxy) {
-            // One UI keeps the compact shortcuts as circular icon controls;
-            // only Wi-Fi and Bluetooth above them use wide focus cards.
+            // One UI keeps compact shortcuts as floating circular icon controls;
+            // Wi-Fi and Bluetooth remain the dedicated wide focus cards above.
             styleSurface(tile, 0x00000000, 0x00000000, a.focus, a.tileCornerDp);
             state.setVisibility(View.GONE);
         } else if (pixel) {
+            // Material tiles are broad, tonal surfaces with a horizontal icon/label rhythm.
             styleSurface(tile, a.tile, a.border, a.focus, a.tileCornerDp);
         } else {
-            styleSurface(tile, a.tile, a.border, a.focus, a.tileCornerDp);
-            name.setTextColor(0xFFF4F4F2);
-            state.setTextColor(0xFFA4A7A8);
+            // Nothing uses a compact 3-column icon grid, with no extra icon badge.
+            styleSurface(tile, 0xFF242729, 0xFF3A3D3F, a.accent, a.tileCornerDp);
+            name.setTextColor(0xFFF2F2EF);
+            state.setTextColor(0xFF9B9E9F);
         }
         registerQuickTile(symbol, tile, state);
         return tile;
@@ -5263,21 +5273,23 @@ public class QinsLauncherActivity extends Activity {
         }
 
         if (nothing) {
-            int fill = active ? 0xFFECEDEA : 0xFF202224;
-            int foreground = active ? 0xFF171819 : 0xFFF4F4F2;
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? 0xFFECEDEA : 0xFF55595B, a.accent, 22f, tile.hasFocus()));
+            int fill = active ? 0xFFECEDEA : 0xFF242729;
+            int foreground = active ? 0xFF171819 : 0xFFF2F2EF;
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill,
+                    active ? 0xFFECEDEA : 0xFF3A3D3F, a.accent, a.tileCornerDp, tile.hasFocus()));
             QinsGlyphView glyph = findQuickGlyph(tile);
-            if (glyph != null) glyph.setTint(active ? 0xFF171819 : 0xFFF4F4F2);
+            if (glyph != null) glyph.setTint(foreground);
             if (tile instanceof android.view.ViewGroup) {
                 android.view.ViewGroup group = (android.view.ViewGroup) tile;
                 for (int i = 0; i < group.getChildCount(); i++) {
                     View child = group.getChildAt(i);
-                    if (child instanceof LinearLayout) {
-                        android.view.ViewGroup labels = (android.view.ViewGroup) child;
-                        for (int j = 0; j < labels.getChildCount(); j++) {
-                            View label = labels.getChildAt(j);
-                            if (label instanceof TextView) ((TextView) label).setTextColor(foreground);
-                        }
+                    if (!(child instanceof LinearLayout)) continue;
+                    android.view.ViewGroup labels = (android.view.ViewGroup) child;
+                    if (labels.getChildCount() > 0 && labels.getChildAt(0) instanceof TextView) {
+                        ((TextView) labels.getChildAt(0)).setTextColor(foreground);
+                    }
+                    if (labels.getChildCount() > 1 && labels.getChildAt(1) instanceof TextView) {
+                        ((TextView) labels.getChildAt(1)).setTextColor(active ? a.accent : 0xFF9B9E9F);
                     }
                 }
             }
@@ -5408,8 +5420,8 @@ public class QinsLauncherActivity extends Activity {
             firstGridIndex = 2;
         }
 
-        final int columns = galaxy ? 4 : 2;
-        final int baseHeight = galaxy ? 66 : (pixel ? 68 : 64);
+        final int columns = galaxy ? 4 : (nothing ? 3 : 2);
+        final int baseHeight = galaxy ? 66 : (pixel ? 72 : 70);
         LinearLayout row = null;
         int used = 0;
         for (int i = firstGridIndex; i < count; i++) {
@@ -5426,13 +5438,13 @@ public class QinsLauncherActivity extends Activity {
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER_VERTICAL);
                 LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(baseHeight));
-                if (panel.getChildCount() > 0) rowParams.topMargin = dp(galaxy ? 1 : (pixel ? 2 : 5));
+                if (panel.getChildCount() > 0) rowParams.topMargin = dp(galaxy ? 1 : (pixel ? 3 : 6));
                 panel.addView(row, rowParams);
             }
             View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
             if (quickGridFirstTile == null) quickGridFirstTile = tile;
             LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, dp(baseHeight * sy), sx);
-            if (used > 0) tileParams.leftMargin = dp(galaxy ? 1 : 6);
+            if (used > 0) tileParams.leftMargin = dp(galaxy ? 1 : (nothing ? 5 : 7));
             row.addView(tile, tileParams);
             if (sy > 1) {
                 android.view.ViewGroup.LayoutParams rowLayout = row.getLayoutParams();
