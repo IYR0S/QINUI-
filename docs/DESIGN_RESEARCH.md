@@ -86,7 +86,7 @@ This section translates current public design guidance and visible OEM interface
 | --- | ---: | ---: | ---: |
 | Focus cards / notification cards | 28dp | 28dp | 18dp |
 | Quick Settings tiles | 24dp | 26dp | 16dp |
-| Icon wells | Circular | Circular / tonal | 5dp rounded square |
+| Icon treatment | Circular accent wells for compact controls | Glyph directly on tonal tile | Glyph directly on dark tile; no nested bubble |
 | Slider containers | 26dp | 22dp | 10dp |
 | Home app row | Transparent; no outer dock bubble | Transparent; no outer dock bubble | Transparent; no outer dock bubble |
 
@@ -94,10 +94,10 @@ These tokens are centralized in ThemeManager.Appearance. Older generic cornerDp 
 
 ### Surface depth, wallpaper and transparency
 
-- **Galaxy / One UI:** use a clearly separated focus block against generous negative space. Light and dark surfaces are distinct; a soft highlight and a low-contrast shadow communicate that a card sits above the wallpaper. A blur/dim layer is appropriate when a related panel is opened, but shadow, blur and dim should not be stacked indiscriminately.
+- **Galaxy / One UI:** use a clearly separated focus block against generous negative space. Light and dark surfaces are distinct; a soft highlight and a low-contrast shadow communicate that a card sits above the wallpaper. The expanded panel reserves wide focus blocks for Wi-Fi and Bluetooth; compact shortcuts use circular icon controls without another rectangular card. A blur/dim layer is appropriate when a related panel is opened, but shadow, blur and dim should not be stacked indiscriminately.
 - **Pixel / Material 3:** distinguish elevation first with tonal surface colors and only then with a subtle shadow. Active tiles use a stronger accent/tonal fill; inactive tiles remain visible as intentional containers rather than almost-transparent outlines.
 - **Nothing:** use near-black or near-white monochrome surfaces, crisp borders, restrained red accent and less exaggerated rounding. The app icons themselves should remain visible without a second circle or pill behind each one.
-- **QINS API 19 implementation:** Quick Settings uses a theme-matched translucent scrim over the wallpaper. There is no real-time blur; this preserves a degree of wallpaper visibility while keeping text and controls legible. Focus blocks use a restrained static gradient/highlight and a soft shadow. The launcher app row itself has no background capsule, and app icons are no longer placed in an extra Nothing-only circular badge.
+- **QINS API 19 implementation:** Quick Settings uses a theme-matched translucent scrim over the wallpaper. There is no real-time blur; this preserves a degree of wallpaper visibility while keeping text and controls legible. Focus blocks use a restrained static gradient/highlight and a soft shadow. Galaxy keeps circular wells only for its compact shortcuts; Pixel and Nothing draw the glyph directly on the tile, without a nested badge. The launcher app row itself has no background capsule, and app icons are no longer placed in an extra Nothing-only circular badge.
 
 ### Sliders and control geometry
 
