@@ -5158,7 +5158,7 @@ public class QinsLauncherActivity extends Activity {
                     }
                 }
                 int remaining = viewport.getHeight() - fixedHeight - dp(6);
-                int targetHeight = Math.max(dp(154), Math.min(dp(360), remaining));
+                int targetHeight = Math.max(dp(154), remaining);
                 android.view.ViewGroup.LayoutParams current = controls.getLayoutParams();
                 if (current.height != targetHeight) {
                     current.height = targetHeight;
