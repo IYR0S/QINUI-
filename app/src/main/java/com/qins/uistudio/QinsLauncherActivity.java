@@ -5316,7 +5316,7 @@ public class QinsLauncherActivity extends Activity {
     private void styleLevelSeekBar(SeekBar seek, ThemeManager.Appearance a) {
         // The card itself carries the live fill. Keep the native track transparent,
         // but retain an OEM-shaped handle: Samsung uses a round thumb, Pixel a
-        // larger Material handle, and Nothing a compact square marker.
+        // larger Material handle.
         GradientDrawable emptyTrack = new GradientDrawable();
         emptyTrack.setColor(0x00000000);
         GradientDrawable emptyProgress = new GradientDrawable();
@@ -5341,36 +5341,6 @@ public class QinsLauncherActivity extends Activity {
         }
         seek.setPadding(0, 0, 0, 0);
         seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-    }
-
-    private void styleNothingVerticalSeekBar(VerticalQuickSeekBar seek, boolean brightness,
-                                             ThemeManager.Appearance a) {
-        // Nothing's separate Quick Settings uses long vertical rails, not
-        // short bars nested inside three tiny cards.
-        GradientDrawable track = new GradientDrawable();
-        track.setColor(0xFF414547);
-        track.setCornerRadius(dp(3));
-        // VerticalQuickSeekBar rotates the canvas, so the drawable's intrinsic
-        // height becomes the visible rail thickness. Keep it deliberately slim.
-        track.setSize(dp(1), dp(6));
-        GradientDrawable progress = new GradientDrawable();
-        // Keep brightness and media volume visually identical.
-        progress.setColor(0xFFF3F3F0);
-        progress.setCornerRadius(dp(3));
-        progress.setSize(dp(1), dp(6));
-        ClipDrawable clipped = new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL);
-        LayerDrawable layers = new LayerDrawable(new Drawable[] {track, clipped});
-        layers.setId(0, android.R.id.background);
-        layers.setId(1, android.R.id.progress);
-        seek.setProgressDrawable(layers);
-
-        GradientDrawable hiddenThumb = new GradientDrawable();
-        hiddenThumb.setColor(0x00000000);
-        hiddenThumb.setSize(dp(1), dp(1));
-        seek.setThumb(hiddenThumb);
-        seek.setPadding(0, 0, 0, 0);
-        seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        seek.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
     }
 
     private NothingPillSlider addNothingVerticalSliderCard(LinearLayout row, String label,
@@ -6515,18 +6485,14 @@ public class QinsLauncherActivity extends Activity {
                 (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN || event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP)) {
             View focused = getCurrentFocus();
             int direction = event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ? View.FOCUS_DOWN : View.FOCUS_UP;
-            // A vertical rail must not trap the D-pad: Up always returns to the last tile row.
-            if (focused instanceof VerticalQuickSeekBar && direction == View.FOCUS_UP && quickGridLastTile != null) {
-                quickGridLastTile.requestFocus();
-                android.graphics.Rect target = new android.graphics.Rect();
-                quickGridLastTile.getDrawingRect(target);
-                quickPanelScrollView.requestChildRectangleOnScreen(quickGridLastTile, target, true);
-                return true;
-            }
-            View nextFocus = focused == null ? null : focused.focusSearch(direction);
-            if (nextFocus == null || !isDescendantOf(nextFocus, quickPanelScrollView)) {
-                quickPanelScrollView.smoothScrollBy(0, direction == View.FOCUS_DOWN ? dp(76) : -dp(76));
-                return true;
+            // The Nothing pill sliders own Up/Down for level changes. The grid
+            // keeps the panel's normal D-pad scrolling behavior.
+            if (!(focused instanceof NothingPillSlider)) {
+                View nextFocus = focused == null ? null : focused.focusSearch(direction);
+                if (nextFocus == null || !isDescendantOf(nextFocus, quickPanelScrollView)) {
+                    quickPanelScrollView.smoothScrollBy(0, direction == View.FOCUS_DOWN ? dp(76) : -dp(76));
+                    return true;
+                }
             }
         }
         if (flashlightScreenOverlay != null) {
