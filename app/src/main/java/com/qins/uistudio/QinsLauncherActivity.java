@@ -4733,26 +4733,25 @@ public class QinsLauncherActivity extends Activity {
         tile.setPadding(dp(galaxy ? 2 : 10), dp(galaxy ? 3 : 6), dp(galaxy ? 2 : 10), dp(galaxy ? 3 : 6));
 
         FrameLayout iconWrap = new FrameLayout(this);
-        GradientDrawable iconShape = new GradientDrawable();
-        if (galaxy || pixel) {
+        if (galaxy) {
+            GradientDrawable iconShape = new GradientDrawable();
             iconShape.setShape(GradientDrawable.OVAL);
-            iconShape.setColor(galaxy ? quickSurfaceColor(a, a.tile) : a.surfaceAlt);
-            if (galaxy) iconShape.setStroke(dp(1), a.border);
-        } else {
-            iconShape.setShape(GradientDrawable.RECTANGLE);
-            iconShape.setCornerRadius(dp(a.iconWellCornerDp));
-            iconShape.setColor(a.surfaceAlt);
+            iconShape.setColor(quickSurfaceColor(a, a.tile));
             iconShape.setStroke(dp(1), a.border);
+            iconWrap.setBackgroundDrawable(iconShape);
+            iconWrap.setTag("quick-icon-shape");
+        } else {
+            // Pixel and Nothing use the tile surface as the icon's only container.
+            // Avoid nesting an extra "bubble" behind the glyph.
+            iconWrap.setBackgroundColor(0x00000000);
         }
-        iconWrap.setBackgroundDrawable(iconShape);
-        iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
         icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
-        int iconSize = galaxy ? 30 : (pixel ? 30 : 24);
+        int iconSize = galaxy ? 30 : (pixel ? 25 : 22);
         iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(iconSize), dp(iconSize), Gravity.CENTER));
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(galaxy ? 44 : (pixel ? 40 : 36)),
-                dp(galaxy ? 44 : (pixel ? 40 : 36)));
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(galaxy ? 44 : 32),
+                dp(galaxy ? 44 : 32));
         if (!galaxy) iconParams.rightMargin = dp(9);
         tile.addView(iconWrap, iconParams);
 
@@ -4779,7 +4778,9 @@ public class QinsLauncherActivity extends Activity {
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
         if (galaxy) {
-            styleSurface(tile, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.tileCornerDp);
+            // One UI keeps the compact shortcuts as circular icon controls;
+            // only Wi-Fi and Bluetooth above them use wide focus cards.
+            styleSurface(tile, 0x00000000, 0x00000000, a.focus, a.tileCornerDp);
             state.setVisibility(View.GONE);
         } else if (pixel) {
             styleSurface(tile, a.tile, a.border, a.focus, a.tileCornerDp);
@@ -5252,14 +5253,6 @@ public class QinsLauncherActivity extends Activity {
             int fill = active ? 0xFFECEDEA : 0xFF202224;
             int foreground = active ? 0xFF171819 : 0xFFF4F4F2;
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? 0xFFECEDEA : 0xFF55595B, a.accent, 22f, tile.hasFocus()));
-            View iconSurface = tile.findViewWithTag("quick-icon-shape");
-            if (iconSurface != null) {
-                GradientDrawable circle = new GradientDrawable();
-                circle.setShape(GradientDrawable.OVAL);
-                circle.setColor(active ? 0xFF242729 : 0xFF303436);
-                circle.setStroke(dp(1), active ? a.accent : 0xFF55595B);
-                iconSurface.setBackgroundDrawable(circle);
-            }
             QinsGlyphView glyph = findQuickGlyph(tile);
             if (glyph != null) glyph.setTint(active ? 0xFF171819 : 0xFFF4F4F2);
             if (tile instanceof android.view.ViewGroup) {
@@ -5281,13 +5274,6 @@ public class QinsLauncherActivity extends Activity {
         if (pixel) {
             int fill = active ? a.accent : a.tile;
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : a.border, a.focus, a.tileCornerDp, tile.hasFocus()));
-            View iconSurface = tile.findViewWithTag("quick-icon-shape");
-            if (iconSurface != null) {
-                GradientDrawable circle = new GradientDrawable();
-                circle.setShape(GradientDrawable.OVAL);
-                circle.setColor(active ? 0x33FFFFFF : a.surfaceAlt);
-                iconSurface.setBackgroundDrawable(circle);
-            }
             QinsGlyphView glyph = findQuickGlyph(tile);
             if (glyph != null) glyph.setTint(active ? 0xFFFFFFFF : a.accent);
             if (tile instanceof android.view.ViewGroup) {
@@ -5311,13 +5297,12 @@ public class QinsLauncherActivity extends Activity {
         if (shape != null) {
             GradientDrawable bg = new GradientDrawable();
             bg.setShape(GradientDrawable.OVAL);
-            bg.setColor(active ? a.tileActive : a.tile);
+            bg.setColor(active ? a.accent : a.tile);
             shape.setBackgroundDrawable(bg);
         }
         if (galaxy) {
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(
-                    active ? quickSurfaceColor(a, a.surface) : quickSurfaceColor(a, a.surfaceAlt),
-                    tile.hasFocus() ? a.accent : a.border,
+                    0x00000000, tile.hasFocus() ? a.accent : 0x00000000,
                     a.accent, a.tileCornerDp, tile.hasFocus()));
             if (glyph != null) glyph.setTint(active ? 0xFFFFFFFF : a.accent);
         } else {
