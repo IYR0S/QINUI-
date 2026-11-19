@@ -39,22 +39,22 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
     }
 
     private void buildPage() {
-        final ThemeManager.Palette palette = ThemeManager.getPalette(this);
+        final ThemeManager.Appearance a = ThemeManager.getAppearance(this);
         ScrollView scroll = new ScrollView(this);
         scroll.setFocusable(false);
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(18), dp(18), dp(18), dp(22));
-        page.setBackgroundColor(palette.background);
+        page.setBackgroundColor(a.background);
         scroll.addView(page);
         TextView heading = new TextView(this);
         heading.setText("Music Widget · Editor");
         heading.setTextSize(23);
-        heading.setTextColor(palette.text);
+        heading.setTextColor(a.text);
         page.addView(heading);
         TextView hint = new TextView(this);
         hint.setText("Use the physical arrow keys to move between settings, OK to select, and Back to return.");
-        hint.setTextColor(palette.muted);
+        hint.setTextColor(a.muted);
         hint.setTextSize(13);
         page.addView(hint);
 
@@ -67,7 +67,7 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
         });
 
         playerSummary = new TextView(this);
-        playerSummary.setTextColor(palette.text);
+        playerSummary.setTextColor(a.text);
         playerSummary.setTextSize(15);
         playerSummary.setPadding(0, dp(14), 0, dp(5));
         page.addView(playerSummary);
@@ -102,7 +102,7 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
         accessSummary.setText(enabled
                 ? "Notification access: enabled. Music players can appear when they publish a media notification."
                 : "Notification access: OFF. Enable QINS here or the widget cannot detect the currently playing track.");
-        accessSummary.setTextColor(enabled ? ThemeManager.getPalette(this).muted : 0xFFE06B61);
+        accessSummary.setTextColor(enabled ? ThemeManager.getAppearance(this).muted : 0xFFE06B61);
     }
 
     private void openNotificationAccessSettings() {
@@ -191,29 +191,37 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
     }
 
     private void showPreview() {
+        final ThemeManager.Appearance a = ThemeManager.getAppearance(this);
         LinearLayout preview = new LinearLayout(this);
         preview.setOrientation(LinearLayout.HORIZONTAL);
         preview.setPadding(dp(12), dp(12), dp(12), dp(12));
+        android.graphics.drawable.GradientDrawable previewSurface = new android.graphics.drawable.GradientDrawable();
+        previewSurface.setColor(a.surface);
+        previewSurface.setCornerRadius(dp(a.cardCornerDp));
+        previewSurface.setStroke(dp(1), a.border);
+        preview.setBackgroundDrawable(previewSurface);
         if (artwork.isChecked()) {
             TextView art = new TextView(this);
             art.setText("♪");
             art.setTextSize(30);
+            art.setTextColor(a.accent);
             art.setGravity(android.view.Gravity.CENTER);
             preview.addView(art, new LinearLayout.LayoutParams(dp(58), dp(58)));
         }
         LinearLayout text = new LinearLayout(this);
         text.setOrientation(LinearLayout.VERTICAL);
         if (title.isChecked()) {
-            TextView song = new TextView(this); song.setText("Song title preview"); song.setTextSize(16);
+            TextView song = new TextView(this); song.setText("Song title preview"); song.setTextSize(16); song.setTextColor(a.text);
             text.addView(song);
         }
         if (artist.isChecked()) {
-            TextView performer = new TextView(this); performer.setText("Artist / track details"); performer.setTextSize(12);
+            TextView performer = new TextView(this); performer.setText("Artist / track details"); performer.setTextSize(12); performer.setTextColor(a.muted);
             text.addView(performer);
         }
         preview.addView(text, new LinearLayout.LayoutParams(0, -2, 1));
         if (controls.isChecked()) {
             TextView buttons = new TextView(this); buttons.setText("‹     ▶ / Ⅱ     ›"); buttons.setTextSize(16);
+            buttons.setTextColor(a.accent);
             buttons.setGravity(android.view.Gravity.CENTER);
             preview.addView(buttons, new LinearLayout.LayoutParams(-2, -1));
         }
