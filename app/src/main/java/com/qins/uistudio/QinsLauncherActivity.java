@@ -5094,8 +5094,6 @@ public class QinsLauncherActivity extends Activity {
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
                 listener.onProgressChanged(bar, progress, fromUser);
-                int percent = max <= 0 ? 0 : Math.round(100f * progress / max);
-                amount.setText(percent + "%");
             }
             @Override public void onStartTrackingTouch(SeekBar bar) { listener.onStartTrackingTouch(bar); }
             @Override public void onStopTrackingTouch(SeekBar bar) { listener.onStopTrackingTouch(bar); }
