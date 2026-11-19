@@ -5063,9 +5063,12 @@ public class QinsLauncherActivity extends Activity {
         seek.setMax(Math.max(1, max));
         seek.setProgress(Math.max(0, Math.min(max, value)));
         styleNothingVerticalSeekBar(seek, brightness, a);
-        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(34), dp(106));
+        // Consume all space left below the fixed label row. The track length
+        // is now driven by the dock's measured height, not a short dp constant.
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(34), 0, 1f);
         seekParams.gravity = Gravity.CENTER_HORIZONTAL;
-        seekParams.topMargin = dp(3);
+        seekParams.topMargin = dp(4);
+        seekParams.bottomMargin = dp(3);
         card.addView(seek, seekParams);
 
         seek.setOnFocusChangeListener(new View.OnFocusChangeListener() {
@@ -5086,14 +5089,16 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStopTrackingTouch(SeekBar bar) { listener.onStopTrackingTouch(bar); }
         });
 
-        row.addView(card, new LinearLayout.LayoutParams(0, dp(144), 1));
+        // Both slider cards stretch to the full height of the shared dock.
+        row.addView(card, new LinearLayout.LayoutParams(0, -1, 1f));
     }
 
     private void addNothingVerticalSliders(LinearLayout panel, ThemeManager.Appearance a) {
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.HORIZONTAL);
         controls.setGravity(Gravity.CENTER_VERTICAL);
-        controls.setPadding(dp(8), dp(5), dp(8), dp(5));
+        controls.setPadding(dp(8), dp(7), dp(8), dp(7));
+        controls.setMinimumHeight(dp(154));
         controls.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         styleSurface(controls, 0xFF1B1D1F, 0xFF383C3E, a.accent, a.cardCornerDp);
 
@@ -5108,7 +5113,10 @@ public class QinsLauncherActivity extends Activity {
 
         View divider = new View(this);
         divider.setBackgroundColor(0xFF3C4042);
-        controls.addView(divider, new LinearLayout.LayoutParams(dp(1), dp(126)));
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(dp(1), -1);
+        dividerParams.topMargin = dp(12);
+        dividerParams.bottomMargin = dp(12);
+        controls.addView(divider, dividerParams);
 
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         final int maxVolume = audio == null ? 15 :
@@ -5127,9 +5135,37 @@ public class QinsLauncherActivity extends Activity {
                     @Override public void onStopTrackingTouch(SeekBar bar) { }
                 }, a);
 
+        // Start with a safe compact height, then expand into the actual
+        // remaining viewport after the media card, tiles and footer are laid
+        // out. This keeps the Nothing rails tall on both short and tall screens.
+        final ScrollView viewport = quickPanelScrollView;
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(154));
         params.topMargin = dp(8);
         panel.addView(controls, params);
+        controls.post(new Runnable() {
+            @Override public void run() {
+                if (viewport == null || quickPanelScrollView != viewport) return;
+                int fixedHeight = panel.getPaddingTop() + panel.getPaddingBottom();
+                for (int i = 0; i < panel.getChildCount(); i++) {
+                    View child = panel.getChildAt(i);
+                    if (child == controls) continue;
+                    fixedHeight += child.getMeasuredHeight();
+                    android.view.ViewGroup.LayoutParams raw = child.getLayoutParams();
+                    if (raw instanceof android.view.ViewGroup.MarginLayoutParams) {
+                        android.view.ViewGroup.MarginLayoutParams margins =
+                                (android.view.ViewGroup.MarginLayoutParams) raw;
+                        fixedHeight += margins.topMargin + margins.bottomMargin;
+                    }
+                }
+                int remaining = viewport.getHeight() - fixedHeight - dp(6);
+                int targetHeight = Math.max(dp(154), Math.min(dp(360), remaining));
+                android.view.ViewGroup.LayoutParams current = controls.getLayoutParams();
+                if (current.height != targetHeight) {
+                    current.height = targetHeight;
+                    controls.setLayoutParams(current);
+                }
+            }
+        });
     }
 
     private void addQuickMediaCard(LinearLayout panel, ThemeManager.Appearance a) {
