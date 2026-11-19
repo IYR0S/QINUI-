@@ -139,8 +139,9 @@ References for the comparison:
 - The two Nothing sliders retain a real visible gap and individual icon affordances.
 - Nothing's custom vertical pill sliders remain original Java views; drawing, touch mapping and D-pad Up/Down share one coordinate system.
 - Pixel's horizontal rail has a slim upright grip protruding symmetrically above and below the track.
-- Pixel-only geometry is tighter: 22dp cards, 20dp tiles, 12dp icon wells and 16dp slider surfaces. These are implementation choices, not claimed OEM measurements.
-- Galaxy shape and sizing tokens remain isolated from Pixel and Nothing.
+- Pixel inactive expanded tiles use a pill radius (36dp for the 72dp-high tile); active tiles morph to the tighter 20dp rounded rectangle.
+- Pixel-only component tokens are 22dp cards, 20dp active tiles, 12dp icon wells and 16dp slider surfaces. These are implementation choices, not claimed OEM measurements.
+- Galaxy's brightness and volume rows were checked for matched 66dp card height, 34dp SeekBar height, equal weighted card width and matching level-fill treatment. Its 44dp circular icon wells remain true circles; Galaxy tokens and layout remain isolated from Pixel and Nothing.
 - No AndroidX, Compose, Shizuku, root, proprietary Nothing assets, or new runtime dependencies are introduced.
 
 ## API-19 and device validation checklist
