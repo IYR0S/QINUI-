@@ -76,7 +76,7 @@ public final class ThemeManager {
         new Appearance(APPEARANCE_GALAXY, "Galaxy / One UI",
             0xFFF1F3F8, 0xFFE8ECF4, 0xFFFCFCFE, 0xFFE9EDF5,
             0xFFE6EAF2, 0xFFDCE7FB, 0xFF356FE5, 0xFF171A22, 0xFF697386,
-            0xFFD7DDE8, 0xFF9DBAF4, 24f, false, false),
+            0xFFD7DDE8, 0xFF9DBAF4, 26f, false, false),
         // Pixel-inspired Material 3 Expressive: tonal lavender surfaces and a vivid violet accent.
         new Appearance(APPEARANCE_PIXEL, "Pixel / Material",
             0xFFEEF3EC, 0xFFDCE7DD, 0xFFF8FBF6, 0xFFE5EEE4,
