@@ -4050,6 +4050,81 @@ public class QinsLauncherActivity extends Activity {
         return "Theme artwork";
     }
 
+    private void showThemeCustomColorPicker(final int roleIndex, final String roleName,
+                                             final int[] colors, final ThemePreview preview,
+                                             final TextView roleView, final int[] selectedChoices) {
+        final int[] channels = new int[] {
+                android.graphics.Color.red(colors[roleIndex]),
+                android.graphics.Color.green(colors[roleIndex]),
+                android.graphics.Color.blue(colors[roleIndex])
+        };
+        final int[] selectedColor = new int[] {colors[roleIndex]};
+        final String[] channelNames = new String[] {"Red", "Green", "Blue"};
+        final TextView[] values = new TextView[3];
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(12), dp(8), dp(12), dp(4));
+        final TextView swatch = new TextView(this);
+        swatch.setText("Preview  ·  " + String.format("#%06X", selectedColor[0] & 0xFFFFFF));
+        swatch.setTextColor(0xFFFFFFFF);
+        swatch.setGravity(Gravity.CENTER);
+        swatch.setBackgroundDrawable(makeShape(selectedColor[0], selectedColor[0], 12, false));
+        content.addView(swatch, new LinearLayout.LayoutParams(-1, dp(42)));
+        for (int i = 0; i < 3; i++) {
+            final int channel = i;
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            TextView label = new TextView(this);
+            label.setText(channelNames[i]);
+            label.setTextColor(appearance().text);
+            label.setTextSize(12);
+            row.addView(label, new LinearLayout.LayoutParams(dp(42), -2));
+            android.widget.SeekBar slider = new android.widget.SeekBar(this);
+            slider.setMax(255);
+            slider.setProgress(channels[i]);
+            slider.setFocusable(true);
+            slider.setFocusableInTouchMode(false);
+            row.addView(slider, new LinearLayout.LayoutParams(0, dp(34), 1));
+            values[i] = new TextView(this);
+            values[i].setText(String.valueOf(channels[i]));
+            values[i].setTextColor(appearance().muted);
+            values[i].setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+            values[i].setTextSize(11);
+            row.addView(values[i], new LinearLayout.LayoutParams(dp(30), -2));
+            content.addView(row, new LinearLayout.LayoutParams(-1, dp(42)));
+            slider.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
+                @Override public void onProgressChanged(android.widget.SeekBar bar, int progress, boolean fromUser) {
+                    channels[channel] = progress;
+                    selectedColor[0] = 0xFF000000 | (channels[0] << 16) | (channels[1] << 8) | channels[2];
+                    values[channel].setText(String.valueOf(progress));
+                    swatch.setText("Preview  ·  " + String.format("#%06X", selectedColor[0] & 0xFFFFFF));
+                    swatch.setBackgroundDrawable(makeShape(selectedColor[0], selectedColor[0], 12, false));
+                }
+                @Override public void onStartTrackingTouch(android.widget.SeekBar bar) { }
+                @Override public void onStopTrackingTouch(android.widget.SeekBar bar) { }
+            });
+        }
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Custom " + roleName)
+                .setView(content)
+                .setPositiveButton("Apply", new android.content.DialogInterface.OnClickListener() {
+                    @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                        colors[roleIndex] = selectedColor[0];
+                        selectedChoices[roleIndex] = 8;
+                        preview.update(colors);
+                        roleView.setText(roleName + "  ·  Custom");
+                        roleView.setCompoundDrawables(null, null, null, null);
+                        GradientDrawable dot = new GradientDrawable();
+                        dot.setShape(GradientDrawable.OVAL);
+                        dot.setColor(selectedColor[0]);
+                        dot.setSize(dp(13), dp(13));
+                        roleView.setCompoundDrawables(dot, null, null, null);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     private void showThemeEditor() {
         final String editingAppearanceId = appearance().id;
         final ThemeManager.Appearance base = ThemeManager.getAppearanceById(editingAppearanceId);
@@ -4128,6 +4203,12 @@ public class QinsLauncherActivity extends Activity {
                             .setTitle(roles[roleIndex])
                             .setItems(names, new android.content.DialogInterface.OnClickListener() {
                                 @Override public void onClick(android.content.DialogInterface dialog, int which) {
+                                    if (which == 8) {
+                                        dialog.dismiss();
+                                        showThemeCustomColorPicker(roleIndex, roles[roleIndex], colors,
+                                                preview, roleViews[roleIndex], selectedChoices);
+                                        return;
+                                    }
                                     if (which == 0) colors[roleIndex] = defaults[roleIndex];
                                     else if (which < choices.length) colors[roleIndex] = choices[which];
                                     selectedChoices[roleIndex] = which;
