@@ -195,11 +195,8 @@ public class MusicWidgetSettingsActivity extends StudioActivity {
         LinearLayout preview = new LinearLayout(this);
         preview.setOrientation(LinearLayout.HORIZONTAL);
         preview.setPadding(dp(12), dp(12), dp(12), dp(12));
-        android.graphics.drawable.GradientDrawable previewSurface = new android.graphics.drawable.GradientDrawable();
-        previewSurface.setColor(a.surface);
-        previewSurface.setCornerRadius(dp(a.cardCornerDp));
-        previewSurface.setStroke(dp(1), a.border);
-        preview.setBackgroundDrawable(previewSurface);
+        KeyboardSupport.setRaisedSurface(preview, a.surface, a.border, a.accent,
+                dp(a.cardCornerDp));
         if (artwork.isChecked()) {
             TextView art = new TextView(this);
             art.setText("♪");
