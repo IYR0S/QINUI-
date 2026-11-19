@@ -2164,6 +2164,9 @@ public class QinsLauncherActivity extends Activity {
         state.setSingleLine(true);
         tile.addView(state);
 
+        text.setTag("compact-label");
+        state.setTag("compact-state");
+        tile.setTag("compact-quick-tile");
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
@@ -5692,6 +5695,47 @@ public class QinsLauncherActivity extends Activity {
         boolean galaxy = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
         boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
         boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
+
+        // Compact shortcuts have a different visual system from the expanded
+        // tiles. Keep their own OEM geometry when state/focus is refreshed.
+        if ("compact-quick-tile".equals(tile.getTag())) {
+            QinsGlyphView compactGlyph = findQuickGlyph(tile);
+            TextView compactLabel = (TextView) tile.findViewWithTag("compact-label");
+            TextView compactState = (TextView) tile.findViewWithTag("compact-state");
+            if (galaxy) {
+                tile.setBackgroundDrawable(new FocusSurfaceDrawable(
+                        0x00000000, tile.hasFocus() ? a.focus : 0x00000000,
+                        a.focus, a.tileCornerDp, tile.hasFocus()));
+                View iconSurface = tile.findViewWithTag("quick-icon-shape");
+                if (iconSurface != null) {
+                    GradientDrawable circle = new GradientDrawable();
+                    circle.setShape(GradientDrawable.OVAL);
+                    circle.setColor(active ? a.accent : a.tileActive);
+                    circle.setStroke(dp(1), a.border);
+                    iconSurface.setBackgroundDrawable(circle);
+                }
+                if (compactGlyph != null) compactGlyph.setTint(active ? 0xFFFFFFFF : a.accent);
+                if (compactLabel != null) compactLabel.setTextColor(a.text);
+                if (compactState != null) compactState.setTextColor(active ? a.accent : a.muted);
+            } else if (pixel) {
+                tile.setBackgroundDrawable(new FocusSurfaceDrawable(
+                        active ? 0xFFD1E1D4 : 0xFFEAF2E9,
+                        active ? 0xFF9DB6A2 : 0xFFCAD8CC,
+                        0xFF78927E, 18f, tile.hasFocus()));
+                if (compactGlyph != null) compactGlyph.setTint(0xFF34483A);
+                if (compactLabel != null) compactLabel.setTextColor(0xFF26372B);
+                if (compactState != null) compactState.setTextColor(active ? 0xFF456A4C : 0xFF617665);
+            } else if (nothing) {
+                tile.setBackgroundDrawable(new FocusSurfaceDrawable(
+                        active ? 0xFF292C2E : 0xFF202224,
+                        active ? 0xFFD71921 : 0xFF45494B,
+                        0xFFD71921, 8f, tile.hasFocus()));
+                if (compactGlyph != null) compactGlyph.setTint(active ? 0xFFD71921 : 0xFFF4F4F0);
+                if (compactLabel != null) compactLabel.setTextColor(0xFFF2F2EF);
+                if (compactState != null) compactState.setTextColor(active ? 0xFFD71921 : 0xFFA4A7A8);
+            }
+            return;
+        }
 
         if (galaxy && "quick-connectivity".equals(tile.getTag())) {
             int fill = active ? a.tileActive : quickSurfaceColor(a, a.surface);
