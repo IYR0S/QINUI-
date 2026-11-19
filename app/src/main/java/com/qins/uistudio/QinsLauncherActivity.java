@@ -121,6 +121,8 @@ public class QinsLauncherActivity extends Activity {
     private TextView themeButton;
     private TextView settingsButton;
     private Bitmap wallpaperBitmap;
+    private String wallpaperBitmapAppearanceId;
+    private String wallpaperPickerAppearanceId;
     private TextView clockView;
     private View clockEditorPreviewCard;
     private LinearLayout homeWidgetArea;
@@ -540,13 +542,25 @@ public class QinsLauncherActivity extends Activity {
         root.setBackground(new QinsWallpaperDrawable(a));
     }
 
-    private File wallpaperFile() {
-        return new File(getFilesDir(), "qins_home_wallpaper.jpg");
+    private String backgroundStyleKey(String appearanceId) {
+        return BACKGROUND_STYLE_KEY + "_" + appearanceId;
     }
 
-    private Bitmap loadWallpaperBitmap() {
-        if (wallpaperBitmap != null && !wallpaperBitmap.isRecycled()) return wallpaperBitmap;
-        File file = wallpaperFile();
+    private File wallpaperFile(String appearanceId) {
+        return new File(getFilesDir(), "qins_home_wallpaper_" + appearanceId + ".jpg");
+    }
+
+    private File wallpaperFile() {
+        return wallpaperFile(appearance().id);
+    }
+
+    private Bitmap loadWallpaperBitmap(String appearanceId) {
+        if (wallpaperBitmap != null && !wallpaperBitmap.isRecycled()
+                && appearanceId.equals(wallpaperBitmapAppearanceId)) return wallpaperBitmap;
+        if (wallpaperBitmap != null && !wallpaperBitmap.isRecycled()) wallpaperBitmap.recycle();
+        wallpaperBitmap = null;
+        wallpaperBitmapAppearanceId = appearanceId;
+        File file = wallpaperFile(appearanceId);
         if (!file.isFile()) return null;
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
@@ -561,6 +575,10 @@ public class QinsLauncherActivity extends Activity {
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         wallpaperBitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
         return wallpaperBitmap;
+    }
+
+    private Bitmap loadWallpaperBitmap() {
+        return loadWallpaperBitmap(appearance().id);
     }
 
     private void showWallpaperOptions() {
@@ -583,6 +601,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void pickWallpaperFromGallery() {
+        wallpaperPickerAppearanceId = appearance().id;
         try {
             Intent documentPick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             documentPick.setType("image/*");
@@ -637,8 +656,8 @@ public class QinsLauncherActivity extends Activity {
         }
     }
 
-    private void saveWallpaper(Bitmap bitmap) throws java.io.IOException {
-        File target = wallpaperFile();
+    private void saveWallpaper(Bitmap bitmap, String appearanceId) throws java.io.IOException {
+        File target = wallpaperFile(appearanceId);
         FileOutputStream output = new FileOutputStream(target);
         try {
             if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 88, output)) {
@@ -648,17 +667,22 @@ public class QinsLauncherActivity extends Activity {
         } finally {
             output.close();
         }
+        if (wallpaperBitmap != null && !wallpaperBitmap.isRecycled()) wallpaperBitmap.recycle();
         wallpaperBitmap = null;
+        wallpaperBitmapAppearanceId = null;
         getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).edit()
-                .putString(BACKGROUND_STYLE_KEY, "photo").commit();
+                .putString(backgroundStyleKey(appearanceId), "photo").commit();
     }
 
     private void resetWallpaper() {
-        File file = wallpaperFile();
+        String appearanceId = appearance().id;
+        File file = wallpaperFile(appearanceId);
         if (file.exists()) file.delete();
+        if (wallpaperBitmap != null && !wallpaperBitmap.isRecycled()) wallpaperBitmap.recycle();
         wallpaperBitmap = null;
+        wallpaperBitmapAppearanceId = null;
         getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).edit()
-                .putString(BACKGROUND_STYLE_KEY, "theme").commit();
+                .putString(backgroundStyleKey(appearanceId), "theme").commit();
         refreshLauncherSurface();
     }
 
@@ -686,7 +710,9 @@ public class QinsLauncherActivity extends Activity {
         try {
             selected = decodeSelectedWallpaper(selectedUri);
             if (selected == null) throw new java.io.IOException("Unsupported image");
-            saveWallpaper(selected);
+            saveWallpaper(selected, wallpaperPickerAppearanceId == null
+                    ? appearance().id : wallpaperPickerAppearanceId);
+            wallpaperPickerAppearanceId = null;
             selected.recycle();
             selected = null;
             refreshLauncherSurface();
@@ -1039,8 +1065,8 @@ public class QinsLauncherActivity extends Activity {
             float w = bounds.width();
             float h = bounds.height();
             String backgroundStyle = getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE)
-                    .getString(BACKGROUND_STYLE_KEY, "theme");
-            Bitmap photo = "photo".equals(backgroundStyle) ? loadWallpaperBitmap() : null;
+                    .getString(backgroundStyleKey(style.id), "theme");
+            Bitmap photo = "photo".equals(backgroundStyle) ? loadWallpaperBitmap(style.id) : null;
             if (photo != null && !photo.isRecycled()) {
                 float scale = Math.max(w / (float) photo.getWidth(), h / (float) photo.getHeight());
                 float sourceWidth = w / scale;
@@ -2312,7 +2338,7 @@ public class QinsLauncherActivity extends Activity {
                 iconFrame.addView(miniIcons, new FrameLayout.LayoutParams(-1, dp(28), Gravity.CENTER));
             } else {
                 final ImageView icon = new ImageView(this);
-                icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(info)));
+                icon.setImageDrawable(loadThemedAppIcon(info));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) {
                     ColorMatrix matrix = new ColorMatrix();
@@ -4037,8 +4063,10 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void showThemeEditor() {
-        final ThemeManager.Appearance base = ThemeManager.getAppearanceById(appearance().id);
-        final int[] colors = themeDefaultColors(appearance());
+        final String editingAppearanceId = editingAppearanceId;
+        final ThemeManager.Appearance base = ThemeManager.getAppearanceById(editingAppearanceId);
+        final ThemeManager.Appearance current = appearance();
+        final int[] colors = themeDefaultColors(current);
         final String[] roles = new String[] {
                 "Accent color", "Screen background", "Cards and panels", "Text and clock"
         };
@@ -4060,15 +4088,16 @@ public class QinsLauncherActivity extends Activity {
             }
         }
         final String[] backgroundStyles = new String[] {"theme", "theme_2", "theme_3", "gradient", "minimal", "dots", "photo"};
-        final String themeName = appearance().id.equals(ThemeManager.APPEARANCE_NOTHING) ? "Nothing" :
-                (appearance().id.equals(ThemeManager.APPEARANCE_PIXEL) ? "Google Pixel" : "Samsung One UI");
-        final String[] backgroundLabels = ThemeManager.APPEARANCE_NOTHING.equals(appearance().id)
+        final String themeName = editingAppearanceId.equals(ThemeManager.APPEARANCE_NOTHING) ? "Nothing" :
+                (editingAppearanceId.equals(ThemeManager.APPEARANCE_PIXEL) ? "Google Pixel" : "Samsung One UI");
+        final String[] backgroundLabels = ThemeManager.APPEARANCE_NOTHING.equals(editingAppearanceId)
                 ? new String[] {"Glyph field", "Signal red slash", "Red orbit", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"}
-                : (ThemeManager.APPEARANCE_PIXEL.equals(appearance().id)
+                : (ThemeManager.APPEARANCE_PIXEL.equals(editingAppearanceId)
                     ? new String[] {"Green / teal flow", "Floating capsules", "Sage petals", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"}
                     : new String[] {"Silver S ribbon", "Metal halo", "Brushed folds", "Soft gradient", "Minimal", "Dot pattern", "Photo wallpaper"});
         final String[] selectedBackground = new String[] {
-                getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).getString(BACKGROUND_STYLE_KEY, "theme")
+                getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE)
+                        .getString(backgroundStyleKey(editingAppearanceId), "theme")
         };
 
         LinearLayout content = new LinearLayout(this);
@@ -4167,16 +4196,16 @@ public class QinsLauncherActivity extends Activity {
         editorScroll.setVerticalScrollBarEnabled(true);
         editorScroll.addView(content, new ScrollView.LayoutParams(-1, -2));
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-                .setTitle("Personalize theme  ·  " + appearance().title)
+                .setTitle("Personalize theme  ·  " + base.title)
                 .setView(editorScroll)
                 .setPositiveButton("Save", new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, int which) {
-                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "accent", colors[0]);
-                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "background", colors[1]);
-                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "surface", colors[2]);
-                        ThemeManager.setCustomColor(QinsLauncherActivity.this, appearance().id, "text", colors[3]);
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, editingAppearanceId, "accent", colors[0]);
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, editingAppearanceId, "background", colors[1]);
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, editingAppearanceId, "surface", colors[2]);
+                        ThemeManager.setCustomColor(QinsLauncherActivity.this, editingAppearanceId, "text", colors[3]);
                         getSharedPreferences(BACKGROUND_PREFS, MODE_PRIVATE).edit()
-                                .putString(BACKGROUND_STYLE_KEY, selectedBackground[0]).commit();
+                                .putString(backgroundStyleKey(editingAppearanceId), selectedBackground[0]).commit();
                         if (quickPanelExpanded) showQuickPanel(false);
                         else if (quickPanelVisible) showCompactQuickPanel(false);
                         else showHome(false);
