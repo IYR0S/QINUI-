@@ -40,6 +40,14 @@ public final class KeyboardSupport {
         styleFocusable(view, fillColor, borderColor, focusColor, radiusPx);
     }
 
+    /** Apply the same lightweight raised surface to a non-interactive preview/card. */
+    public static void setRaisedSurface(View view, int fillColor, int borderColor,
+                                        int focusColor, int radiusPx) {
+        view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        view.setBackground(new RaisedControlDrawable(
+                fillColor, borderColor, focusColor, radiusPx, false));
+    }
+
     /** Shared raised surface for buttons and controls outside the main launcher canvas. */
     public static void styleFocusable(final View view, final int fillColor,
                                       final int focusColor, final int textColor,
