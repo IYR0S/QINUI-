@@ -50,7 +50,13 @@ public final class ThemeManager {
         public final int muted;
         public final int border;
         public final int focus;
+        /** Legacy/base radius retained for compatibility with existing editor views. */
         public final float cornerDp;
+        /** Component-specific shape tokens, in dp. These are QINS tuning values, not OEM specs. */
+        public final float cardCornerDp;
+        public final float tileCornerDp;
+        public final float iconWellCornerDp;
+        public final float sliderCornerDp;
         public final boolean monochrome;
         public final boolean useMonoType;
 
@@ -62,6 +68,13 @@ public final class ThemeManager {
             this.surface=surface; this.surfaceAlt=surfaceAlt; this.tile=tile; this.tileActive=tileActive;
             this.accent=accent; this.text=text; this.muted=muted; this.border=border; this.focus=focus;
             this.cornerDp=cornerDp; this.monochrome=monochrome; this.useMonoType=useMonoType;
+            if (APPEARANCE_GALAXY.equals(id)) {
+                cardCornerDp=28f; tileCornerDp=24f; iconWellCornerDp=14f; sliderCornerDp=26f;
+            } else if (APPEARANCE_PIXEL.equals(id)) {
+                cardCornerDp=28f; tileCornerDp=26f; iconWellCornerDp=16f; sliderCornerDp=22f;
+            } else {
+                cardCornerDp=18f; tileCornerDp=16f; iconWellCornerDp=5f; sliderCornerDp=10f;
+            }
         }
     }
 
