@@ -142,3 +142,24 @@ Current sources:
 - Nothing OS 5.0 separate panel and vertical slider report: https://www.91mobiles.com/reviews/nothing-os-5-hands-on/
 
 The launcher has to preserve Android 4.4.4 / API 19 compatibility. Modern wallpaper blur, Android 13+ themed adaptive icons and recent OS-level volume overlays are therefore not directly available; the implementation uses compatible Canvas/Drawable surfaces, existing app icons and theme-specific icon treatments instead.
+
+
+## Follow-up implementation pass — 2026-11-19
+
+A code review of the previous Nothing slider implementation found a sizing error: each vertical track was only 52dp tall and was squeezed into one of three 78dp columns, alongside a DND control. That was too short to read or operate like a system-level control.
+
+The latest QINS implementation replaces that with:
+- One shared dark Nothing control dock, containing two equal vertical controls: brightness and media volume.
+- 106dp vertical tracks (rather than 52dp), a full-height inactive rail, a bright clipped fill, a compact squared thumb, and a visible percentage label.
+- The DND shortcut is moved back into the 3-column tile grid rather than competing for the slider dock's width.
+- Hardware D-pad Up / Down now changes the actual brightness or media volume. The prior implementation could visually move the SeekBar without applying the system value because its listener ignored non-touch updates.
+
+### Theme-specific Quick Settings composition
+
+| Theme | Order | Tile layout | Level controls |
+| --- | --- | --- | --- |
+| Galaxy / One UI | Media → dedicated Wi-Fi and Bluetooth cards → compact shortcuts → controls | 4-column circular shortcut group; wide connectivity focus cards | Separate horizontal cards |
+| Pixel / Material | Brightness control → tonal tiles → media → volume | 2-column wide tonal tiles, horizontal icon/label layout | Horizontal Material-style control |
+| Nothing OS 5 direction | Compact media → 3-column icon grid → slider dock | 3 columns × 2 rows, icon above uppercase label, no inner icon wells | Paired long vertical brightness and volume rails |
+
+This makes the structure as distinct as the colour tokens. The layouts are intentionally adapted to the small portrait QINS1+ screen and physical D-pad; exact OEM animation, live blur and system-managed behavior remain unavailable on API 19.
