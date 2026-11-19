@@ -47,6 +47,7 @@ These ideas borrow interaction patterns from current Android / One UI releases, 
 - [ ] Now Bar cards: allow up to two compact cards (for example, media + missed call) when the available height allows; fall back to one card on short screens.
 - [ ] Add local activity cards for timer / stopwatch and file-transfer progress; expose only actions that can be activated by the physical keys.
 - [ ] Notification organizer: group by app, offer a simple priority / quiet filter, and keep direct actions available without touch.
+- [ ] Implement the API-19 theme-scoped appfilter + PNG icon resolver and licensed starter packs; keep installed app icons as fallback (implementation contract: `docs/ICON_PIPELINE_IMPLEMENTATION.md`).
 - [ ] Add optional icon masks (circle, squircle, rounded square) and a monochrome icon mode for the Nothing preset; keep original colors as the default.
 - [x] Quick Panel: per-tile 1×1, 2×1 and 2×2 sizing exposed in Customize Quick Settings.
 - [x] Media player card: compact/large sizing exposed in the Quick Settings size editor.
