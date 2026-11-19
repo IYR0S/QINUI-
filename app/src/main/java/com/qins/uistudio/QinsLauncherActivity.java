@@ -4585,21 +4585,30 @@ public class QinsLauncherActivity extends Activity {
         }
 
         String[] expandedKeys = getExpandedQuickTileKeys();
-        addQuickMediaCard(panel, a);
-        addQuickTileGrid(panel, a, expandedKeys,
-                ThemeManager.APPEARANCE_GALAXY.equals(a.id) || ThemeManager.APPEARANCE_NOTHING.equals(a.id) ||
-                        ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 6 : 4);
-        updateQuickStates();
+        boolean galaxyTheme = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
+        boolean pixelTheme = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
+        boolean nothingTheme = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
 
-        // Preserve each OEM's actual control language instead of forcing one
-        // generic slider layout across all three themes:
-        // Nothing OS 5 uses paired vertical brightness / volume rails;
-        // Galaxy and Pixel keep their horizontal, card-based controls.
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            addNothingVerticalSliders(panel, a);
-        } else {
+        if (pixelTheme) {
+            // Pixel's Quick Settings starts with the long Material brightness
+            // control, then the tonal tile grid, with media content below it.
             addBrightnessSleepRow(panel, a);
+            addQuickTileGrid(panel, a, expandedKeys, 6);
+            updateQuickStates();
+            addQuickMediaCard(panel, a);
             addVolumeDndRow(panel, a);
+        } else {
+            // One UI and Nothing both keep media above connectivity, but use
+            // different tile geometry and different slider systems.
+            addQuickMediaCard(panel, a);
+            addQuickTileGrid(panel, a, expandedKeys, (galaxyTheme || nothingTheme) ? 6 : 4);
+            updateQuickStates();
+            if (nothingTheme) {
+                addNothingVerticalSliders(panel, a);
+            } else {
+                addBrightnessSleepRow(panel, a);
+                addVolumeDndRow(panel, a);
+            }
         }
 
         LinearLayout tools = new LinearLayout(this);
