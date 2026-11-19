@@ -4530,9 +4530,16 @@ public class QinsLauncherActivity extends Activity {
                         ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 6 : 4);
         updateQuickStates();
 
-        // Keep both level controls horizontal and visually consistent in every theme.
-        addBrightnessSleepRow(panel, a);
-        addVolumeDndRow(panel, a);
+        // Preserve each OEM's actual control language instead of forcing one
+        // generic slider layout across all three themes:
+        // Nothing OS 5 uses paired vertical brightness / volume rails;
+        // Galaxy and Pixel keep their horizontal, card-based controls.
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
+            addNothingVerticalSliders(panel, a);
+        } else {
+            addBrightnessSleepRow(panel, a);
+            addVolumeDndRow(panel, a);
+        }
 
         LinearLayout tools = new LinearLayout(this);
         tools.setOrientation(LinearLayout.HORIZONTAL);
