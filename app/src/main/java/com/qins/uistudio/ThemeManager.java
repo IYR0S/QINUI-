@@ -71,7 +71,9 @@ public final class ThemeManager {
             if (APPEARANCE_GALAXY.equals(id)) {
                 cardCornerDp=28f; tileCornerDp=24f; iconWellCornerDp=14f; sliderCornerDp=26f;
             } else if (APPEARANCE_PIXEL.equals(id)) {
-                cardCornerDp=28f; tileCornerDp=26f; iconWellCornerDp=16f; sliderCornerDp=22f;
+                // Pixel Material 3 Expressive: tighter, more geometric surfaces
+                // while retaining enough rounding for the active/inactive morph.
+                cardCornerDp=22f; tileCornerDp=20f; iconWellCornerDp=12f; sliderCornerDp=16f;
             } else {
                 // Nothing-inspired QS uses soft capsule and rounded-square geometry,
                 // not the tight 10–16dp corners used by the earlier prototype.
