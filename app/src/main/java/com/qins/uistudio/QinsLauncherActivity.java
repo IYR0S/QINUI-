@@ -5504,8 +5504,12 @@ public class QinsLauncherActivity extends Activity {
         row.addView(action, actionParams);
         action.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
-                if (brightnessMode) toggleSleepMode(); else toggleDoNotDisturb();
-                showQuickPanel(false);
+                if (brightnessMode) {
+                    toggleSleepMode();
+                    showQuickPanel(false);
+                } else {
+                    toggleDoNotDisturb();
+                }
             }
         });
         LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
