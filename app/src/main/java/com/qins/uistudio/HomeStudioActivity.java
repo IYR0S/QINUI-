@@ -87,12 +87,8 @@ public class HomeStudioActivity extends StudioActivity {
         preview = new LinearLayout(this);
         preview.setOrientation(LinearLayout.VERTICAL);
         preview.setPadding(dp(8), dp(8), dp(8), dp(8));
-        GradientDrawable previewSurface = new GradientDrawable();
-        previewSurface.setColor(a.surface);
-        previewSurface.setCornerRadius(dp(a.cardCornerDp));
-        previewSurface.setStroke(dp(1), a.border);
-        preview.setBackgroundDrawable(previewSurface);
-        preview.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        KeyboardSupport.setRaisedSurface(preview, a.surface, a.border, a.accent,
+                dp(a.cardCornerDp));
         page.addView(preview, new LinearLayout.LayoutParams(-1, -2));
 
         status = new TextView(this);
@@ -182,11 +178,8 @@ public class HomeStudioActivity extends StudioActivity {
                 label.setSingleLine(true);
                 tile.addView(label, new LinearLayout.LayoutParams(-1, -2));
 
-                GradientDrawable tileSurface = new GradientDrawable();
-                tileSurface.setColor(a.tile);
-                tileSurface.setCornerRadius(dp(a.tileCornerDp));
-                tileSurface.setStroke(dp(1), a.border);
-                tile.setBackgroundDrawable(tileSurface);
+                KeyboardSupport.setRaisedSurface(tile, a.tile, a.border, a.accent,
+                        dp(a.tileCornerDp));
 
                 LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, dp(66), 1f);
                 tileParams.setMargins(dp(3), dp(3), dp(3), dp(3));
