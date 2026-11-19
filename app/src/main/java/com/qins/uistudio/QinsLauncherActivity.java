@@ -5566,70 +5566,28 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void addVolumeDndRow(LinearLayout panel, ThemeManager.Appearance a) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-
-        AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        final int max = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
-        final int current = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
-
-        final LinearLayout volume = new LinearLayout(this);
-        volume.setOrientation(LinearLayout.VERTICAL);
-        volume.setPadding(dp(10), dp(7), dp(10), dp(5));
-        updateBrightnessCard(volume, a, current, max);
-
-        TextView heading = new TextView(this);
-        heading.setText(getString(R.string.launcher_volume));
-        heading.setTextColor(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 0xFF111111 : a.text);
-        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) heading.setShadowLayer(dp(1), 0, 0, 0xFFFFFFFF);
-        heading.setTextSize(13);
-        volume.addView(heading);
-
-        SeekBar seek = new SeekBar(this);
-        seek.setMax(max);
-        seek.setProgress(current);
-        seek.setFocusable(true);
-        seek.setFocusableInTouchMode(false);
-        styleLevelSeekBar(seek, a);
-        attachBrightnessFocus(volume, seek);
-        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
-                if (fromUser) {
-                    AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    if (manager != null) manager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0);
-                }
-                updateBrightnessCard(volume, a, value, max);
-            }
-            @Override public void onStartTrackingTouch(SeekBar bar) { }
-            @Override public void onStopTrackingTouch(SeekBar bar) { }
-        });
-        volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(32)));
-        row.addView(volume, new LinearLayout.LayoutParams(0, dp(66), 1));
-
-        final TextView dnd = new TextView(this);
-        boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
-        dnd.setText("⊖\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\nON" : "\nOFF"));
-        dnd.setTextColor(a.text);
-        dnd.setTextSize(10);
-        dnd.setGravity(Gravity.CENTER);
-        dnd.setFocusable(true);
-        dnd.setFocusableInTouchMode(false);
-        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) {
-            GradientDrawable dndCircle = new GradientDrawable(); dndCircle.setShape(GradientDrawable.OVAL);
-            dndCircle.setColor(quiet ? a.tileActive : a.tile); dndCircle.setStroke(dp(1), a.border);
-            dnd.setBackgroundDrawable(dndCircle);
-        } else styleSurface(dnd, quickSurfaceColor(a, quiet ? a.tileActive : a.tile), a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
-        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(dp(66), dp(66));
-        dndParams.leftMargin = dp(7);
-        row.addView(dnd, dndParams);
-        dnd.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { toggleDoNotDisturb(); }
-        });
-
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
-        rp.topMargin = dp(8);
-        panel.addView(row, rp);
+        LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout volume = new LinearLayout(this); volume.setOrientation(LinearLayout.VERTICAL); volume.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(volume, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.cornerDp);
+        TextView heading = new TextView(this); heading.setText(getString(R.string.launcher_volume)); heading.setTextColor(a.text); heading.setTextSize(13); volume.addView(heading);
+        AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE); final int max = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)); final int current = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+        SeekBar seek = new SeekBar(this); seek.setMax(max); seek.setProgress(current); seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        float sliderRadius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 1f : (ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 14f : 10f);
+        GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(sliderRadius));
+        GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(sliderRadius));
+        int sliderThickness = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 12 : 4;
+        track.setSize(dp(1), dp(sliderThickness)); progress.setSize(dp(1), dp(sliderThickness));
+        LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL)}); layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
+        GradientDrawable thumb = new GradientDrawable();
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) { thumb.setShape(GradientDrawable.RECTANGLE); thumb.setCornerRadius(dp(2)); }
+        else thumb.setShape(GradientDrawable.OVAL);
+        thumb.setColor(a.accent); int thumbSize = ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 20 : 16; thumb.setSize(dp(thumbSize), dp(thumbSize)); seek.setThumb(thumb);
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { @Override public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser){AudioManager m=(AudioManager)getSystemService(Context.AUDIO_SERVICE);if(m!=null)m.setStreamVolume(AudioManager.STREAM_MUSIC,value,0);}} @Override public void onStartTrackingTouch(SeekBar bar){} @Override public void onStopTrackingTouch(SeekBar bar){} });
+        volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 42 : 32))); row.addView(volume, new LinearLayout.LayoutParams(0, dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 78 : 66), 1));
+        final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
+        dnd.setText("⊖\\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\\nON" : "\\nOFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false); styleSurface(dnd, quickSurfaceColor(a, quiet ? a.tileActive : a.tile), a.border, a.focus, a.cornerDp);
+        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(dp(82), dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 78 : 66)); dndParams.leftMargin = dp(7); row.addView(dnd, dndParams);
+        dnd.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){toggleDoNotDisturb();}});
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1,-2); rp.topMargin=dp(8); panel.addView(row,rp);
     }
 
     private void toggleWifi() {
