@@ -3094,16 +3094,9 @@ public class QinsLauncherActivity extends Activity {
         tile.setTag("drawer:" + componentKey(info));
         tile.setContentDescription((folder ? getFolderName(info) : info.loadLabel(getPackageManager())) +
                 (folder ? ". Folder. Press to open, long press for options." : ". Press to open, long press to pin."));
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            styleSurface(tile, a.surface, a.border, a.focus, a.cornerDp);
-        } else {
-            tile.setBackgroundColor(0x00000000);
-            tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-                @Override public void onFocusChange(View v, boolean focused) {
-                    v.setBackgroundColor(focused ? ((a.focus & 0x00FFFFFF) | 0x22000000) : 0x00000000);
-                }
-            });
-        }
+        // App artwork should be the visible object, not a badge inside another badge.
+        // All OEM drawers keep the grid open; only the focused item receives a surface outline.
+        styleSurface(tile, 0x00000000, 0x00000000, a.focus, a.cardCornerDp);
 
         int widthIconSize = clamp(screenWidthDp() / Math.max(1, drawerColumns()) - 16, 40, 64);
         int heightIconSize = clamp((screenHeightDp() - 105) / Math.max(1, drawerRows()) - 27, 36, 62);
