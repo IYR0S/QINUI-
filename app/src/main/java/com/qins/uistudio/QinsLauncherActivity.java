@@ -2112,39 +2112,38 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private View compactQuickTile(String key, ThemeManager.Appearance a) {
-        boolean galaxy = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
-        boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
-        boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
+        final boolean galaxy = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
+        final boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
+        final boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
+
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.VERTICAL);
         tile.setGravity(Gravity.CENTER);
-        tile.setPadding(dp(2), dp(3), dp(2), dp(3));
+        tile.setPadding(dp(2), dp(2), dp(2), dp(2));
 
         FrameLayout iconWrap = new FrameLayout(this);
-        GradientDrawable shape = new GradientDrawable();
         if (galaxy) {
-            shape.setShape(GradientDrawable.OVAL);
-            shape.setColor(a.tileActive);
-            shape.setStroke(dp(1), a.border);
+            GradientDrawable circle = new GradientDrawable();
+            circle.setShape(GradientDrawable.OVAL);
+            circle.setColor(a.tileActive);
+            circle.setStroke(dp(1), a.border);
+            iconWrap.setBackgroundDrawable(circle);
         } else {
-            shape.setShape(GradientDrawable.RECTANGLE);
-            shape.setCornerRadius(dp(nothing ? 6 : 16));
-            shape.setColor(nothing ? 0xFF292C2E : (pixel ? 0xFFD1E1D4 : a.tileActive));
-            if (pixel) shape.setStroke(dp(1), 0xFFB9CDBD);
-            if (nothing) shape.setStroke(dp(1), 0xFF45494B);
+            // Pixel and Nothing compact tiles use one coherent tile surface;
+            // a second nested icon plate made the compact panel look boxed-in.
+            iconWrap.setBackgroundColor(0x00000000);
         }
-        iconWrap.setBackgroundDrawable(shape);
         iconWrap.setTag("quick-icon-shape");
+
         QinsGlyphView icon = new QinsGlyphView(this, glyphForQuickKey(key),
                 nothing ? 0xFFF4F4F0 : (pixel ? 0xFF34483A : a.accent));
         icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
+        int glyphSize = galaxy ? 21 : (pixel ? 23 : 21);
         iconWrap.addView(icon, new FrameLayout.LayoutParams(
-                dp(galaxy ? 21 : (pixel ? 21 : 19)),
-                dp(galaxy ? 21 : (pixel ? 21 : 19)), Gravity.CENTER));
-        tile.addView(iconWrap, new LinearLayout.LayoutParams(
-                dp(galaxy ? 32 : (pixel ? 36 : 30)),
-                dp(galaxy ? 32 : (pixel ? 30 : 30))));
+                dp(glyphSize), dp(glyphSize), Gravity.CENTER));
+        int iconBox = galaxy ? 32 : (pixel ? 26 : 24);
+        tile.addView(iconWrap, new LinearLayout.LayoutParams(dp(iconBox), dp(iconBox)));
 
         TextView text = new TextView(this);
         text.setText(nothing ? quickLabel(key).toUpperCase(Locale.US) : quickLabel(key));
@@ -2157,18 +2156,25 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(-1, -2);
         textParams.topMargin = dp(2);
         tile.addView(text, textParams);
+
         TextView state = new TextView(this);
         state.setTextColor(nothing ? 0xFFA4A7A8 : (pixel ? 0xFF617665 : a.muted));
         state.setTextSize(7);
         state.setGravity(Gravity.CENTER);
         state.setSingleLine(true);
         tile.addView(state);
+
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
-        if (nothing) styleSurface(tile, 0xFF202224, 0xFF45494B, a.accent, 8f);
-        else if (pixel) styleSurface(tile, 0xFFEAF2E9, 0xFFCAD8CC, 0xFF78927E, 18f);
-        else if (galaxy) styleSurface(tile, 0x00000000, 0x00000000, a.focus, a.tileCornerDp);
+        if (nothing) {
+            styleSurface(tile, 0xFF202224, 0xFF45494B, a.accent, 8f);
+        } else if (pixel) {
+            styleSurface(tile, 0xFFEAF2E9, 0xFFCAD8CC, 0xFF78927E, 18f);
+        } else {
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(
+                    0x00000000, 0x00000000, a.focus, a.tileCornerDp, false));
+        }
         registerQuickTile(key, tile, state);
         return tile;
     }
@@ -5216,17 +5222,31 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER_HORIZONTAL);
-        card.setPadding(dp(4), dp(5), dp(4), dp(4));
+        // Start the vertical rail at the very top of its own card. The label
+        // sits below it so it no longer steals the first part of the slider.
+        card.setPadding(dp(4), 0, dp(4), dp(3));
         card.setBackgroundDrawable(new FocusSurfaceDrawable(
                 0xFF202224, 0xFF45494B, a.accent, 9f, false));
 
+        final VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this);
+        seek.setMax(Math.max(1, max));
+        seek.setProgress(Math.max(0, Math.min(max, value)));
+        seek.setContentDescription(brightness ? "Brightness" : "Media volume");
+        if (quickGridLastTile != null) seek.setNextFocusUpId(quickGridLastTile.getId());
+        styleNothingVerticalSeekBar(seek, brightness, a);
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(34), 0, 1f);
+        seekParams.gravity = Gravity.CENTER_HORIZONTAL;
+        seekParams.topMargin = 0;
+        seekParams.bottomMargin = 0;
+        card.addView(seek, seekParams);
+
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setGravity(Gravity.CENTER);
         QinsGlyphView glyph = new QinsGlyphView(this,
                 brightness ? "brightness" : "volume", 0xFFF0F0ED);
         glyph.setVisualStyle(a.id);
-        header.addView(glyph, new LinearLayout.LayoutParams(dp(15), dp(15)));
+        header.addView(glyph, new LinearLayout.LayoutParams(dp(13), dp(13)));
 
         TextView title = new TextView(this);
         title.setText(brightness ? "BRIGHT" : "VOLUME");
@@ -5234,23 +5254,10 @@ public class QinsLauncherActivity extends Activity {
         title.setTextSize(7);
         title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         title.setSingleLine(true);
-        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, -2, 1);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-2, -2);
         titleParams.leftMargin = dp(3);
         header.addView(title, titleParams);
         card.addView(header, new LinearLayout.LayoutParams(-1, dp(16)));
-
-        final VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this);
-        seek.setMax(Math.max(1, max));
-        seek.setProgress(Math.max(0, Math.min(max, value)));
-        if (quickGridLastTile != null) seek.setNextFocusUpId(quickGridLastTile.getId());
-        styleNothingVerticalSeekBar(seek, brightness, a);
-        // Consume all space left below the fixed label row. The track length
-        // is now driven by the dock's measured height, not a short dp constant.
-        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(34), 0, 1f);
-        seekParams.gravity = Gravity.CENTER_HORIZONTAL;
-        seekParams.topMargin = dp(1);
-        seekParams.bottomMargin = dp(1);
-        card.addView(seek, seekParams);
 
         seek.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View view, boolean focused) {
@@ -5268,10 +5275,9 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStopTrackingTouch(SeekBar bar) { listener.onStopTrackingTouch(bar); }
         });
 
-        // Both slider cards stretch to the full height of the shared dock.
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(0, -1, 1f);
-        cardParams.leftMargin = dp(3);
-        cardParams.rightMargin = dp(3);
+        cardParams.leftMargin = dp(2);
+        cardParams.rightMargin = dp(2);
         row.addView(card, cardParams);
     }
 
@@ -5313,7 +5319,8 @@ public class QinsLauncherActivity extends Activity {
                     @Override public void onStopTrackingTouch(SeekBar bar) { }
                 }, a);
         View divider = new View(this);
-        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(dp(8), 1);
+        // A transparent 10dp spacer gives the two rails a real visual gap.
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(dp(10), -1);
         controls.addView(divider, dividerParams);
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         final int maxVolume = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
