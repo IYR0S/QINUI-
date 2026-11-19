@@ -453,7 +453,7 @@ public class QinsLauncherActivity extends Activity {
         appsNavButton.setFocusable(true);
         appsNavButton.setFocusableInTouchMode(false);
         appsNavButton.setVisibility(View.GONE);
-        styleSurface(appsNavButton, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(appsNavButton, a.surface, a.border, a.focus, a.tileCornerDp);
         appsNavButton.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (drawerVisible || quickPanelVisible) showHome(false);
@@ -523,7 +523,7 @@ public class QinsLauncherActivity extends Activity {
         appsNavButton.setText(drawerVisible || quickPanelVisible
                 ? getString(R.string.launcher_home) : getString(R.string.launcher_apps));
         appsNavButton.setTextColor(a.text);
-        styleSurface(appsNavButton, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(appsNavButton, a.surface, a.border, a.focus, a.tileCornerDp);
         if (wallpaperButton != null) {
             wallpaperButton.setTextColor(a.text);
             wallpaperButton.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, 0x00000000, a.accent, 8f, wallpaperButton.hasFocus()));
@@ -1684,7 +1684,7 @@ public class QinsLauncherActivity extends Activity {
         boolean solidClockBackground = clockBackgroundFilled(a);
         int clockBackgroundColor = solidClockBackground ? clockBackgroundColor(a) : 0x00000000;
         int clockBorderColor = solidClockBackground ? a.border : 0x00000000;
-        styleSurface(clockView, clockBackgroundColor, clockBorderColor, a.focus, a.cornerDp);
+        styleSurface(clockView, clockBackgroundColor, clockBorderColor, a.focus, a.cardCornerDp);
         clockView.setPadding(dp(7), dp(4), dp(7), dp(4));
         clockView.setTag("home:clock");
         clockView.setContentDescription("Clock style. Press to customize.");
@@ -1820,7 +1820,7 @@ public class QinsLauncherActivity extends Activity {
             emptyCard.setFocusableInTouchMode(false);
             emptyCard.setClickable(true);
             emptyCard.setTag("home:widget-stack");
-            styleSurface(emptyCard, a.surface, a.border, a.focus, a.cornerDp);
+            styleSurface(emptyCard, a.surface, a.border, a.focus, a.cardCornerDp);
             TextView emptyTitle = new TextView(this);
             emptyTitle.setText("MUSIC WIDGET");
             emptyTitle.setTextColor(a.accent);
@@ -1967,7 +1967,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout compact = new LinearLayout(this);
         compact.setOrientation(LinearLayout.VERTICAL);
         compact.setPadding(dp(5), dp(4), dp(5), dp(4));
-        styleSurface(compact, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp + 3);
+        styleSurface(compact, a.surface, a.border, a.focus, a.cardCornerDp);
 
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
@@ -2187,7 +2187,7 @@ public class QinsLauncherActivity extends Activity {
         button.setVisualStyle(a.id);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
-        styleSurface(button, a.backgroundAlt, a.border, a.focus, a.cornerDp);
+        styleSurface(button, a.backgroundAlt, a.border, a.focus, a.tileCornerDp);
         return button;
     }
 
@@ -2240,7 +2240,7 @@ public class QinsLauncherActivity extends Activity {
                 add.setFocusable(true);
                 add.setFocusableInTouchMode(false);
                 add.setTag("home-empty:" + absoluteIndex);
-                styleSurface(add, 0x00000000, 0x00000000, a.focus, a.cornerDp);
+                styleSurface(add, 0x00000000, 0x00000000, a.focus, a.tileCornerDp);
                 add.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) { showDrawer(true); }
                 });
@@ -2526,7 +2526,7 @@ public class QinsLauncherActivity extends Activity {
         button.setContentDescription(description);
         button.setFocusable(true);
         button.setFocusableInTouchMode(false);
-        styleSurface(button, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+        styleSurface(button, a.surface, a.border, a.focus, a.tileCornerDp);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1);
         params.setMargins(dp(3), 0, dp(3), 0);
         editBar.addView(button, params);
@@ -2638,7 +2638,7 @@ public class QinsLauncherActivity extends Activity {
         panel.setPadding(dp(12), dp(10), dp(12), dp(10));
         GradientDrawable panelBackground = new GradientDrawable();
         panelBackground.setColor(0x99151A21);
-        panelBackground.setCornerRadius(dp(a.cornerDp + 2f));
+        panelBackground.setCornerRadius(dp(a.cardCornerDp));
         panelBackground.setStroke(dp(1), 0x66FFFFFF);
         panel.setBackgroundDrawable(panelBackground);
         panel.setClickable(true);
@@ -2801,7 +2801,7 @@ public class QinsLauncherActivity extends Activity {
         settings.setGravity(Gravity.CENTER);
         settings.setFocusable(true);
         settings.setFocusableInTouchMode(false);
-        styleSurface(settings, a.surfaceAlt, a.border, a.focus, a.cornerDp);
+        styleSurface(settings, a.surfaceAlt, a.border, a.focus, a.tileCornerDp);
         settings.setContentDescription(getString(R.string.launcher_edge_settings));
         settings.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showEdgePanelSettings(); }
@@ -3273,7 +3273,7 @@ public class QinsLauncherActivity extends Activity {
         clearSearch.setFocusableInTouchMode(false);
         clearSearch.setTag("drawer-search-clear");
         clearSearch.setPadding(dp(7), 0, dp(7), 0);
-        styleSurface(clearSearch, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(clearSearch, a.surface, a.border, a.focus, a.tileCornerDp);
         clearSearch.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { drawerSearchQuery = ""; drawerPage = 0; showDrawer(pinSelectionMode); }
         });
@@ -3317,7 +3317,7 @@ public class QinsLauncherActivity extends Activity {
         createFolder.setFocusable(true);
         createFolder.setFocusableInTouchMode(false);
         createFolder.setPadding(dp(6), 0, dp(6), 0);
-        styleSurface(createFolder, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(createFolder, a.surface, a.border, a.focus, a.tileCornerDp);
         createFolder.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showDrawerCreateFolderDialog(); }
         });
@@ -3332,7 +3332,7 @@ public class QinsLauncherActivity extends Activity {
         hiddenApps.setFocusable(true);
         hiddenApps.setFocusableInTouchMode(false);
         hiddenApps.setPadding(dp(6), 0, dp(6), 0);
-        styleSurface(hiddenApps, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(hiddenApps, a.surface, a.border, a.focus, a.tileCornerDp);
         hiddenApps.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { showHiddenDrawerApps(); } });
         LinearLayout.LayoutParams hiddenParams = new LinearLayout.LayoutParams(-2, dp(28));
         hiddenParams.rightMargin = dp(5);
@@ -3345,7 +3345,7 @@ public class QinsLauncherActivity extends Activity {
         editGrid.setFocusable(true);
         editGrid.setFocusableInTouchMode(false);
         editGrid.setPadding(dp(7), 0, dp(7), 0);
-        styleSurface(editGrid, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(editGrid, a.surface, a.border, a.focus, a.tileCornerDp);
         editGrid.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showDrawerGridSettings(); }
         });
@@ -3387,7 +3387,7 @@ public class QinsLauncherActivity extends Activity {
         previous.setFocusable(drawerPage > 0);
         previous.setFocusableInTouchMode(false);
         previous.setTag("drawer-page-prev");
-        styleSurface(previous, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(previous, a.surface, a.border, a.focus, a.tileCornerDp);
         previous.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { if (drawerPage > 0) { drawerPage--; showDrawer(pinSelectionMode); } }
         });
@@ -3405,7 +3405,7 @@ public class QinsLauncherActivity extends Activity {
         next.setFocusable(drawerPage + 1 < pageCount);
         next.setFocusableInTouchMode(false);
         next.setTag("drawer-page-next");
-        styleSurface(next, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(next, a.surface, a.border, a.focus, a.tileCornerDp);
         next.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { if (drawerPage + 1 < pageCount) { drawerPage++; showDrawer(pinSelectionMode); } }
         });
@@ -3733,10 +3733,10 @@ public class QinsLauncherActivity extends Activity {
                         dialog.dismiss();
                         int chosen = which == 0 ? 0x00000000 : colors[which];
                         if (clockEditorPreviewCard != null) {
-                            styleSurface(clockEditorPreviewCard, chosen, which == 0 ? 0x00000000 : a.border, a.focus, a.cornerDp);
+                            styleSurface(clockEditorPreviewCard, chosen, which == 0 ? 0x00000000 : a.border, a.focus, a.cardCornerDp);
                         }
                         if (clockView != null) {
-                            styleSurface(clockView, chosen, which == 0 ? 0x00000000 : a.border, a.focus, a.cornerDp);
+                            styleSurface(clockView, chosen, which == 0 ? 0x00000000 : a.border, a.focus, a.cardCornerDp);
                         }
                     }
                 }).setNegativeButton(android.R.string.cancel, null).show();
@@ -3843,9 +3843,9 @@ public class QinsLauncherActivity extends Activity {
                             new FrameLayout.LayoutParams(-1, dp(66), Gravity.CENTER));
                 }
                 if (clockBackgroundFilled(a)) {
-                    styleSurface(previewCard, clockBackgroundColor(a), a.border, a.focus, a.cornerDp);
+                    styleSurface(previewCard, clockBackgroundColor(a), a.border, a.focus, a.cardCornerDp);
                 } else {
-                    styleSurface(previewCard, 0x00000000, 0x00000000, a.focus, a.cornerDp);
+                    styleSurface(previewCard, 0x00000000, 0x00000000, a.focus, a.cardCornerDp);
                 }
                 grid.removeAllViews();
                 LinearLayout row = null;
@@ -3866,7 +3866,7 @@ public class QinsLauncherActivity extends Activity {
                     option.setGravity(Gravity.CENTER);
                     option.setPadding(dp(3), dp(3), dp(3), dp(3));
                     styleSurface(option, selected ? a.tileActive : a.surface,
-                            selected ? a.accent : a.border, a.focus, a.cornerDp);
+                            selected ? a.accent : a.border, a.focus, a.tileCornerDp);
                     TextView sample = new TextView(QinsLauncherActivity.this);
                     sample.setText("stacked".equals(value) ? "12\n45" : "12:45");
                     sample.setTextColor(a.text);
@@ -4221,7 +4221,7 @@ public class QinsLauncherActivity extends Activity {
         button.setText(label); button.setTextColor(a.text); button.setTextSize(11);
         button.setGravity(Gravity.CENTER); button.setFocusable(true);
         button.setFocusableInTouchMode(false); button.setClickable(true);
-        styleSurface(button, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(button, a.surface, a.border, a.focus, a.tileCornerDp);
         button.setOnClickListener(listener);
         return button;
     }
@@ -4338,7 +4338,7 @@ public class QinsLauncherActivity extends Activity {
                     tile.setGravity(Gravity.CENTER);
                     tile.setPadding(dp(2), dp(2), dp(2), dp(2));
                     int fill = i == selected[0] ? a.tileActive : a.surface;
-                    styleSurface(tile, fill, i == selected[0] ? a.accent : a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+                    styleSurface(tile, fill, i == selected[0] ? a.accent : a.border, a.focus, a.tileCornerDp);
                     FrameLayout iconBox = new FrameLayout(QinsLauncherActivity.this);
                     GradientDrawable iconShape = new GradientDrawable();
                     if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) iconShape.setShape(GradientDrawable.OVAL);
@@ -4550,7 +4550,7 @@ public class QinsLauncherActivity extends Activity {
         controlsTab.setTextColor(quickPanelPage == 0 ? a.text : a.muted);
         controlsTab.setFocusable(true);
         controlsTab.setFocusableInTouchMode(false);
-        styleSurface(controlsTab, quickPanelPage == 0 ? a.tileActive : a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+        styleSurface(controlsTab, quickPanelPage == 0 ? a.tileActive : a.surface, a.border, a.focus, a.tileCornerDp);
         tabs.addView(controlsTab, new LinearLayout.LayoutParams(0, -1, 1));
         controlsTab.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { switchQuickPanelPage(0); }
@@ -4563,7 +4563,7 @@ public class QinsLauncherActivity extends Activity {
         notificationsTab.setTextColor(quickPanelPage == 1 ? a.text : a.muted);
         notificationsTab.setFocusable(true);
         notificationsTab.setFocusableInTouchMode(false);
-        styleSurface(notificationsTab, quickPanelPage == 1 ? a.tileActive : a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+        styleSurface(notificationsTab, quickPanelPage == 1 ? a.tileActive : a.surface, a.border, a.focus, a.tileCornerDp);
         LinearLayout.LayoutParams notificationsParams = new LinearLayout.LayoutParams(0, -1, 1);
         notificationsParams.leftMargin = dp(6);
         tabs.addView(notificationsTab, notificationsParams);
@@ -4608,7 +4608,7 @@ public class QinsLauncherActivity extends Activity {
         customize.setTextSize(11);
         customize.setFocusable(true);
         customize.setFocusableInTouchMode(false);
-        styleSurface(customize, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+        styleSurface(customize, a.surface, a.border, a.focus, a.tileCornerDp);
         tools.addView(customize, new LinearLayout.LayoutParams(0, -1, 1));
         customize.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { showQuickSettingsEditor(false); }
@@ -4620,7 +4620,7 @@ public class QinsLauncherActivity extends Activity {
         themeSettings.setTextSize(11);
         themeSettings.setFocusable(true);
         themeSettings.setFocusableInTouchMode(false);
-        styleSurface(themeSettings, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+        styleSurface(themeSettings, a.surface, a.border, a.focus, a.tileCornerDp);
         LinearLayout.LayoutParams themeParams = new LinearLayout.LayoutParams(0, -1, 1);
         themeParams.leftMargin = dp(6);
         tools.addView(themeSettings, themeParams);
@@ -4647,7 +4647,7 @@ public class QinsLauncherActivity extends Activity {
             access.setTextSize(11);
             access.setFocusable(true);
             access.setFocusableInTouchMode(false);
-            styleSurface(access, a.surface, a.border, a.focus, a.cornerDp);
+            styleSurface(access, a.surface, a.border, a.focus, a.tileCornerDp);
             panel.addView(access, new LinearLayout.LayoutParams(-1, dp(42)));
             access.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { openNotificationAccessSettings(); }
@@ -4909,7 +4909,7 @@ public class QinsLauncherActivity extends Activity {
         float level = max <= 0 ? 0f : Math.max(0f, Math.min(1f, value / (float) max));
         int fillColor = (ThemeManager.APPEARANCE_NOTHING.equals(a.id) || ThemeManager.APPEARANCE_PIXEL.equals(a.id)) ? a.accent : a.tileActive;
         float radius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 10f :
-                (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 22f : a.cornerDp);
+                a.sliderCornerDp;
         int baseSurface = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 0xFF25282A : quickSurfaceColor(a, a.surfaceAlt);
         Drawable current = card.getBackground();
         boolean horizontal = true;
@@ -5028,7 +5028,7 @@ public class QinsLauncherActivity extends Activity {
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
             styleSurface(card, 0xFF1B1D1E, 0xFF1B1D1E, a.focus, 14f);
         } else {
-            styleSurface(card, quickSurfaceColor(a, a.surface), a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+            styleSurface(card, quickSurfaceColor(a, a.surface), a.border, a.focus, a.cardCornerDp);
         }
         if (item.artwork != null && !item.artwork.isRecycled()) {
             ImageView artwork = new ImageView(this);
@@ -5116,7 +5116,7 @@ public class QinsLauncherActivity extends Activity {
             GradientDrawable sleepCircle = new GradientDrawable(); sleepCircle.setShape(GradientDrawable.OVAL);
             sleepCircle.setColor(isSleepModeActive() ? a.tileActive : a.tile); sleepCircle.setStroke(dp(1), a.border);
             sleep.setBackgroundDrawable(sleepCircle);
-        } else styleSurface(sleep, quickSurfaceColor(a, isSleepModeActive() ? a.tileActive : a.tile), a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 8f : a.cornerDp);
+        } else styleSurface(sleep, quickSurfaceColor(a, isSleepModeActive() ? a.tileActive : a.tile), a.border, a.focus, a.tileCornerDp);
         LinearLayout.LayoutParams sleepParams = new LinearLayout.LayoutParams(dp(66), dp(66)); sleepParams.leftMargin = dp(7); row.addView(sleep, sleepParams);
         sleep.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleSleepMode(); showQuickPanel(false); } });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.topMargin = dp(8); panel.addView(row, params);
@@ -5613,7 +5613,7 @@ public class QinsLauncherActivity extends Activity {
 
     private void addVolumeDndRow(LinearLayout panel, ThemeManager.Appearance a) {
         LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.HORIZONTAL); row.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout volume = new LinearLayout(this); volume.setOrientation(LinearLayout.VERTICAL); volume.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(volume, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.cornerDp);
+        LinearLayout volume = new LinearLayout(this); volume.setOrientation(LinearLayout.VERTICAL); volume.setPadding(dp(10), dp(7), dp(10), dp(5)); styleSurface(volume, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.sliderCornerDp);
         TextView heading = new TextView(this); heading.setText(getString(R.string.launcher_volume)); heading.setTextColor(a.text); heading.setTextSize(13); volume.addView(heading);
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE); final int max = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)); final int current = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
         SeekBar seek = new SeekBar(this); seek.setMax(max); seek.setProgress(current); seek.setFocusable(true); seek.setFocusableInTouchMode(false); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -5630,7 +5630,7 @@ public class QinsLauncherActivity extends Activity {
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { @Override public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser){AudioManager m=(AudioManager)getSystemService(Context.AUDIO_SERVICE);if(m!=null)m.setStreamVolume(AudioManager.STREAM_MUSIC,value,0);}} @Override public void onStartTrackingTouch(SeekBar bar){} @Override public void onStopTrackingTouch(SeekBar bar){} });
         volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 42 : 32))); row.addView(volume, new LinearLayout.LayoutParams(0, dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 78 : 66), 1));
         final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
-        dnd.setText("⊖\\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\\nON" : "\\nOFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false); styleSurface(dnd, quickSurfaceColor(a, quiet ? a.tileActive : a.tile), a.border, a.focus, a.cornerDp);
+        dnd.setText("⊖\\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\\nON" : "\\nOFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false); styleSurface(dnd, quickSurfaceColor(a, quiet ? a.tileActive : a.tile), a.border, a.focus, a.tileCornerDp);
         LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(dp(82), dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 78 : 66)); dndParams.leftMargin = dp(7); row.addView(dnd, dndParams);
         dnd.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){toggleDoNotDisturb();}});
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1,-2); rp.topMargin=dp(8); panel.addView(row,rp);
