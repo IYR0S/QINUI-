@@ -5437,7 +5437,7 @@ public class QinsLauncherActivity extends Activity {
             sleepCircle.setColor(isSleepModeActive() ? a.tileActive : a.tile); sleepCircle.setStroke(dp(1), a.border);
             sleep.setBackgroundDrawable(sleepCircle);
         } else styleSurface(sleep, quickSurfaceColor(a, isSleepModeActive() ? a.tileActive : a.tile), a.border, a.focus, a.tileCornerDp);
-        LinearLayout.LayoutParams sleepParams = new LinearLayout.LayoutParams(dp(66), dp(66)); sleepParams.leftMargin = dp(7); row.addView(sleep, sleepParams);
+        LinearLayout.LayoutParams sleepParams = new LinearLayout.LayoutParams(dp(82), dp(66)); sleepParams.leftMargin = dp(7); row.addView(sleep, sleepParams);
         sleep.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleSleepMode(); showQuickPanel(false); } });
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2); params.topMargin = dp(8); panel.addView(row, params);
     }
