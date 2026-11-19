@@ -5016,8 +5016,9 @@ public class QinsLauncherActivity extends Activity {
             styleSurface(tile, 0x00000000, 0x00000000, a.focus, a.tileCornerDp);
             state.setVisibility(View.GONE);
         } else if (pixel) {
-            // Material tiles are broad, tonal surfaces with a horizontal icon/label rhythm.
-            styleSurface(tile, a.tile, a.border, a.focus, a.tileCornerDp);
+            // Material 3 Expressive uses pill-shaped inactive tiles; the active
+            // state morphs to a tighter rounded rectangle in updateQuickTileVisual.
+            styleSurface(tile, a.tile, a.border, a.focus, 36f);
         } else {
             // Nothing uses a compact 3-column icon grid, with no extra icon badge.
             styleSurface(tile, 0xFF242729, 0xFF3A3D3F, a.accent, a.tileCornerDp);
@@ -5605,11 +5606,11 @@ public class QinsLauncherActivity extends Activity {
             // Material 3 Expressive uses a slim upright grip that protrudes
             // equally above and below the horizontal rail.
             canvas.drawRoundRect(new android.graphics.RectF(
-                    cx - dp(2), cy - dp(12), cx + dp(2), cy + dp(12)),
+                    cx - dp(2), cy - dp(10), cx + dp(2), cy + dp(10)),
                     dp(2), dp(2), paint);
         }
         @Override public int getIntrinsicWidth() { return dp(10); }
-        @Override public int getIntrinsicHeight() { return dp(30); }
+        @Override public int getIntrinsicHeight() { return dp(24); }
         @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
         @Override public void setColorFilter(android.graphics.ColorFilter filter) {
             paint.setColorFilter(filter); invalidateSelf();
@@ -5915,7 +5916,8 @@ public class QinsLauncherActivity extends Activity {
 
         if (pixel) {
             int fill = active ? a.accent : a.tile;
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : a.border, a.focus, a.tileCornerDp, tile.hasFocus()));
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : a.border, a.focus,
+                    active ? a.tileCornerDp : 36f, tile.hasFocus()));
             QinsGlyphView glyph = findQuickGlyph(tile);
             if (glyph != null) glyph.setTint(active ? 0xFFFFFFFF : a.accent);
             if (tile instanceof android.view.ViewGroup) {
