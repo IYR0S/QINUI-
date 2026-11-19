@@ -1839,7 +1839,7 @@ public class QinsLauncherActivity extends Activity {
         homeWidgetIndex = Math.max(0, Math.min(homeWidgetIndex, items.size() - 1));
         final NotificationBridgeService.NotificationItem item = items.get(homeWidgetIndex);
         LinearLayout card = new LinearLayout(this); card.setOrientation(LinearLayout.VERTICAL); card.setPadding(dp(8), dp(5), dp(8), dp(5));
-        card.setFocusable(true); card.setFocusableInTouchMode(false); card.setClickable(true); card.setTag("home:widget-stack"); styleSurface(card, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+        card.setFocusable(true); card.setFocusableInTouchMode(false); card.setClickable(true); card.setTag("home:widget-stack"); styleSurface(card, a.surface, a.border, a.focus, a.cardCornerDp);
         TextView label = new TextView(this); label.setText(item.missedCall ? getString(R.string.launcher_missed_call) : getString(R.string.launcher_now_playing)); label.setTextColor(a.accent); label.setTextSize(9); card.addView(label);
         LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.HORIZONTAL); content.setGravity(Gravity.CENTER_VERTICAL); content.setTag("home:widget-stack");
         if (item.media && musicPrefs.getBoolean("show_artwork", true) && item.artwork != null && !item.artwork.isRecycled()) {
@@ -2069,7 +2069,7 @@ public class QinsLauncherActivity extends Activity {
         TextView text = new TextView(this); text.setText(label); text.setTextColor(a.text); text.setTextSize(9); text.setGravity(Gravity.CENTER); tile.addView(text);
         TextView state = new TextView(this); state.setTextColor(a.muted); state.setTextSize(8); state.setGravity(Gravity.CENTER); tile.addView(state);
         tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
-        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.surface, a.border, a.focus, a.cornerDp); else tile.setBackgroundColor(0x00000000);
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(tile, a.surface, a.border, a.focus, a.tileCornerDp); else tile.setBackgroundColor(0x00000000);
         registerQuickTile(key, tile, state); return tile;
     }
 
@@ -4459,18 +4459,25 @@ public class QinsLauncherActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         quickPanelScrollView = scroll;
         scroll.setSmoothScrollingEnabled(true);
-        scroll.setFillViewport(false);
+        scroll.setFillViewport(true);
         scroll.setVerticalScrollBarEnabled(ThemeManager.APPEARANCE_NOTHING.equals(a.id));
         scroll.setFocusable(false);
         scroll.setDescendantFocusability(android.view.ViewGroup.FOCUS_AFTER_DESCENDANTS);
         scroll.setPadding(0, 0, 0, 0);
+        scroll.setBackgroundColor(0x00000000);
         scroll.setClipToPadding(false);
         scroll.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
         LinearLayout panel = new LinearLayout(this);
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setClipChildren(false);
         panel.setClipToPadding(false);
-        panel.setPadding(0, 0, 0, dp(10));
+        panel.setPadding(dp(8), 0, dp(8), dp(10));
+        // API 19 cannot provide a live blurred backdrop. Use a theme-matched
+        // translucent scrim so wallpaper remains visible without competing
+        // with the foreground focus blocks.
+        int scrimAlpha = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 0xEE : 0xD8;
+        panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
+                (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
 
@@ -4660,7 +4667,7 @@ public class QinsLauncherActivity extends Activity {
             card.setFocusable(true);
             card.setFocusableInTouchMode(false);
             card.setClickable(true);
-            styleSurface(card, a.surface, a.border, a.focus, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5f : a.cornerDp);
+            styleSurface(card, a.surface, a.border, a.focus, a.cardCornerDp);
 
             TextView app = new TextView(this);
             app.setText(notificationAppLabel(item.packageName));
@@ -4772,12 +4779,12 @@ public class QinsLauncherActivity extends Activity {
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
         if (galaxy) {
-            styleSurface(tile, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, 24f);
+            styleSurface(tile, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, a.tileCornerDp);
             state.setVisibility(View.GONE);
         } else if (pixel) {
-            styleSurface(tile, a.tile, a.border, a.focus, 27f);
+            styleSurface(tile, a.tile, a.border, a.focus, a.tileCornerDp);
         } else {
-            styleSurface(tile, a.tile, a.border, a.focus, 18f);
+            styleSurface(tile, a.tile, a.border, a.focus, a.tileCornerDp);
             name.setTextColor(0xFFF4F4F2);
             state.setTextColor(0xFFA4A7A8);
         }
@@ -4951,7 +4958,7 @@ public class QinsLauncherActivity extends Activity {
         card.setPadding(dp(4), dp(6), dp(4), dp(6));
         final boolean brightness = label.equals(getString(R.string.launcher_brightness));
         if (brightness) updateBrightnessCard(card, a, value, max);
-        else styleSurface(card, a.surface, a.border, a.focus, 14f);
+        else styleSurface(card, a.surface, a.border, a.focus, a.sliderCornerDp);
         TextView title = new TextView(this); title.setText(label); title.setTextColor(a.text); title.setTextSize(10); title.setGravity(Gravity.CENTER); card.addView(title);
         VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this); seek.setMax(max); seek.setProgress(Math.max(0, Math.min(max, value))); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         if (brightness) { styleLevelSeekBar(seek, a); attachBrightnessFocus(card, seek); }
@@ -5127,7 +5134,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(dp(14), dp(8), dp(14), dp(7));
-        styleSurface(card, a.surface, a.border, a.focus, a.cornerDp);
+        styleSurface(card, a.surface, a.border, a.focus, a.cardCornerDp);
         LinearLayout heading = new LinearLayout(this);
         heading.setOrientation(LinearLayout.HORIZONTAL);
         heading.setGravity(Gravity.CENTER_VERTICAL);
@@ -5214,7 +5221,7 @@ public class QinsLauncherActivity extends Activity {
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
-        styleSurface(tile, a.tile, a.border, a.focus, 22f);
+        styleSurface(tile, a.tile, a.border, a.focus, a.tileCornerDp);
         registerQuickTile(key, tile, state);
         return tile;
     }
@@ -5273,7 +5280,7 @@ public class QinsLauncherActivity extends Activity {
 
         if (pixel) {
             int fill = active ? a.accent : a.tile;
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : a.border, a.focus, 27f, tile.hasFocus()));
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : a.border, a.focus, a.tileCornerDp, tile.hasFocus()));
             View iconSurface = tile.findViewWithTag("quick-icon-shape");
             if (iconSurface != null) {
                 GradientDrawable circle = new GradientDrawable();
@@ -5310,11 +5317,11 @@ public class QinsLauncherActivity extends Activity {
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(
                     active ? quickSurfaceColor(a, a.surface) : quickSurfaceColor(a, a.surfaceAlt),
                     tile.hasFocus() ? a.accent : a.border,
-                    a.accent, 24f, tile.hasFocus()));
+                    a.accent, a.tileCornerDp, tile.hasFocus()));
             if (glyph != null) glyph.setTint(active ? 0xFFFFFFFF : a.accent);
         } else {
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(
-                    active ? 0xFFECEDEA : a.tile, a.border, a.accent, 18f, tile.hasFocus()));
+                    active ? 0xFFECEDEA : a.tile, a.border, a.accent, a.tileCornerDp, tile.hasFocus()));
         }
     }
 
