@@ -5426,9 +5426,11 @@ public class QinsLauncherActivity extends Activity {
         });
 
         LinearLayout.LayoutParams columnParams = new LinearLayout.LayoutParams(0, -1, 1f);
-        columnParams.leftMargin = dp(1);
-        columnParams.rightMargin = dp(1);
+        // Keep a visible 8dp inter-pill gap after both columns are laid out.
+        columnParams.leftMargin = dp(4);
+        columnParams.rightMargin = dp(4);
         row.addView(column, columnParams);
+        slider.setId(View.generateViewId());
         return slider;
     }
 
@@ -5885,7 +5887,7 @@ public class QinsLauncherActivity extends Activity {
                 tile.setBackgroundDrawable(new FocusSurfaceDrawable(
                         active ? 0xFF292C2E : 0xFF202224,
                         active ? 0xFFD71921 : 0xFF45494B,
-                        0xFFD71921, 8f, tile.hasFocus()));
+                        0xFFD71921, 24f, tile.hasFocus()));
                 if (compactGlyph != null) compactGlyph.setTint(active ? 0xFFD71921 : 0xFFF4F4F0);
                 if (compactLabel != null) compactLabel.setTextColor(0xFFF2F2EF);
                 if (compactState != null) compactState.setTextColor(active ? 0xFFD71921 : 0xFFA4A7A8);
