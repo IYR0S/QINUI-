@@ -710,7 +710,7 @@ public class QinsLauncherActivity extends Activity {
         });
     }
 
-    /** Keeps the original fill and draws a luminous outline only; focus never adds a grey plate. */
+    /** OEM-aware layered surface with a restrained drop shadow, tonal highlight and clear keypad focus. */
     private final class FocusSurfaceDrawable extends Drawable {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final int fill;
@@ -718,10 +718,12 @@ public class QinsLauncherActivity extends Activity {
         private final int glow;
         private final float radius;
         private final boolean focused;
+        private final String themeId;
 
         FocusSurfaceDrawable(int fill, int border, int glow, float radiusDp, boolean focused) {
             this.fill = fill; this.border = border; this.glow = glow;
             this.radius = dp(radiusDp); this.focused = focused;
+            this.themeId = appearance().id;
         }
 
         @Override public void draw(Canvas canvas) {
@@ -729,18 +731,45 @@ public class QinsLauncherActivity extends Activity {
             android.graphics.RectF r = new android.graphics.RectF(
                     b.left + dp(focused ? 3 : 1), b.top + dp(focused ? 3 : 1),
                     b.right - dp(focused ? 3 : 1), b.bottom - dp(focused ? 3 : 1));
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(fill);
-            if (focused) paint.setShadowLayer(dp(7), 0, 0, glow);
-            canvas.drawRoundRect(r, radius, radius, paint);
-            paint.clearShadowLayer();
+
+            boolean hasFill = ((fill >>> 24) & 0xFF) > 0;
+            if (hasFill) {
+                paint.setStyle(Paint.Style.FILL);
+                paint.setShader(null);
+                paint.setColor(fill);
+                int shadow = ThemeManager.APPEARANCE_GALAXY.equals(themeId) ? 0x30182845 :
+                        (ThemeManager.APPEARANCE_PIXEL.equals(themeId) ? 0x30243B2C : 0x4A000000);
+                paint.setShadowLayer(dp(focused ? 8 : 5), 0, dp(2), shadow);
+                canvas.drawRoundRect(r, radius, radius, paint);
+                paint.clearShadowLayer();
+
+                int topSheen = ThemeManager.APPEARANCE_NOTHING.equals(themeId) ? 0x18FFFFFF : 0x30FFFFFF;
+                int bottomShade = ThemeManager.APPEARANCE_NOTHING.equals(themeId) ? 0x10000000 : 0x08000000;
+                paint.setShader(new LinearGradient(r.left, r.top, r.left, r.bottom,
+                        new int[] {topSheen, 0x00FFFFFF, bottomShade}, null, Shader.TileMode.CLAMP));
+                paint.setColor(0xFFFFFFFF);
+                canvas.drawRoundRect(r, radius, radius, paint);
+                paint.setShader(null);
+
+                paint.setStyle(Paint.Style.STROKE);
+                paint.setStrokeWidth(dp(1));
+                paint.setColor(ThemeManager.APPEARANCE_NOTHING.equals(themeId) ? 0x24FFFFFF : 0x55FFFFFF);
+                canvas.drawLine(r.left + radius * 0.7f, r.top + dp(1),
+                        r.right - radius * 0.7f, r.top + dp(1), paint);
+            }
+
+            paint.setShader(null);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(dp(focused ? 2 : 1));
             paint.setColor(focused ? glow : border);
-            canvas.drawRoundRect(r, radius, radius, paint);
+            if (focused) paint.setShadowLayer(dp(5), 0, 0, glow);
+            if (((border >>> 24) & 0xFF) > 0 || focused) {
+                canvas.drawRoundRect(r, radius, radius, paint);
+            }
+            paint.clearShadowLayer();
             if (focused) {
                 paint.setStrokeWidth(dp(1));
-                paint.setColor(0x66FFFFFF);
+                paint.setColor(0x72FFFFFF);
                 android.graphics.RectF inner = new android.graphics.RectF(r.left + dp(2), r.top + dp(2),
                         r.right - dp(2), r.bottom - dp(2));
                 canvas.drawRoundRect(inner, Math.max(0, radius - dp(2)), Math.max(0, radius - dp(2)), paint);
@@ -773,8 +802,16 @@ public class QinsLauncherActivity extends Activity {
             android.graphics.RectF r = new android.graphics.RectF(b.left + dp(1), b.top + dp(1),
                     b.right - dp(1), b.bottom - dp(1));
             Path clip = new Path(); clip.addRoundRect(r, radius, radius, Path.Direction.CW);
-            paint.setStyle(Paint.Style.FILL); paint.setColor(baseColor);
+            paint.setStyle(Paint.Style.FILL); paint.setShader(null); paint.setColor(baseColor);
+            paint.setShadowLayer(dp(focused ? 7 : 4), 0, dp(2), 0x38000000);
             canvas.drawRoundRect(r, radius, radius, paint);
+            paint.clearShadowLayer();
+            paint.setShader(new LinearGradient(r.left, r.top, r.left, r.bottom,
+                    0x24FFFFFF, 0x00000000, Shader.TileMode.CLAMP));
+            paint.setColor(0xFFFFFFFF);
+            canvas.drawRoundRect(r, radius, radius, paint);
+            paint.setShader(null);
+            paint.setColor(baseColor);
             if (level > 0f) {
                 int save = canvas.save(); canvas.clipPath(clip);
                 paint.setColor(fillColor);
@@ -1702,27 +1739,14 @@ public class QinsLauncherActivity extends Activity {
         appRow = new LinearLayout(this);
         appRow.setOrientation(LinearLayout.HORIZONTAL);
         appRow.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        appRow.setPadding(dp(4), dp(5), dp(4), dp(3));
+        appRow.setPadding(0, dp(3), 0, 0);
+        appRow.setClipChildren(false);
+        appRow.setClipToPadding(false);
         homeAppRowHeightDp = clamp((int) (screenHeightDp() * 0.34f), 64, 112);
 
-        // Give the pinned-app row a deliberate dock surface instead of leaving
-        // four icons floating in an unstructured strip. The geometry follows
-        // each preset while staying light enough for the QINS1+ GPU.
-        GradientDrawable dock = new GradientDrawable();
-        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) {
-            dock.setColor(quickSurfaceColor(a, a.surface));
-            dock.setCornerRadius(dp(26));
-            dock.setStroke(dp(1), a.border);
-        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
-            dock.setColor(quickSurfaceColor(a, a.surfaceAlt));
-            dock.setCornerRadius(dp(30));
-            dock.setStroke(dp(1), a.border);
-        } else {
-            dock.setColor(0xCC17191A);
-            dock.setCornerRadius(dp(18));
-            dock.setStroke(dp(1), 0xFF3C4042);
-        }
-        appRow.setBackgroundDrawable(dock);
+        // The app icons sit directly on the wallpaper. Avoid a second capsule
+        // around the whole row: the app artwork itself is the visual container.
+        appRow.setBackgroundColor(0x00000000);
         LinearLayout.LayoutParams dockParams = new LinearLayout.LayoutParams(-1, dp(homeAppRowHeightDp));
         dockParams.leftMargin = dp(3);
         dockParams.rightMargin = dp(3);
@@ -2224,18 +2248,11 @@ public class QinsLauncherActivity extends Activity {
             float iconScale = getSharedPreferences("qins_home_layout", MODE_PRIVATE)
                     .getFloat("icon_scale", 1.0f);
             int iconFrameSize = clamp(Math.round((screenWidthDp() / 4 - 12) * iconScale), 38, 76);
-            boolean nothingIcons = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
-            int iconSize = Math.round(iconFrameSize * (nothingIcons ? 0.82f : 0.98f));
+            int iconSize = Math.round(iconFrameSize * 0.96f);
             FrameLayout iconFrame = new FrameLayout(this);
-            if (nothingIcons) {
-                GradientDrawable iconBackground = new GradientDrawable();
-                iconBackground.setShape(GradientDrawable.OVAL);
-                iconBackground.setColor(isFolder(info) ? 0x55000000 : a.tile);
-                iconBackground.setStroke(dp(1), a.border);
-                iconFrame.setBackgroundDrawable(iconBackground);
-            } else {
-                iconFrame.setBackgroundColor(0x00000000);
-            }
+            // No circular "app bubble": Nothing's monochrome identity comes from
+            // the icon artwork and the rest of the dark interface, not a badge behind it.
+            iconFrame.setBackgroundColor(0x00000000);
             if (isFolder(info)) {
                 LinearLayout miniIcons = new LinearLayout(this);
                 miniIcons.setGravity(Gravity.CENTER);
@@ -4710,9 +4727,16 @@ public class QinsLauncherActivity extends Activity {
 
         FrameLayout iconWrap = new FrameLayout(this);
         GradientDrawable iconShape = new GradientDrawable();
-        iconShape.setShape(GradientDrawable.OVAL);
-        iconShape.setColor(galaxy ? quickSurfaceColor(a, a.tile) : (pixel ? 0x3317231D : 0xFF303436));
-        if (nothing) iconShape.setStroke(dp(1), 0xFF55595B);
+        if (galaxy || pixel) {
+            iconShape.setShape(GradientDrawable.OVAL);
+            iconShape.setColor(galaxy ? quickSurfaceColor(a, a.tile) : a.surfaceAlt);
+            if (galaxy) iconShape.setStroke(dp(1), a.border);
+        } else {
+            iconShape.setShape(GradientDrawable.RECTANGLE);
+            iconShape.setCornerRadius(dp(5));
+            iconShape.setColor(a.surfaceAlt);
+            iconShape.setStroke(dp(1), a.border);
+        }
         iconWrap.setBackgroundDrawable(iconShape);
         iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
@@ -4748,12 +4772,12 @@ public class QinsLauncherActivity extends Activity {
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
         if (galaxy) {
-            tile.setBackgroundColor(0x00000000);
+            styleSurface(tile, quickSurfaceColor(a, a.surfaceAlt), a.border, a.focus, 24f);
             state.setVisibility(View.GONE);
         } else if (pixel) {
-            styleSurface(tile, 0x3317231D, 0x553C8060, a.focus, 28f);
+            styleSurface(tile, a.tile, a.border, a.focus, 27f);
         } else {
-            styleSurface(tile, 0xFF202224, 0xFF55595B, a.focus, 22f);
+            styleSurface(tile, a.tile, a.border, a.focus, 18f);
             name.setTextColor(0xFFF4F4F2);
             state.setTextColor(0xFFA4A7A8);
         }
@@ -4867,12 +4891,14 @@ public class QinsLauncherActivity extends Activity {
     private void updateBrightnessCard(View card, ThemeManager.Appearance a, int value, int max) {
         float level = max <= 0 ? 0f : Math.max(0f, Math.min(1f, value / (float) max));
         int fillColor = (ThemeManager.APPEARANCE_NOTHING.equals(a.id) || ThemeManager.APPEARANCE_PIXEL.equals(a.id)) ? a.accent : a.tileActive;
-        float radius = (ThemeManager.APPEARANCE_NOTHING.equals(a.id) || ThemeManager.APPEARANCE_PIXEL.equals(a.id)) ? 8f : a.cornerDp;
+        float radius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 10f :
+                (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 22f : a.cornerDp);
+        int baseSurface = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 0xFF25282A : quickSurfaceColor(a, a.surfaceAlt);
         Drawable current = card.getBackground();
         boolean horizontal = true;
         QuickLevelFillDrawable background = current instanceof QuickLevelFillDrawable
                 ? (QuickLevelFillDrawable) current
-                : new QuickLevelFillDrawable(radius, 0xFF000000, fillColor, ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? a.accent : a.border, a.accent, level, horizontal);
+                : new QuickLevelFillDrawable(radius, baseSurface, fillColor, a.border, a.accent, level, horizontal);
         background.setLevelValue(level);
         background.setFocused(card.hasFocus());
         if (current != background) card.setBackgroundDrawable(background);
@@ -4925,13 +4951,13 @@ public class QinsLauncherActivity extends Activity {
         card.setPadding(dp(4), dp(6), dp(4), dp(6));
         final boolean brightness = label.equals(getString(R.string.launcher_brightness));
         if (brightness) updateBrightnessCard(card, a, value, max);
-        else styleSurface(card, a.surface, a.border, a.focus, 8f);
+        else styleSurface(card, a.surface, a.border, a.focus, 14f);
         TextView title = new TextView(this); title.setText(label); title.setTextColor(a.text); title.setTextSize(10); title.setGravity(Gravity.CENTER); card.addView(title);
         VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this); seek.setMax(max); seek.setProgress(Math.max(0, Math.min(max, value))); seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         if (brightness) { styleLevelSeekBar(seek, a); attachBrightnessFocus(card, seek); }
         else {
-            GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(0);
-            GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(0);
+            GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(4));
+            GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(4));
             LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.BOTTOM, ClipDrawable.VERTICAL)});
             layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
             GradientDrawable thumb = new GradientDrawable(); thumb.setShape(GradientDrawable.RECTANGLE); thumb.setCornerRadius(dp(2)); thumb.setColor(a.accent); thumb.setSize(dp(14), dp(14)); seek.setThumb(thumb);
@@ -5246,13 +5272,13 @@ public class QinsLauncherActivity extends Activity {
         }
 
         if (pixel) {
-            int fill = active ? a.accent : 0x3317231D;
-            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : 0x553C8060, a.focus, 28f, tile.hasFocus()));
+            int fill = active ? a.accent : a.tile;
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : a.border, a.focus, 27f, tile.hasFocus()));
             View iconSurface = tile.findViewWithTag("quick-icon-shape");
             if (iconSurface != null) {
                 GradientDrawable circle = new GradientDrawable();
                 circle.setShape(GradientDrawable.OVAL);
-                circle.setColor(active ? 0x33FFFFFF : 0x223C8060);
+                circle.setColor(active ? 0x33FFFFFF : a.surfaceAlt);
                 iconSurface.setBackgroundDrawable(circle);
             }
             QinsGlyphView glyph = findQuickGlyph(tile);
@@ -5282,10 +5308,13 @@ public class QinsLauncherActivity extends Activity {
         }
         if (galaxy) {
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(
-                    0x00000000, tile.hasFocus() ? a.accent : a.border,
-                    a.accent, 14f, tile.hasFocus()));
+                    active ? quickSurfaceColor(a, a.surface) : quickSurfaceColor(a, a.surfaceAlt),
+                    tile.hasFocus() ? a.accent : a.border,
+                    a.accent, 24f, tile.hasFocus()));
+            if (glyph != null) glyph.setTint(active ? 0xFFFFFFFF : a.accent);
         } else {
-            tile.setBackgroundColor(0x00000000);
+            tile.setBackgroundDrawable(new FocusSurfaceDrawable(
+                    active ? 0xFFECEDEA : a.tile, a.border, a.accent, 18f, tile.hasFocus()));
         }
     }
 
