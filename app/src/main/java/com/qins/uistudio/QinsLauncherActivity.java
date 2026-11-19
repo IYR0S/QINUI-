@@ -2322,13 +2322,9 @@ public class QinsLauncherActivity extends Activity {
                             continue;
                         }
                         ImageView smallIcon = new ImageView(this);
-                        smallIcon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(folderApps.get(mini))));
+                        smallIcon.setImageDrawable(loadThemedAppIcon(folderApps.get(mini)));
                         smallIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                        if (a.monochrome) {
-                            ColorMatrix matrix = new ColorMatrix();
-                            matrix.setSaturation(0f);
-                            smallIcon.setColorFilter(new ColorMatrixColorFilter(matrix));
-                        }
+
                         LinearLayout.LayoutParams miniParams = new LinearLayout.LayoutParams(dp(miniSize), dp(miniSize));
                         miniParams.setMargins(dp(1), dp(1), dp(1), dp(1));
                         miniRowView.addView(smallIcon, miniParams);
@@ -2340,11 +2336,7 @@ public class QinsLauncherActivity extends Activity {
                 final ImageView icon = new ImageView(this);
                 icon.setImageDrawable(loadThemedAppIcon(info));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                if (a.monochrome) {
-                    ColorMatrix matrix = new ColorMatrix();
-                    matrix.setSaturation(0f);
-                    icon.setColorFilter(new ColorMatrixColorFilter(matrix));
-                }
+
                 FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
                         dp(iconSize), dp(iconSize), Gravity.CENTER);
                 iconFrame.addView(icon, iconParams);
@@ -2730,7 +2722,7 @@ public class QinsLauncherActivity extends Activity {
                 item.setFocusableInTouchMode(false);
                 item.setClickable(true);
                 final ImageView icon = new ImageView(this);
-                icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(child)));
+                icon.setImageDrawable(loadThemedAppIcon(child));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 item.addView(icon, new LinearLayout.LayoutParams(dp(32), dp(32)));
                 TextView label = new TextView(this);
@@ -2866,13 +2858,9 @@ public class QinsLauncherActivity extends Activity {
             item.setFocusableInTouchMode(false);
             item.setClickable(true);
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(info)));
+            icon.setImageDrawable(loadThemedAppIcon(info));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-                android.graphics.ColorMatrix monochrome = new android.graphics.ColorMatrix();
-                monochrome.setSaturation(0f);
-                icon.setColorFilter(new android.graphics.ColorMatrixColorFilter(monochrome));
-            }
+
             item.addView(icon, new LinearLayout.LayoutParams(dp(46), dp(46)));
             item.setGravity(Gravity.CENTER);
             // Edge app icons are not wrapped in individual cards. The selected
@@ -3172,9 +3160,9 @@ public class QinsLauncherActivity extends Activity {
                     int childIndex = rowIndex * 2 + col;
                     if (childIndex >= count) { previewRow.addView(new View(this), new LinearLayout.LayoutParams(dp(mini), dp(mini))); continue; }
                     ImageView childIcon = new ImageView(this);
-                    childIcon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(children.get(childIndex))));
+                    childIcon.setImageDrawable(loadThemedAppIcon(children.get(childIndex)));
                     childIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                    if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); childIcon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
+
                     LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(dp(mini), dp(mini));
                     cp.setMargins(dp(1), dp(1), dp(1), dp(1));
                     previewRow.addView(childIcon, cp);
@@ -3187,7 +3175,7 @@ public class QinsLauncherActivity extends Activity {
             final ImageView icon = new ImageView(this);
             icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(info)));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
+
             // Keep every app icon at the same full visual size; downloaded apps
             // must not be shrunk relative to system apps.
             tile.addView(icon, new LinearLayout.LayoutParams(dp(iconSize), dp(iconSize)));
