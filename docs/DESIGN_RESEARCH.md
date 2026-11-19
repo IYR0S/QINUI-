@@ -121,3 +121,24 @@ QINS continues to use each installed app's own launcher icon for the home and ap
 - Nothing OS 4.0 general release notes: https://nothing.community/en/d/47265-nothing-os-40-general-release/2
 
 Compatibility remains Android 4.4.4 / API 19, Java and XML. These visual choices are implemented as lightweight Canvas and Drawable operations; no AndroidX, live blur, root, or new runtime dependency is introduced.
+
+
+## Current-version cross-check (2026-11-19)
+
+The reference target is now the current generation rather than older launchers:
+
+- **Samsung One UI 8.5:** the official design language emphasizes transparent blur and floating surfaces. The Galaxy Quick Panel supports independently moving/resizing controls, including brightness and volume; therefore QINS keeps horizontal sliders as broad, separately styled focus cards and retains prominent Wi-Fi/Bluetooth cards.
+- **Google Pixel / Android 17:** Material 3 Expressive keeps the brightness bar horizontal in Quick Settings and uses tonal surfaces; Android 17 expands translucent/blurred system surfaces. QINS approximates the material hierarchy using solid tonal fills, a horizontal brightness rail and a translucent scrim because API 19 cannot reproduce live system blur.
+- **Nothing OS 5.0 (Android 17):** the current design introduces Geist typography, refreshed iconography and spacing, wallpaper-aware app/widget colours and an optional split Notifications / Quick Settings layout. The redesigned Quick Settings puts the media player first, then connectivity controls, with vertical brightness and volume sliders. QINS retains this vertical pair under the media player and tile grid. Official Nothing release notes do not publish a numeric universal corner radius for these components; the per-component dp values remain QINS implementation choices.
+
+Current sources:
+- Samsung One UI 8.5 official visual design notes: https://doc.samsungmobile.com/SM-S731B/035514250925/roh.html
+- Samsung One UI 8.5 Quick Panel customisation: https://www.samsung.com/uk/support/mobile-devices/how-to-customise-the-quick-panel-on-the-samsung-galaxy-s26-series/
+- Samsung One UI slider component guideline: https://design.samsung.com/global/contents/one-ui/download/oneui_design_guide_eng.pdf
+- Android 17 expanded system translucency: https://9to5google.com/2026/05/19/android-17-beta-1-blur/
+- Android 17 Quick Settings layout customisation: https://9to5google.com/2026/08/14/customize-pixel-quick-settings/
+- Nothing OS 5.0 official feature overview: https://nothing.tech/nothing-os
+- Nothing OS 5.0 release announcement: https://nothing.community/d/63548-nothing-os-50-general-release-is-here
+- Nothing OS 5.0 separate panel and vertical slider report: https://www.91mobiles.com/reviews/nothing-os-5-hands-on/
+
+The launcher has to preserve Android 4.4.4 / API 19 compatibility. Modern wallpaper blur, Android 13+ themed adaptive icons and recent OS-level volume overlays are therefore not directly available; the implementation uses compatible Canvas/Drawable surfaces, existing app icons and theme-specific icon treatments instead.
