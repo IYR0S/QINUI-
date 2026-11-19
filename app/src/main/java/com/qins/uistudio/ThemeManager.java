@@ -73,7 +73,9 @@ public final class ThemeManager {
             } else if (APPEARANCE_PIXEL.equals(id)) {
                 cardCornerDp=28f; tileCornerDp=26f; iconWellCornerDp=16f; sliderCornerDp=22f;
             } else {
-                cardCornerDp=18f; tileCornerDp=16f; iconWellCornerDp=5f; sliderCornerDp=10f;
+                // Nothing-inspired QS uses soft capsule and rounded-square geometry,
+                // not the tight 10–16dp corners used by the earlier prototype.
+                cardCornerDp=28f; tileCornerDp=24f; iconWellCornerDp=14f; sliderCornerDp=22f;
             }
         }
     }
