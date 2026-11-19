@@ -74,3 +74,50 @@ References:
 ### Compatibility guardrails
 
 All changes remain Java/XML and Android 4.4.4 / API 19 compatible. No AndroidX, new runtime libraries, root, live blur, or OS-level theme hooks are introduced. The focus indicator is a static drawable and the dock uses a static GradientDrawable to avoid expensive blur or continuous animation on the QINS hardware.
+
+
+## Detailed component system — 2026-11-19
+
+This section translates current public design guidance and visible OEM interface patterns into QINS-specific API-19 values. The dp values below are **implementation decisions for QINS**, not claims that Samsung, Google or Nothing publish a universal numeric radius for every control. A corner radius is a distance, not an angle; the apparent roundness also depends on the component's width and height.
+
+### Shape tokens
+
+| Component | Galaxy / One UI direction | Pixel / Material direction | Nothing direction |
+| --- | ---: | ---: | ---: |
+| Focus cards / notification cards | 28dp | 28dp | 18dp |
+| Quick Settings tiles | 24dp | 26dp | 16dp |
+| Icon wells | Circular | Circular / tonal | 5dp rounded square |
+| Slider containers | 26dp | 22dp | 10dp |
+| Home app row | Transparent; no outer dock bubble | Transparent; no outer dock bubble | Transparent; no outer dock bubble |
+
+These tokens are centralized in ThemeManager.Appearance. Older generic cornerDp remains available for legacy editor surfaces while new launcher components use role-specific tokens.
+
+### Surface depth, wallpaper and transparency
+
+- **Galaxy / One UI:** use a clearly separated focus block against generous negative space. Light and dark surfaces are distinct; a soft highlight and a low-contrast shadow communicate that a card sits above the wallpaper. A blur/dim layer is appropriate when a related panel is opened, but shadow, blur and dim should not be stacked indiscriminately.
+- **Pixel / Material 3:** distinguish elevation first with tonal surface colors and only then with a subtle shadow. Active tiles use a stronger accent/tonal fill; inactive tiles remain visible as intentional containers rather than almost-transparent outlines.
+- **Nothing:** use near-black or near-white monochrome surfaces, crisp borders, restrained red accent and less exaggerated rounding. The app icons themselves should remain visible without a second circle or pill behind each one.
+- **QINS API 19 implementation:** Quick Settings uses a theme-matched translucent scrim over the wallpaper. There is no real-time blur; this preserves a degree of wallpaper visibility while keeping text and controls legible. Focus blocks use a restrained static gradient/highlight and a soft shadow. The launcher app row itself has no background capsule, and app icons are no longer placed in an extra Nothing-only circular badge.
+
+### Sliders and control geometry
+
+- **Galaxy:** horizontal brightness and volume cards, broad track, circular thumb, separate connectivity cards for Wi-Fi and Bluetooth. The controls should feel substantial but not balloon-like.
+- **Pixel:** horizontal Material-style controls, with a larger rounded-rectangle thumb and a solid tonal card surface. Brightness and media volume keep different semantic cards rather than looking like duplicate widgets.
+- **Nothing:** paired vertical brightness and media-volume rails, square/rectangular thumb, compact control column and a tighter card radius. Brightness fill is accent red; volume keeps its own rail and thumb treatment.
+- **All themes:** the control's visible filled level, keyboard focus and current value must be distinguishable without relying on color alone. Left/right or up/down hardware keys must change values in the intuitive direction.
+
+### Icon policy
+
+QINS continues to use each installed app's own launcher icon for the home and app drawer, preserving app identity. UI controls use QINS-drawn glyphs so the launcher does not require AndroidX, VectorDrawable framework features newer than API 19, or a heavyweight icon dependency. Exact stock Samsung/Nothing third-party app icon matching is a separate asset-mapping task and requires a properly licensed icon pack; the current control glyphs and surface system do not depend on that pack.
+
+### References
+
+- Samsung One UI Design Guide — Focus Blocks and large rounded containers: https://design.samsung.com/global/contents/one-ui/download/oneui_design_guide_eng.pdf
+- Samsung Developer — Visual depth (blur, dim and soft shadow; avoid exaggerated 3D): https://developer.samsung.com/one-ui/structure/visual-depth.html
+- Samsung Developer — Basic layout and viewing / interaction areas: https://developer.samsung.com/one-ui/layout/basic.html
+- Samsung One UI 8.5 update notes — transparent blur and floating elements: https://doc.samsungmobile.com/SM-S926B/029357240224/eng.html
+- Android Developers — Material 3 shape scale and tonal elevation plus shadow elevation: https://developer.android.com/develop/ui/compose/designsystems/material3
+- Nothing official community announcement — Nothing OS 4.0 refined component system, clearer Quick Settings and refreshed first-party icons: https://nothing.community/en/d/42205-introducing-nothing-os-40
+- Nothing OS 4.0 general release notes: https://nothing.community/en/d/47265-nothing-os-40-general-release/2
+
+Compatibility remains Android 4.4.4 / API 19, Java and XML. These visual choices are implemented as lightweight Canvas and Drawable operations; no AndroidX, live blur, root, or new runtime dependency is introduced.
