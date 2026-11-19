@@ -1980,6 +1980,7 @@ public class QinsLauncherActivity extends Activity {
         edit.setGravity(Gravity.CENTER);
         edit.setFocusable(true);
         edit.setFocusableInTouchMode(false);
+        KeyboardSupport.makeFocusable(edit);
         edit.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, 0x00000000, a.accent, 7f, false));
         edit.setOnFocusChangeListener(new View.OnFocusChangeListener() { @Override public void onFocusChange(View v, boolean focused) { v.setBackgroundDrawable(new FocusSurfaceDrawable(focused ? a.surface : 0x00000000, focused ? a.accent : 0x00000000, a.accent, 7f, focused)); } });
         header.addView(edit, new LinearLayout.LayoutParams(dp(36), dp(28)));
@@ -4375,6 +4376,7 @@ public class QinsLauncherActivity extends Activity {
                     name.setSingleLine(true); name.setEllipsize(android.text.TextUtils.TruncateAt.END);
                     tile.addView(name, new LinearLayout.LayoutParams(-1, -2));
                     tile.setFocusable(true); tile.setFocusableInTouchMode(false); tile.setClickable(true);
+                    KeyboardSupport.makeFocusable(tile);
                     tile.setOnClickListener(new View.OnClickListener() {
                         @Override public void onClick(View v) { selected[0] = index; render[0].run(); }
                     });
@@ -4535,6 +4537,7 @@ public class QinsLauncherActivity extends Activity {
         editQuick.setContentDescription(getString(R.string.launcher_edit_shortcuts));
         editQuick.setFocusable(true);
         editQuick.setFocusableInTouchMode(false);
+        KeyboardSupport.makeFocusable(editQuick);
         editQuick.setBackgroundDrawable(new FocusSurfaceDrawable(0x00000000, 0x00000000, a.accent, 8f, false));
         editQuick.setOnFocusChangeListener(new View.OnFocusChangeListener() { @Override public void onFocusChange(View v, boolean focused) { v.setBackgroundDrawable(new FocusSurfaceDrawable(focused ? a.surface : 0x00000000, focused ? a.accent : 0x00000000, a.accent, 8f, focused)); } });
         heading.addView(editQuick, new LinearLayout.LayoutParams(dp(38), dp(38)));
