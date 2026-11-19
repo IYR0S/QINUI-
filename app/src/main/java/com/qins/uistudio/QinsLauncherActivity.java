@@ -4186,7 +4186,7 @@ public class QinsLauncherActivity extends Activity {
         FrameLayout iconWrap = new FrameLayout(this);
         GradientDrawable iconShape = new GradientDrawable();
         iconShape.setShape(GradientDrawable.OVAL);
-        iconShape.setColor(galaxy ? 0xDFFFFFFF : (pixel ? 0x263C8060 : 0xFF303436));
+        iconShape.setColor(galaxy ? 0xDFFFFFFF : (pixel ? 0x3317231D : 0xFF303436));
         if (nothing) iconShape.setStroke(dp(1), 0xFF55595B);
         iconWrap.setBackgroundDrawable(iconShape);
         iconWrap.setTag("quick-icon-shape");
@@ -4226,7 +4226,7 @@ public class QinsLauncherActivity extends Activity {
             tile.setBackgroundColor(0x00000000);
             state.setVisibility(View.GONE);
         } else if (pixel) {
-            styleSurface(tile, 0x263C8060, 0x553C8060, a.focus, 28f);
+            styleSurface(tile, 0x3317231D, 0x553C8060, a.focus, 28f);
         } else {
             styleSurface(tile, 0xFF202224, 0xFF55595B, a.focus, 22f);
             name.setTextColor(0xFFF4F4F2);
@@ -4687,13 +4687,13 @@ public class QinsLauncherActivity extends Activity {
         }
 
         if (pixel) {
-            int fill = active ? a.accent : 0x263C8060;
+            int fill = active ? a.accent : 0x3317231D;
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill, active ? a.accent : 0x553C8060, a.focus, 28f, tile.hasFocus()));
             View iconSurface = tile.findViewWithTag("quick-icon-shape");
             if (iconSurface != null) {
                 GradientDrawable circle = new GradientDrawable();
                 circle.setShape(GradientDrawable.OVAL);
-                circle.setColor(active ? 0x33FFFFFF : 0x263C8060);
+                circle.setColor(active ? 0x33FFFFFF : 0x223C8060);
                 iconSurface.setBackgroundDrawable(circle);
             }
             QinsGlyphView glyph = findQuickGlyph(tile);
