@@ -57,6 +57,10 @@ public final class QinsGlyphView extends View {
         else if ("sound-muted".equals(glyph)) drawMutedSound(canvas);
         else if ("sound-vibrate".equals(glyph)) drawVibrateSound(canvas);
         else if ("brightness".equals(glyph)) drawBrightness(canvas);
+        else if ("flashlight".equals(glyph)) drawFlashlight(canvas);
+        else if ("hotspot".equals(glyph)) drawHotspot(canvas);
+        else if ("dnd".equals(glyph)) drawDoNotDisturb(canvas);
+        else if ("dark-mode".equals(glyph)) drawDarkMode(canvas);
         else if ("home".equals(glyph)) drawHome(canvas);
         else if ("add".equals(glyph)) drawAdd(canvas);
         else if ("remove".equals(glyph)) drawRemove(canvas);
@@ -215,6 +219,36 @@ public final class QinsGlyphView extends View {
             float y2 = (float) Math.sin(angle) * 10.5f;
             c.drawLine(x1, y1, x2, y2, paint);
         }
+    }
+
+    private void drawFlashlight(Canvas c) {
+        c.drawRoundRect(new RectF(-5, -10, 5, 7), 2f, 2f, paint);
+        c.drawLine(-3, -10, -3, -13, paint);
+        c.drawLine(3, -10, 3, -13, paint);
+        c.drawLine(-4, 7, 4, 7, paint);
+        c.drawLine(-2, 10, 2, 10, paint);
+        c.drawLine(0, 10, 0, 13, paint);
+    }
+
+    private void drawHotspot(Canvas c) {
+        c.drawCircle(0, 0, 2.2f, paint);
+        c.drawArc(new RectF(-6, -6, 6, 6), 210, 120, false, paint);
+        c.drawArc(new RectF(-10, -10, 10, 10), 210, 120, false, paint);
+        c.drawArc(new RectF(-6, -6, 6, 6), 30, 120, false, paint);
+        c.drawArc(new RectF(-10, -10, 10, 10), 30, 120, false, paint);
+    }
+
+    private void drawDarkMode(Canvas c) {
+        c.drawCircle(0, 0, 9, paint);
+        paint.setStyle(Paint.Style.FILL);
+        Path cut = new Path(); cut.addCircle(5, -4, 8, Path.Direction.CW);
+        c.drawPath(cut, paint);
+        paint.setStyle(Paint.Style.STROKE);
+    }
+
+    private void drawDoNotDisturb(Canvas c) {
+        c.drawCircle(0, 0, 9, paint);
+        c.drawLine(-5, 0, 5, 0, paint);
     }
 
     private void drawHome(Canvas c) {
