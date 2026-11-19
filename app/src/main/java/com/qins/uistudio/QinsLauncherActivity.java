@@ -2838,8 +2838,9 @@ public class QinsLauncherActivity extends Activity {
             }
             item.addView(icon, new LinearLayout.LayoutParams(dp(46), dp(46)));
             item.setGravity(Gravity.CENTER);
-            if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) styleSurface(item, a.surfaceAlt, a.border, a.focus, a.cornerDp);
-            else item.setBackgroundColor(0x00000000);
+            // Edge app icons are not wrapped in individual cards. The selected
+            // item receives a small OEM-shaped focus plate on the icon only.
+            item.setBackgroundColor(0x00000000);
             item.setClipChildren(true);
             item.setClipToPadding(true);
             item.setPadding(dp(4), dp(2), dp(4), dp(2));
@@ -2850,15 +2851,18 @@ public class QinsLauncherActivity extends Activity {
                     // full-height edge row where it was clipped/overflowing.
                     if (focused) {
                         GradientDrawable glow = new GradientDrawable();
-                        glow.setShape(GradientDrawable.OVAL);
-                        glow.setColor(0x554F91FF);
-                        glow.setStroke(dp(3), a.accent);
-                        icon.setBackgroundDrawable(new android.graphics.drawable.InsetDrawable(glow, 0));
+                        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) {
+                            glow.setShape(GradientDrawable.OVAL);
+                        } else {
+                            glow.setShape(GradientDrawable.RECTANGLE);
+                            glow.setCornerRadius(dp(a.iconWellCornerDp));
+                        }
+                        glow.setColor((a.accent & 0x00FFFFFF) | 0x26000000);
+                        glow.setStroke(dp(2), a.accent);
+                        icon.setBackgroundDrawable(new android.graphics.drawable.InsetDrawable(glow, dp(3)));
                     } else {
                         icon.setBackgroundColor(0x00000000);
-                        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id))
-                            styleSurface(v, a.surfaceAlt, a.border, a.focus, a.cornerDp);
-                        else v.setBackgroundColor(0x00000000);
+                        v.setBackgroundColor(0x00000000);
                     }
                 }
             });
