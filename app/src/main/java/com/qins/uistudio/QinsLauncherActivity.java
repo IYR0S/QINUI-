@@ -5195,11 +5195,15 @@ public class QinsLauncherActivity extends Activity {
         // short bars nested inside three tiny cards.
         GradientDrawable track = new GradientDrawable();
         track.setColor(0xFF414547);
-        track.setCornerRadius(dp(9));
+        track.setCornerRadius(dp(3));
+        // VerticalQuickSeekBar rotates the canvas, so the drawable's intrinsic
+        // height becomes the visible rail thickness. Keep it deliberately slim.
+        track.setSize(dp(1), dp(6));
         GradientDrawable progress = new GradientDrawable();
         // Keep brightness and media volume visually identical.
         progress.setColor(0xFFF3F3F0);
-        progress.setCornerRadius(dp(9));
+        progress.setCornerRadius(dp(3));
+        progress.setSize(dp(1), dp(6));
         ClipDrawable clipped = new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL);
         LayerDrawable layers = new LayerDrawable(new Drawable[] {track, clipped});
         layers.setId(0, android.R.id.background);
@@ -5503,10 +5507,14 @@ public class QinsLauncherActivity extends Activity {
         seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         GradientDrawable track = new GradientDrawable();
         track.setColor(0x553C8060);
-        track.setCornerRadius(dp(8));
+        track.setCornerRadius(dp(3));
+        // Explicit intrinsic height prevents Android 4.4 SeekBar from
+        // stretching the track to the full 34dp control height.
+        track.setSize(dp(1), dp(6));
         GradientDrawable fill = new GradientDrawable();
         fill.setColor(a.accent);
-        fill.setCornerRadius(dp(8));
+        fill.setCornerRadius(dp(3));
+        fill.setSize(dp(1), dp(6));
         LayerDrawable layers = new LayerDrawable(new Drawable[] {
                 track, new ClipDrawable(fill, Gravity.LEFT, ClipDrawable.HORIZONTAL)
         });
