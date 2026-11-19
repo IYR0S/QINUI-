@@ -80,13 +80,13 @@ public final class ThemeManager {
         // Pixel-inspired Material 3 Expressive: tonal lavender surfaces and a vivid violet accent.
         new Appearance(APPEARANCE_PIXEL, "Pixel / Material",
             0xFFEEF3EC, 0xFFDCE7DD, 0xFFF8FBF6, 0xFFE5EEE4,
-            0xFFE0EAE0, 0xFFCFE0D0, 0xFF3C8060, 0xFF17231D, 0xFF617267,
+            0xFFDDE8DE, 0xFF3C8060, 0xFF3C8060, 0xFF17231D, 0xFF617267,
             0xFFD3DED4, 0xFF9BC8A8, 28f, false, false),
         // Nothing-inspired: monochrome, high contrast and tight geometry with restrained red detail.
         new Appearance(APPEARANCE_NOTHING, "Nothing",
             0xFF101112, 0xFF191B1D, 0xFF202224, 0xFF292C2E,
-            0xFF242729, 0xFF383B3D, 0xFFE3343A, 0xFFF4F4F2, 0xFFA4A7A8,
-            0xFF3C4042, 0xFF777B7D, 18f, true, false)
+            0xFF242729, 0xFF383B3D, 0xFFD71921, 0xFFF4F4F2, 0xFFA4A7A8,
+            0xFF3C4042, 0xFF777B7D, 22f, true, true)
     };
 
     public static Palette[] getPalettes() { return PALETTES.clone(); }
