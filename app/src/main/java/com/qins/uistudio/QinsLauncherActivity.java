@@ -3173,7 +3173,7 @@ public class QinsLauncherActivity extends Activity {
             tile.addView(preview, new LinearLayout.LayoutParams(-1, dp(iconSize)));
         } else {
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(info)));
+            icon.setImageDrawable(loadThemedAppIcon(info));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
 
             // Keep every app icon at the same full visual size; downloaded apps

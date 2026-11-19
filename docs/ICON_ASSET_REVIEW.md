@@ -81,4 +81,4 @@ The project contains a large SVG collection and appfilter mapping. Its README di
 
 ## Current integration status
 
-The launcher still uses installed app icons as its safe fallback. No third-party app icon artwork has been bundled yet. The next engineering step is a theme-scoped appfilter + PNG asset pipeline/importer and a curated licensed asset set. This preserves Android 4.4 / API 19, Java + XML, no AndroidX and no new runtime dependencies.
+The API-19 theme-scoped resolver is integrated and uses installed icons as the safe fallback. The resolver caches each theme's mapping and decoded PNGs, supports exact component mappings plus explicit package mappings, and applies a custom monochrome treatment to Nothing icons. The four appfilter files remain intentionally empty until a specific asset set has verified redistribution rights. No proprietary Nothing APK artwork or unlicensed icon artwork has been bundled. The next step is to add a curated PNG set with per-pack license notices, then validate icon coverage and memory use on QINS1+.
