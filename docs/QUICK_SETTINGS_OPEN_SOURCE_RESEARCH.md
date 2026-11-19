@@ -99,6 +99,24 @@ Why it is not reused:
 - Rotating a horizontal SeekBar requires swapping measurement dimensions and manually mapping touch coordinates. That is precisely the fragile geometry used by the previous QINS Nothing slider.
 - MPL-1.1 has file-level source obligations. QINS does not need to import this code because a small original Canvas view is simpler and avoids introducing another license surface.
 
+### 5. Android Open Source Project SystemUI — Apache-2.0
+
+API-19-era source inspected:
+- https://android.googlesource.com/platform/frameworks/base/+/ab51002/packages/SystemUI/src/com/android/systemui/statusbar/phone/QuickSettings.java
+- https://android.googlesource.com/platform/frameworks/base/+/52277428d54cc71f0cde3f1efa035f1e6742b900/packages/SystemUI/src/com/android/systemui/statusbar/phone/QuickSettingsTileView.java
+
+Useful findings:
+- The Android 4.4-era tile view is a small FrameLayout wrapper around a tile-specific content layout and supports column spans.
+- QuickSettings separates tile presentation from a model/controller that refreshes the view when actual device state changes.
+- The newer AOSP QS documentation makes the state lifecycle explicit: an action changes device state; the controller reports the change; the tile refreshes its state; then the view maps that state to color, icon and label. The visual view should not optimistically become the source of truth.
+
+Compatibility:
+- The 4.4 source is close to QINS's API level and is Apache-2.0, but the classes are part of privileged SystemUI and depend on internal framework services. They are not directly reusable inside a normal launcher APK.
+- QINS adopts the state-to-view separation as an architectural rule, not the privileged SystemUI implementation.
+
+Modern AOSP lifecycle reference:
+- https://github.com/aospapp/aosp/blob/main/frameworks/base/packages/SystemUI/docs/qs-tiles.md
+
 ## What is being applied in QINS
 
 - One rounded Nothing panel surface with a consistent 28dp outer radius.
