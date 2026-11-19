@@ -2008,7 +2008,7 @@ public class QinsLauncherActivity extends Activity {
             compactShape.setStroke(dp(1), 0xFFCAD8CC);
         } else {
             compactShape.setColor(0xF51B1D1F);
-            compactShape.setCornerRadius(dp(9));
+            compactShape.setCornerRadius(dp(28));
             compactShape.setStroke(dp(1), 0xFF494D4F);
         }
         compact.setBackgroundDrawable(compactShape);
@@ -2171,7 +2171,7 @@ public class QinsLauncherActivity extends Activity {
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
         if (nothing) {
-            styleSurface(tile, 0xFF202224, 0xFF45494B, a.accent, 8f);
+            styleSurface(tile, 0xFF202224, 0xFF45494B, a.accent, 24f);
         } else if (pixel) {
             styleSurface(tile, 0xFFEAF2E9, 0xFFCAD8CC, 0xFF78927E, 18f);
         } else {
@@ -4677,14 +4677,25 @@ public class QinsLauncherActivity extends Activity {
         panel.setOrientation(LinearLayout.VERTICAL);
         panel.setClipChildren(false);
         panel.setClipToPadding(false);
-        panel.setPadding(dp(8), 0, dp(8), dp(10));
+        boolean nothingPanel = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
+        panel.setPadding(dp(nothingPanel ? 10 : 8), dp(nothingPanel ? 8 : 0),
+                dp(nothingPanel ? 10 : 8), dp(nothingPanel ? 12 : 10));
         // API 19 cannot provide a live blurred backdrop. Use a theme-matched
         // translucent scrim so wallpaper remains visible without competing
         // with the foreground focus blocks.
         int scrimAlpha = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 0xC4 :
                 (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 0xD0 : 0xE8);
-        panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
-                (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
+        if (nothingPanel) {
+            GradientDrawable nothingSurface = new GradientDrawable();
+            nothingSurface.setColor(a.surface);
+            nothingSurface.setCornerRadius(dp(28));
+            nothingSurface.setStroke(dp(1), a.border);
+            panel.setBackgroundDrawable(nothingSurface);
+            scroll.setPadding(dp(5), dp(5), dp(5), dp(5));
+        } else {
+            panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
+                    (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
+        }
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
 
@@ -5098,32 +5109,172 @@ public class QinsLauncherActivity extends Activity {
                 }).setNegativeButton(android.R.string.cancel, null).show();
     }
 
-    private final class VerticalQuickSeekBar extends SeekBar {
-        VerticalQuickSeekBar(Context context) { super(context); setFocusable(true); setFocusableInTouchMode(false); }
-        @Override protected synchronized void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(heightMeasureSpec, widthMeasureSpec);
-            setMeasuredDimension(getMeasuredHeight(), getMeasuredWidth());
+    private interface NothingSliderChangeListener {
+        void onProgressChanged(int progress, boolean fromUser);
+        void onStartTrackingTouch();
+        void onStopTrackingTouch();
+    }
+
+    /**
+     * API-19-safe vertical pill slider. It draws its own track instead of rotating
+     * a horizontal framework SeekBar, so measurement, touch and D-pad axes agree.
+     */
+    private final class NothingPillSlider extends View {
+        private final Paint trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint focusPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private int max = 100;
+        private int progress = 50;
+        private boolean tracking;
+        private NothingSliderChangeListener listener;
+
+        NothingPillSlider(Context context, int max, int progress) {
+            super(context);
+            this.max = Math.max(1, max);
+            this.progress = Math.max(0, Math.min(this.max, progress));
+            setFocusable(true);
+            setFocusableInTouchMode(false);
+            setClickable(true);
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+            trackPaint.setColor(0xFF3A3D3F);
+            fillPaint.setColor(0xFFF1F1EF);
+            focusPaint.setColor(0xFFD71921);
+            focusPaint.setStyle(Paint.Style.STROKE);
+            focusPaint.setStrokeWidth(dp(1.5f));
         }
+
+        void setOnNothingSliderChangeListener(NothingSliderChangeListener value) {
+            listener = value;
+        }
+
+        int getProgressValue() { return progress; }
+
+        void setProgressValue(int value) {
+            progress = Math.max(0, Math.min(max, value));
+            invalidate();
+            updateDescription();
+        }
+
+        private void updateDescription() {
+            int percent = Math.round(progress * 100f / Math.max(1, max));
+            setContentDescription(percent + "%");
+        }
+
+        private void changeProgress(int value, boolean fromUser) {
+            int bounded = Math.max(0, Math.min(max, value));
+            if (bounded == progress) return;
+            progress = bounded;
+            invalidate();
+            updateDescription();
+            if (listener != null) listener.onProgressChanged(progress, fromUser);
+        }
+
+        private int stepSize() {
+            return max > 100 ? Math.max(1, max / 32) : 1;
+        }
+
+        @Override protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int desiredWidth = dp(46);
+            int desiredHeight = dp(150);
+            int width = resolveSize(desiredWidth, widthMeasureSpec);
+            int height = resolveSize(desiredHeight, heightMeasureSpec);
+            setMeasuredDimension(width, height);
+        }
+
         @Override protected void onDraw(Canvas canvas) {
-            canvas.save(); canvas.rotate(-90); canvas.translate(-getHeight(), 0); super.onDraw(canvas); canvas.restore();
+            super.onDraw(canvas);
+            float width = getWidth();
+            float height = getHeight();
+            if (width <= 0 || height <= dp(12)) return;
+
+            float railWidth = Math.min(dp(30), Math.max(dp(22), width - dp(12)));
+            float left = (width - railWidth) / 2f;
+            float right = left + railWidth;
+            float top = dp(5);
+            float bottom = height - dp(5);
+            float radius = railWidth / 2f;
+            android.graphics.RectF rail = new android.graphics.RectF(left, top, right, bottom);
+            canvas.drawRoundRect(rail, radius, radius, trackPaint);
+
+            float fraction = progress / (float) Math.max(1, max);
+            float fillTop = bottom - ((bottom - top) * fraction);
+            if (fillTop < bottom) {
+                android.graphics.RectF fill = new android.graphics.RectF(left, fillTop, right, bottom);
+                float fillRadius = Math.min(radius, Math.max(dp(2), (bottom - fillTop) / 2f));
+                canvas.drawRoundRect(fill, fillRadius, fillRadius, fillPaint);
+            }
+
+            if (hasFocus()) {
+                android.graphics.RectF focus = new android.graphics.RectF(
+                        left - dp(3), top - dp(3), right + dp(3), bottom + dp(3));
+                canvas.drawRoundRect(focus, radius + dp(3), radius + dp(3), focusPaint);
+            }
         }
+
+        private void updateFromTouch(float y) {
+            float top = dp(5);
+            float bottom = getHeight() - dp(5);
+            float usable = Math.max(1f, bottom - top);
+            float fraction = Math.max(0f, Math.min(1f, (bottom - y) / usable));
+            changeProgress(Math.round(fraction * max), true);
+        }
+
+        @Override public boolean onTouchEvent(android.view.MotionEvent event) {
+            if (!isEnabled()) return false;
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    requestFocus();
+                    tracking = true;
+                    setPressed(true);
+                    if (listener != null) listener.onStartTrackingTouch();
+                    updateFromTouch(event.getY());
+                    return true;
+                case android.view.MotionEvent.ACTION_MOVE:
+                    if (tracking) updateFromTouch(event.getY());
+                    return true;
+                case android.view.MotionEvent.ACTION_UP:
+                    if (tracking) updateFromTouch(event.getY());
+                    tracking = false;
+                    setPressed(false);
+                    if (listener != null) listener.onStopTrackingTouch();
+                    performClick();
+                    return true;
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    tracking = false;
+                    setPressed(false);
+                    if (listener != null) listener.onStopTrackingTouch();
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
+        @Override public boolean performClick() {
+            super.performClick();
+            return true;
+        }
+
         @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
-            // Nothing's vertical rails are operated with the physical Up/Down keys.
-            // Left/Right remain available for moving between brightness and volume.
-            int step = getMax() > 100 ? Math.max(1, getMax() / 32) : 1;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP && getProgress() < getMax()) {
-                setProgress(Math.min(getMax(), getProgress() + step));
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                changeProgress(progress + stepSize(), true);
                 return true;
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && getProgress() > 0) {
-                setProgress(Math.max(0, getProgress() - step));
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                changeProgress(progress - stepSize(), true);
                 return true;
             }
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
-                View next = focusSearch(keyCode == KeyEvent.KEYCODE_DPAD_LEFT ? View.FOCUS_LEFT : View.FOCUS_RIGHT);
+                View next = focusSearch(keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+                        ? View.FOCUS_LEFT : View.FOCUS_RIGHT);
                 if (next != null) { next.requestFocus(); return true; }
             }
             return super.onKeyDown(keyCode, event);
+        }
+
+        @Override protected void onFocusChanged(boolean focused, int direction,
+                                                android.graphics.Rect previouslyFocusedRect) {
+            super.onFocusChanged(focused, direction, previouslyFocusedRect);
+            invalidate();
         }
     }
 
@@ -5222,70 +5373,63 @@ public class QinsLauncherActivity extends Activity {
         seek.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
     }
 
-    private void addNothingVerticalSliderCard(LinearLayout row, String label, int value, int max,
-                                              final SeekBar.OnSeekBarChangeListener listener,
-                                              final ThemeManager.Appearance a) {
-        final boolean brightness = label.equals(getString(R.string.launcher_brightness));
-        LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
-        card.setGravity(Gravity.CENTER_HORIZONTAL);
-        // Start the vertical rail at the very top of its own card. The label
-        // sits below it so it no longer steals the first part of the slider.
-        card.setPadding(dp(4), 0, dp(4), dp(3));
-        card.setBackgroundDrawable(new FocusSurfaceDrawable(
-                0xFF202224, 0xFF45494B, a.accent, 9f, false));
+    private NothingPillSlider addNothingVerticalSliderCard(LinearLayout row, String label,
+                                                               int value, int max,
+                                                               final boolean brightness) {
+        LinearLayout column = new LinearLayout(this);
+        column.setOrientation(LinearLayout.VERTICAL);
+        column.setGravity(Gravity.CENTER_HORIZONTAL);
+        column.setPadding(dp(1), dp(2), dp(1), dp(2));
+        column.setBackgroundColor(0x00000000);
 
-        final VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this);
-        seek.setMax(Math.max(1, max));
-        seek.setProgress(Math.max(0, Math.min(max, value)));
-        seek.setContentDescription(brightness ? "Brightness" : "Media volume");
-        if (quickGridLastTile != null) seek.setNextFocusUpId(quickGridLastTile.getId());
-        styleNothingVerticalSeekBar(seek, brightness, a);
-        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(34), 0, 1f);
-        seekParams.gravity = Gravity.CENTER_HORIZONTAL;
-        seekParams.topMargin = 0;
-        seekParams.bottomMargin = 0;
-        card.addView(seek, seekParams);
+        final NothingPillSlider slider = new NothingPillSlider(this, max, value);
+        slider.setContentDescription(brightness ? "Screen brightness" : "Media volume");
+        LinearLayout.LayoutParams sliderParams = new LinearLayout.LayoutParams(dp(44), 0, 1f);
+        sliderParams.gravity = Gravity.CENTER_HORIZONTAL;
+        column.addView(slider, sliderParams);
 
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER);
+        LinearLayout footer = new LinearLayout(this);
+        footer.setOrientation(LinearLayout.HORIZONTAL);
+        footer.setGravity(Gravity.CENTER);
+        FrameLayout iconBubble = new FrameLayout(this);
+        GradientDrawable bubble = new GradientDrawable();
+        bubble.setShape(GradientDrawable.OVAL);
+        bubble.setColor(0xFF292C2E);
+        bubble.setStroke(dp(1), 0xFF45494B);
+        iconBubble.setBackgroundDrawable(bubble);
         QinsGlyphView glyph = new QinsGlyphView(this,
-                brightness ? "brightness" : "volume", 0xFFF0F0ED);
-        glyph.setVisualStyle(a.id);
-        header.addView(glyph, new LinearLayout.LayoutParams(dp(13), dp(13)));
+                brightness ? "brightness" : "volume", 0xFFF1F1EF);
+        glyph.setVisualStyle(ThemeManager.APPEARANCE_NOTHING);
+        iconBubble.addView(glyph, new FrameLayout.LayoutParams(dp(14), dp(14), Gravity.CENTER));
+        footer.addView(iconBubble, new LinearLayout.LayoutParams(dp(25), dp(25)));
 
         TextView title = new TextView(this);
         title.setText(brightness ? "BRIGHT" : "VOLUME");
-        title.setTextColor(0xFFA8ABAC);
+        title.setTextColor(0xFFAEB1B2);
         title.setTextSize(7);
-        title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         title.setSingleLine(true);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(-2, -2);
         titleParams.leftMargin = dp(3);
-        header.addView(title, titleParams);
-        card.addView(header, new LinearLayout.LayoutParams(-1, dp(16)));
+        footer.addView(title, titleParams);
+        LinearLayout.LayoutParams footerParams = new LinearLayout.LayoutParams(-1, dp(30));
+        footerParams.topMargin = dp(3);
+        column.addView(footer, footerParams);
 
-        seek.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+        slider.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View view, boolean focused) {
-                card.setBackgroundDrawable(new FocusSurfaceDrawable(
-                        0xFF202224,
-                        focused ? a.accent : 0xFF45494B,
-                        a.accent, 9f, focused));
+                iconBubble.setBackgroundDrawable(new FocusSurfaceDrawable(
+                        0xFF292C2E, focused ? 0xFFD71921 : 0xFF45494B,
+                        0xFFD71921, 20f, focused));
+                title.setTextColor(focused ? 0xFFF1F1EF : 0xFFAEB1B2);
             }
-        });
-        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
-                listener.onProgressChanged(bar, progress, fromUser);
-            }
-            @Override public void onStartTrackingTouch(SeekBar bar) { listener.onStartTrackingTouch(bar); }
-            @Override public void onStopTrackingTouch(SeekBar bar) { listener.onStopTrackingTouch(bar); }
         });
 
-        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(0, -1, 1f);
-        cardParams.leftMargin = dp(2);
-        cardParams.rightMargin = dp(2);
-        row.addView(card, cardParams);
+        LinearLayout.LayoutParams columnParams = new LinearLayout.LayoutParams(0, -1, 1f);
+        columnParams.leftMargin = dp(1);
+        columnParams.rightMargin = dp(1);
+        row.addView(column, columnParams);
+        return slider;
     }
 
     private void addNothingQuickGridAndSliders(LinearLayout panel, ThemeManager.Appearance a,
@@ -5294,12 +5438,14 @@ public class QinsLauncherActivity extends Activity {
         content.setOrientation(LinearLayout.HORIZONTAL);
         content.setGravity(Gravity.TOP);
         LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(-1, -2);
-        contentParams.topMargin = 0;
+        contentParams.topMargin = dp(2);
         panel.addView(content, contentParams);
+
         LinearLayout tiles = new LinearLayout(this);
         tiles.setOrientation(LinearLayout.VERTICAL);
         content.addView(tiles, new LinearLayout.LayoutParams(0, -2, 1f));
         addQuickTileGrid(tiles, a, expandedKeys, 6);
+
         addNothingVerticalSliders(content, a);
         updateQuickStates();
     }
@@ -5311,40 +5457,50 @@ public class QinsLauncherActivity extends Activity {
         controls.setPadding(0, 0, 0, 0);
         controls.setClipChildren(false);
         controls.setClipToPadding(false);
+        controls.setBackgroundColor(0x00000000);
+
         int availableHeightDp = (int) (getResources().getDisplayMetrics().heightPixels /
                 getResources().getDisplayMetrics().density);
-        final int dockHeightDp = Math.max(220, Math.min(280, availableHeightDp - 105));
-        controls.setMinimumHeight(dp(dockHeightDp));
-        controls.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        controls.setBackgroundColor(0x00000000);
-        addNothingVerticalSliderCard(controls, getString(R.string.launcher_brightness),
-                readBrightness(), 255, new SeekBar.OnSeekBarChangeListener() {
-                    @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
-                        if (fromUser || bar.hasFocus()) writeBrightness(Math.max(1, value));
-                    }
-                    @Override public void onStartTrackingTouch(SeekBar bar) { }
-                    @Override public void onStopTrackingTouch(SeekBar bar) { }
-                }, a);
-        View divider = new View(this);
-        // A transparent 10dp spacer gives the two rails a real visual gap.
-        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(dp(10), -1);
-        controls.addView(divider, dividerParams);
+        final int dockHeightDp = Math.max(156, Math.min(220, availableHeightDp - 125));
+
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        final int maxVolume = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
-        final int currentVolume = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
-        addNothingVerticalSliderCard(controls, getString(R.string.launcher_volume),
-                currentVolume, maxVolume, new SeekBar.OnSeekBarChangeListener() {
-                    @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
-                        if (fromUser || bar.hasFocus()) {
-                            AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                            if (manager != null) manager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0);
-                        }
-                    }
-                    @Override public void onStartTrackingTouch(SeekBar bar) { }
-                    @Override public void onStopTrackingTouch(SeekBar bar) { }
-                }, a);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(126), dp(dockHeightDp));
-        params.leftMargin = dp(6);
+        final int maxVolume = audio == null ? 15 :
+                Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+        final int currentVolume = audio == null ? 0 :
+                audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+
+        NothingPillSlider brightnessSlider = addNothingVerticalSliderCard(
+                controls, "BRIGHT", readBrightness(), 255, true);
+        NothingPillSlider volumeSlider = addNothingVerticalSliderCard(
+                controls, "VOLUME", currentVolume, maxVolume, false);
+
+        brightnessSlider.setNextFocusRightId(volumeSlider.getId());
+        volumeSlider.setNextFocusLeftId(brightnessSlider.getId());
+        if (quickGridLastTile != null) {
+            brightnessSlider.setNextFocusLeftId(quickGridLastTile.getId());
+            quickGridLastTile.setNextFocusRightId(brightnessSlider.getId());
+        }
+
+        brightnessSlider.setOnNothingSliderChangeListener(new NothingSliderChangeListener() {
+            @Override public void onProgressChanged(int progress, boolean fromUser) {
+                if (fromUser) writeBrightness(Math.max(1, progress));
+            }
+            @Override public void onStartTrackingTouch() { }
+            @Override public void onStopTrackingTouch() { }
+        });
+        volumeSlider.setOnNothingSliderChangeListener(new NothingSliderChangeListener() {
+            @Override public void onProgressChanged(int progress, boolean fromUser) {
+                if (fromUser) {
+                    AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                    if (manager != null) manager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0);
+                }
+            }
+            @Override public void onStartTrackingTouch() { }
+            @Override public void onStopTrackingTouch() { }
+        });
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(112), dp(dockHeightDp));
+        params.leftMargin = dp(5);
         params.topMargin = 0;
         params.bottomMargin = 0;
         parent.addView(controls, params);
@@ -5360,7 +5516,7 @@ public class QinsLauncherActivity extends Activity {
         String mediaSize = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("media_size", "2x1");
         card.setMinimumHeight(dp("2x2".equals(mediaSize) ? 108 : 62));
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            styleSurface(card, 0xFF1B1D1E, 0xFF1B1D1E, a.focus, 14f);
+            styleSurface(card, 0xFF1B1D1E, 0xFF34383A, a.focus, 24f);
         } else {
             styleSurface(card, quickSurfaceColor(a, a.surface), a.border, a.focus, a.cardCornerDp);
         }
