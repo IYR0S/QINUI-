@@ -2061,7 +2061,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout tile = new LinearLayout(this); tile.setOrientation(LinearLayout.VERTICAL); tile.setGravity(Gravity.CENTER); tile.setPadding(dp(2), dp(2), dp(2), dp(2));
         FrameLayout iconWrap = new FrameLayout(this); GradientDrawable shape = new GradientDrawable();
         if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) shape.setShape(GradientDrawable.OVAL);
-        else { shape.setShape(GradientDrawable.RECTANGLE); shape.setCornerRadius(dp(ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 5 : 8)); }
+        else { shape.setShape(GradientDrawable.RECTANGLE); shape.setCornerRadius(dp(a.iconWellCornerDp)); }
         shape.setColor(a.tile); iconWrap.setBackgroundDrawable(shape); iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, glyph, a.accent); icon.setVisualStyle(a.id); icon.setTag("quick-glyph");
         iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(19), dp(19), Gravity.CENTER));
@@ -4740,7 +4740,7 @@ public class QinsLauncherActivity extends Activity {
             if (galaxy) iconShape.setStroke(dp(1), a.border);
         } else {
             iconShape.setShape(GradientDrawable.RECTANGLE);
-            iconShape.setCornerRadius(dp(5));
+            iconShape.setCornerRadius(dp(a.iconWellCornerDp));
             iconShape.setColor(a.surfaceAlt);
             iconShape.setStroke(dp(1), a.border);
         }
