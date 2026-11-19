@@ -34,25 +34,25 @@ public class AppMenuActivity extends StudioActivity {
     }
 
     private void buildMenu() {
-        final ThemeManager.Palette palette = ThemeManager.getPalette(this);
+        final ThemeManager.Appearance a = ThemeManager.getAppearance(this);
         ScrollView scroll = new ScrollView(this);
         scroll.setFocusable(false);
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(20), dp(24), dp(20), dp(24));
-        page.setBackgroundColor(palette.background);
+        page.setBackgroundColor(a.background);
         scroll.addView(page);
 
         TextView title = new TextView(this);
         title.setText(R.string.app_menu_title);
         title.setTextSize(26);
-        title.setTextColor(palette.text);
+        title.setTextColor(a.text);
         page.addView(title);
 
         TextView hint = new TextView(this);
         hint.setText(R.string.app_menu_hint);
         hint.setTextSize(14);
-        hint.setTextColor(palette.muted);
+        hint.setTextColor(a.muted);
         LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(-1, -2);
         hp.bottomMargin = dp(18);
         page.addView(hint, hp);
@@ -82,18 +82,18 @@ public class AppMenuActivity extends StudioActivity {
         TextView homeHeading = new TextView(this);
         homeHeading.setText("Default Home Launcher");
         homeHeading.setTextSize(18);
-        homeHeading.setTextColor(palette.text);
+        homeHeading.setTextColor(a.text);
         homeHeading.setPadding(0, dp(14), 0, dp(4));
         page.addView(homeHeading);
         homeStatus = new TextView(this);
         updateHomeStatus();
         homeStatus.setTextSize(13);
-        homeStatus.setTextColor(palette.muted);
+        homeStatus.setTextColor(a.muted);
         page.addView(homeStatus);
         TextView homeHelp = new TextView(this);
         homeHelp.setText("Android 4.4: if another launcher is already selected, clear its defaults in App info, then press the physical Home key and choose QINS Home → Always.");
         homeHelp.setTextSize(12);
-        homeHelp.setTextColor(palette.muted);
+        homeHelp.setTextColor(a.muted);
         homeHelp.setPadding(0, dp(5), 0, dp(8));
         page.addView(homeHelp);
         addItem(page, R.string.menu_home, new View.OnClickListener() {
