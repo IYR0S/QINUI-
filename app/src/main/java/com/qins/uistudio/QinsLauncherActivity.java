@@ -4678,20 +4678,17 @@ public class QinsLauncherActivity extends Activity {
         panel.setClipChildren(false);
         panel.setClipToPadding(false);
         boolean nothingPanel = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
-        panel.setPadding(dp(nothingPanel ? 10 : 8), dp(nothingPanel ? 8 : 0),
-                dp(nothingPanel ? 10 : 8), dp(nothingPanel ? 12 : 10));
-        // API 19 cannot provide a live blurred backdrop. Use a theme-matched
-        // translucent scrim so wallpaper remains visible without competing
-        // with the foreground focus blocks.
+        panel.setPadding(dp(nothingPanel ? 8 : 8), dp(nothingPanel ? 8 : 0),
+                dp(nothingPanel ? 8 : 8), dp(nothingPanel ? 12 : 10));
+        // API 19 has no platform live-blur API. Nothing's shade is therefore
+        // represented as a full-width translucent scrim over the wallpaper,
+        // not as a floating rounded card with exposed wallpaper gutters.
         int scrimAlpha = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 0xC4 :
-                (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 0xD0 : 0xE8);
+                (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 0xD0 : 0xD8);
         if (nothingPanel) {
-            GradientDrawable nothingSurface = new GradientDrawable();
-            nothingSurface.setColor(a.surface);
-            nothingSurface.setCornerRadius(dp(28));
-            nothingSurface.setStroke(dp(1), a.border);
-            panel.setBackgroundDrawable(nothingSurface);
-            scroll.setPadding(dp(5), dp(5), dp(5), dp(5));
+            scroll.setPadding(0, 0, 0, 0);
+            panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
+                    (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
         } else {
             panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
                     (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
@@ -5478,8 +5475,11 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onStopTrackingTouch() { }
         });
 
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(112), dp(dockHeightDp));
-        params.leftMargin = dp(5);
+        // Tiles and the paired vertical controls share the content width equally.
+        // The two Nothing sliders therefore occupy approximately half the screen.
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, dp(dockHeightDp), 1f);
+        params.leftMargin = dp(4);
+        params.rightMargin = dp(2);
         params.topMargin = 0;
         params.bottomMargin = 0;
         parent.addView(controls, params);
@@ -5602,12 +5602,14 @@ public class QinsLauncherActivity extends Activity {
             float cy = b.exactCenterY();
             paint.setColor(color);
             paint.setStyle(Paint.Style.FILL);
+            // Material 3 Expressive uses a slim upright grip that protrudes
+            // equally above and below the horizontal rail.
             canvas.drawRoundRect(new android.graphics.RectF(
-                    cx - dp(2), cy - dp(5), cx + dp(2), cy + dp(12)),
+                    cx - dp(2), cy - dp(12), cx + dp(2), cy + dp(12)),
                     dp(2), dp(2), paint);
         }
         @Override public int getIntrinsicWidth() { return dp(10); }
-        @Override public int getIntrinsicHeight() { return dp(25); }
+        @Override public int getIntrinsicHeight() { return dp(30); }
         @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
         @Override public void setColorFilter(android.graphics.ColorFilter filter) {
             paint.setColorFilter(filter); invalidateSelf();
