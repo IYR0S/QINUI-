@@ -5021,7 +5021,7 @@ public class QinsLauncherActivity extends Activity {
             styleSurface(tile, a.tile, a.border, a.focus, 36f);
         } else {
             // Nothing uses a compact 3-column icon grid, with no extra icon badge.
-            styleSurface(tile, 0xFF242729, 0xFF3A3D3F, a.accent, a.tileCornerDp);
+            styleSurface(tile, 0xD8242729, 0xB03A3D3F, a.accent, a.tileCornerDp);
             name.setTextColor(0xFFF2F2EF);
             state.setTextColor(0xFF9B9E9F);
         }
@@ -5496,7 +5496,7 @@ public class QinsLauncherActivity extends Activity {
         String mediaSize = getSharedPreferences(QUICK_PREFS, MODE_PRIVATE).getString("media_size", "2x1");
         card.setMinimumHeight(dp("2x2".equals(mediaSize) ? 108 : 62));
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            styleSurface(card, 0xFF1B1D1E, 0xFF34383A, a.focus, 24f);
+            styleSurface(card, 0xE61B1D1E, 0xC834383A, a.focus, 24f);
         } else {
             styleSurface(card, quickSurfaceColor(a, a.surface), a.border, a.focus, a.cardCornerDp);
         }
@@ -5891,10 +5891,10 @@ public class QinsLauncherActivity extends Activity {
         }
 
         if (nothing) {
-            int fill = active ? 0xFFECEDEA : 0xFF242729;
+            int fill = active ? 0xFFECEDEA : 0xD8242729;
             int foreground = active ? 0xFF171819 : 0xFFF2F2EF;
             tile.setBackgroundDrawable(new FocusSurfaceDrawable(fill,
-                    active ? 0xFFECEDEA : 0xFF3A3D3F, a.accent, a.tileCornerDp, tile.hasFocus()));
+                    active ? 0xFFECEDEA : 0xB03A3D3F, a.accent, a.tileCornerDp, tile.hasFocus()));
             QinsGlyphView glyph = findQuickGlyph(tile);
             if (glyph != null) glyph.setTint(foreground);
             if (tile instanceof android.view.ViewGroup) {
