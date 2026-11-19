@@ -115,4 +115,19 @@ public final class ThemedIconResolver {
         }
         return new BitmapDrawable(context.getResources(), bitmap);
     }
+
+    /** Monochrome fallback treatment for installed icons without a matching PNG. */
+    public static Bitmap applyTheme(Bitmap source, String theme) {
+        if (source == null || source.isRecycled() ||
+                !ThemeManager.APPEARANCE_NOTHING.equals(theme)) return source;
+        Bitmap mono = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas = new android.graphics.Canvas(mono);
+        android.graphics.Paint paint = new android.graphics.Paint(
+                android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
+        android.graphics.ColorMatrix matrix = new android.graphics.ColorMatrix();
+        matrix.setSaturation(0f);
+        paint.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
+        canvas.drawBitmap(source, 0f, 0f, paint);
+        return mono;
+    }
 }
