@@ -4700,85 +4700,62 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private View quickTile(String symbol, String label, ThemeManager.Appearance a) {
+        final boolean galaxy = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
+        final boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
+        final boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
         LinearLayout tile = new LinearLayout(this);
-        boolean nothingTheme = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
-        boolean pixelTheme = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
-        tile.setOrientation(pixelTheme ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
-        tile.setGravity(pixelTheme ? Gravity.CENTER_VERTICAL : Gravity.CENTER);
-        tile.setPadding(dp(nothingTheme ? 5 : (pixelTheme ? 9 : 3)),
-                dp(pixelTheme ? 5 : 3),
-                dp(nothingTheme ? 5 : (pixelTheme ? 9 : 3)),
-                dp(pixelTheme ? 5 : 3));
+        tile.setOrientation(galaxy ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        tile.setGravity(Gravity.CENTER_VERTICAL);
+        tile.setPadding(dp(galaxy ? 2 : 10), dp(galaxy ? 3 : 6), dp(galaxy ? 2 : 10), dp(galaxy ? 3 : 6));
 
         FrameLayout iconWrap = new FrameLayout(this);
-        GradientDrawable shape = new GradientDrawable();
-        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) shape.setShape(GradientDrawable.OVAL);
-        else {
-            shape.setShape(GradientDrawable.RECTANGLE);
-            shape.setCornerRadius(dp(pixelTheme ? 5 : 8));
-        }
-        shape.setColor(pixelTheme ? quickSurfaceColor(a, a.tile) : a.tile);
-        if (pixelTheme) {
-            shape.setCornerRadius(dp(8));
-            shape.setStroke(dp(1), a.border);
-        }
-        iconWrap.setBackgroundDrawable(shape);
+        GradientDrawable iconShape = new GradientDrawable();
+        iconShape.setShape(GradientDrawable.OVAL);
+        iconShape.setColor(galaxy ? quickSurfaceColor(a, a.tile) : (pixel ? 0x3317231D : 0xFF303436));
+        if (nothing) iconShape.setStroke(dp(1), 0xFF55595B);
+        iconWrap.setBackgroundDrawable(iconShape);
         iconWrap.setTag("quick-icon-shape");
-
         QinsGlyphView icon = new QinsGlyphView(this, symbol, a.accent);
         icon.setVisualStyle(a.id);
         icon.setTag("quick-glyph");
-        int quickIconSize = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 66 : (pixelTheme ? 42 : clamp(screenHeightDp() / 8, 30, 40));
-        int glyphSize = dp(quickIconSize * (pixelTheme ? 0.72f : 0.64f));
-        iconWrap.addView(icon, new FrameLayout.LayoutParams(glyphSize, glyphSize, Gravity.CENTER));
-        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(quickIconSize), dp(quickIconSize));
-        if (!pixelTheme) iconParams.gravity = Gravity.CENTER_HORIZONTAL;
+        int iconSize = galaxy ? 30 : (pixel ? 30 : 24);
+        iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(iconSize), dp(iconSize), Gravity.CENTER));
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dp(galaxy ? 44 : (pixel ? 40 : 36)),
+                dp(galaxy ? 44 : (pixel ? 40 : 36)));
+        if (!galaxy) iconParams.rightMargin = dp(9);
         tile.addView(iconWrap, iconParams);
 
-        LinearLayout textBlock = new LinearLayout(this);
-        textBlock.setOrientation(LinearLayout.VERTICAL);
-        textBlock.setGravity(pixelTheme ? (Gravity.CENTER_VERTICAL | Gravity.LEFT) : Gravity.CENTER);
-        if (pixelTheme) textBlock.setPadding(dp(9), 0, 0, 0);
-
+        LinearLayout labels = new LinearLayout(this);
+        labels.setOrientation(LinearLayout.VERTICAL);
+        labels.setGravity(galaxy ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
+        if (galaxy) labels.setPadding(0, dp(2), 0, 0);
         TextView name = new TextView(this);
-        name.setText(label);
+        name.setText(nothing ? label.toUpperCase(Locale.US) : label);
         name.setTextColor(a.text);
-        name.setTextSize(pixelTheme ? 11 : 12);
-        name.setGravity(pixelTheme ? (Gravity.LEFT | Gravity.CENTER_VERTICAL) : Gravity.CENTER);
+        name.setTextSize(galaxy ? 9 : (pixel ? 12 : 10));
         name.setSingleLine(true);
-        name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        textBlock.addView(name);
-
+        name.setGravity(galaxy ? Gravity.CENTER : Gravity.LEFT);
+        labels.addView(name);
         TextView state = new TextView(this);
         state.setTextColor(a.muted);
-        state.setTextSize(pixelTheme ? 9 : 10);
-        state.setGravity(pixelTheme ? (Gravity.LEFT | Gravity.CENTER_VERTICAL) : Gravity.CENTER);
-        textBlock.addView(state);
-        LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(pixelTheme ? 0 : -1, -2);
-        if (pixelTheme) textParams.weight = 1;
-        tile.addView(textBlock, textParams);
+        state.setTextSize(galaxy ? 8 : (pixel ? 10 : 9));
+        state.setSingleLine(true);
+        state.setGravity(galaxy ? Gravity.CENTER : Gravity.LEFT);
+        labels.addView(state);
+        tile.addView(labels, new LinearLayout.LayoutParams(galaxy ? -1 : 0, -2, galaxy ? 0 : 1));
 
         tile.setFocusable(true);
         tile.setFocusableInTouchMode(false);
         tile.setClickable(true);
-        if (nothingTheme) {
-            styleSurface(tile, 0xFF242729, 0xFF242729, a.focus, 16f);
-            iconWrap.setBackgroundColor(0x00000000);
-            icon.setTint(0xFFF4F4F2);
-            name.setTextColor(0xFFF4F4F2);
-            name.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-            name.setTextSize(11);
-            state.setTextColor(0xFFA4A7A8);
-            state.setTextSize(9);
-        } else if (pixelTheme) {
-            styleSurface(tile, quickSurfaceColor(a, a.tile), a.border, a.focus, 5f);
-            iconWrap.setBackgroundColor(0x00000000);
-            name.setTextColor(a.text);
-            name.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-            name.setTextSize(12);
-            state.setTextColor(a.muted);
-        } else {
+        if (galaxy) {
             tile.setBackgroundColor(0x00000000);
+            state.setVisibility(View.GONE);
+        } else if (pixel) {
+            styleSurface(tile, 0x3317231D, 0x553C8060, a.focus, 28f);
+        } else {
+            styleSurface(tile, 0xFF202224, 0xFF55595B, a.focus, 22f);
+            name.setTextColor(0xFFF4F4F2);
+            state.setTextColor(0xFFA4A7A8);
         }
         registerQuickTile(symbol, tile, state);
         return tile;
