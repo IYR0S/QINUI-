@@ -116,7 +116,7 @@ Modern AOSP lifecycle reference:
 ### Nothing OS 5
 Public hands-on coverage confirms a separate Quick Settings panel, a minimized media player near the top, vertical brightness and volume sliders, and resizable tiles. The QINS layout now gives the tile group and paired slider group equal horizontal weights (approximately 50/50), rather than a fixed 112dp dock. The paired sliders retain an explicit inter-slider gap.
 
-The outer shade surface now spans the full viewport width. Its background is a translucent full-bleed scrim over the wallpaper, not a rounded floating card that exposes narrow wallpaper gutters at the left and right. This is a deliberate API-19 approximation: modern live wallpaper blur is unavailable to this ordinary launcher view. Small internal content padding remains, so controls do not touch the display edge.
+The outer shade surface now spans the full viewport width. Its background is a translucent full-bleed scrim over the wallpaper, not a rounded floating card that exposes narrow wallpaper gutters at the left and right. Expanded Nothing tiles and the media card also use restrained alpha so the Lucent-style surfaces reveal a hint of the wallpaper. This is a deliberate API-19 approximation: modern live wallpaper blur is unavailable to this ordinary launcher view. Small internal content padding remains, so controls do not touch the display edge.
 
 ### Pixel / Material 3 Expressive
 Android 16 QPR1 references show an updated rectangular brightness surface with a prominent upright grip. Inactive tiles remain pill-shaped; enabled tiles morph to rounded rectangles or squares. QINS keeps the horizontal rail and now draws the narrow upright grip symmetrically above and below it. Pixel-specific corner tokens were tightened to 22dp cards, 20dp tiles, 12dp icon wells and 16dp slider surfaces. These are QINS tuning values, not Google's published dp specifications.
@@ -134,7 +134,7 @@ References for the comparison:
 
 ## What is being applied in QINS
 
-- Nothing expanded shade uses a full-viewport translucent scrim, with no outer rounded-card gutters.
+- Nothing expanded shade uses a full-viewport translucent scrim, with no outer rounded-card gutters; its tile and media surfaces have restrained translucency to echo the OS 5 Lucent treatment.
 - Nothing tile group and the paired brightness/volume slider group share the available width equally; the pair therefore occupies approximately half of the panel width.
 - The two Nothing sliders retain a real visible gap and individual icon affordances.
 - Nothing's custom vertical pill sliders remain original Java views; drawing, touch mapping and D-pad Up/Down share one coordinate system.
