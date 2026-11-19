@@ -38,19 +38,23 @@ public class MainActivity extends Activity {
     }
 
     private void showDashboard() {
+        final ThemeManager.Appearance a = ThemeManager.getAppearance(this);
         final LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(16), dp(18), dp(16), dp(18));
         page.setFocusable(false);
+        page.setBackgroundColor(a.background);
 
         TextView title = new TextView(this);
         title.setText("QINS UI Studio");
         title.setTextSize(24);
+        title.setTextColor(a.text);
         page.addView(title, new LinearLayout.LayoutParams(-1, -2));
 
         TextView hint = new TextView(this);
         hint.setText("Use the physical arrow keys and OK / Enter.");
         hint.setTextSize(14);
+        hint.setTextColor(a.muted);
         LinearLayout.LayoutParams hintParams = new LinearLayout.LayoutParams(-1, -2);
         hintParams.bottomMargin = dp(14);
         page.addView(hint, hintParams);
@@ -66,8 +70,9 @@ public class MainActivity extends Activity {
     private void addButton(LinearLayout page, String label, final Class<?> target) {
         Button button = new Button(this);
         button.setText(label);
-        button.setFocusable(true);
-        button.setFocusableInTouchMode(false);
+        ThemeManager.Appearance a = ThemeManager.getAppearance(this);
+        KeyboardSupport.makeFocusable(button, a.surface, a.accent, a.text, dp(a.tileCornerDp));
+        button.setAllCaps(false);
         button.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) {
                 try {
