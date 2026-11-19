@@ -5307,6 +5307,7 @@ public class QinsLauncherActivity extends Activity {
         }
 
         View shape = tile.findViewWithTag("quick-icon-shape");
+        QinsGlyphView glyph = findQuickGlyph(tile);
         if (shape != null) {
             GradientDrawable bg = new GradientDrawable();
             bg.setShape(GradientDrawable.OVAL);
