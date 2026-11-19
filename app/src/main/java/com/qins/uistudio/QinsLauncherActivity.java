@@ -728,18 +728,26 @@ public class QinsLauncherActivity extends Activity {
 
         @Override public void draw(Canvas canvas) {
             android.graphics.Rect b = getBounds();
+            int inset = dp(focused ? 4 : 3);
             android.graphics.RectF r = new android.graphics.RectF(
-                    b.left + dp(focused ? 3 : 1), b.top + dp(focused ? 3 : 1),
-                    b.right - dp(focused ? 3 : 1), b.bottom - dp(focused ? 3 : 1));
+                    b.left + inset, b.top + inset,
+                    b.right - inset, b.bottom - inset);
 
             boolean hasFill = ((fill >>> 24) & 0xFF) > 0;
             if (hasFill) {
                 paint.setStyle(Paint.Style.FILL);
                 paint.setShader(null);
-                paint.setColor(fill);
                 int shadow = ThemeManager.APPEARANCE_GALAXY.equals(themeId) ? 0x30182845 :
                         (ThemeManager.APPEARANCE_PIXEL.equals(themeId) ? 0x30243B2C : 0x4A000000);
+                android.graphics.RectF lowerLip = new android.graphics.RectF(r);
+                lowerLip.offset(0, dp(2));
+                paint.setColor(ThemeManager.APPEARANCE_NOTHING.equals(themeId) ? 0xAA000000 : 0x3A000000);
                 paint.setShadowLayer(dp(focused ? 8 : 5), 0, dp(2), shadow);
+                canvas.drawRoundRect(lowerLip, radius, radius, paint);
+                paint.clearShadowLayer();
+
+                paint.setColor(fill);
+                paint.setShadowLayer(dp(focused ? 7 : 4), 0, dp(1), shadow);
                 canvas.drawRoundRect(r, radius, radius, paint);
                 paint.clearShadowLayer();
 
@@ -799,11 +807,18 @@ public class QinsLauncherActivity extends Activity {
         void setFocused(boolean value) { focused = value; invalidateSelf(); }
         @Override public void draw(Canvas canvas) {
             android.graphics.Rect b = getBounds();
-            android.graphics.RectF r = new android.graphics.RectF(b.left + dp(1), b.top + dp(1),
-                    b.right - dp(1), b.bottom - dp(1));
+            android.graphics.RectF r = new android.graphics.RectF(b.left + dp(4), b.top + dp(4),
+                    b.right - dp(4), b.bottom - dp(4));
             Path clip = new Path(); clip.addRoundRect(r, radius, radius, Path.Direction.CW);
-            paint.setStyle(Paint.Style.FILL); paint.setShader(null); paint.setColor(baseColor);
+            paint.setStyle(Paint.Style.FILL); paint.setShader(null);
+            android.graphics.RectF lowerLip = new android.graphics.RectF(r);
+            lowerLip.offset(0, dp(2));
+            paint.setColor(0x3A000000);
             paint.setShadowLayer(dp(focused ? 7 : 4), 0, dp(2), 0x38000000);
+            canvas.drawRoundRect(lowerLip, radius, radius, paint);
+            paint.clearShadowLayer();
+            paint.setColor(baseColor);
+            paint.setShadowLayer(dp(focused ? 6 : 3), 0, dp(1), 0x30000000);
             canvas.drawRoundRect(r, radius, radius, paint);
             paint.clearShadowLayer();
             paint.setShader(new LinearGradient(r.left, r.top, r.left, r.bottom,
@@ -4890,6 +4905,7 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void updateBrightnessCard(View card, ThemeManager.Appearance a, int value, int max) {
+        card.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         float level = max <= 0 ? 0f : Math.max(0f, Math.min(1f, value / (float) max));
         int fillColor = (ThemeManager.APPEARANCE_NOTHING.equals(a.id) || ThemeManager.APPEARANCE_PIXEL.equals(a.id)) ? a.accent : a.tileActive;
         float radius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 10f :
