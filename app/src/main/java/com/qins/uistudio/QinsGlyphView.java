@@ -42,13 +42,42 @@ public final class QinsGlyphView extends View {
         canvas.translate(getWidth() / 2f, getHeight() / 2f);
         canvas.scale(unit, unit);
 
+        // A tiny offset shadow gives the glyph a physical edge without making
+        // it look like a sticker. Nothing stays crisp and high-contrast.
+        paint.setAntiAlias(true);
+        paint.setStrokeCap("nothing".equals(visualStyle) ? Paint.Cap.SQUARE : Paint.Cap.ROUND);
+        paint.setStrokeJoin(Paint.Join.ROUND);
+        paint.setStrokeWidth("nothing".equals(visualStyle) ? 2.25f :
+                ("galaxy".equals(visualStyle) ? 2.45f : 2.15f));
+        if ("nothing".equals(visualStyle)) {
+            canvas.save();
+            canvas.translate(0.35f, 0.65f);
+            paint.setColor(0x55000000);
+            paint.setStyle(Paint.Style.STROKE);
+            drawGlyph(canvas);
+            canvas.restore();
+        } else {
+            canvas.save();
+            canvas.translate(0.45f, 0.7f);
+            paint.setColor("galaxy".equals(visualStyle) ? 0x44303D55 : 0x44304739);
+            paint.setStyle(Paint.Style.STROKE);
+            drawGlyph(canvas);
+            canvas.restore();
+        }
+
+        paint.clearShadowLayer();
         paint.setColor(tint);
-        paint.setStrokeWidth("nothing".equals(visualStyle) ? 2.2f :
-                ("galaxy".equals(visualStyle) ? 2.35f : 1.85f));
+        paint.setStrokeWidth("nothing".equals(visualStyle) ? 2.25f :
+                ("galaxy".equals(visualStyle) ? 2.45f : 2.15f));
         paint.setStrokeCap("nothing".equals(visualStyle) ? Paint.Cap.SQUARE : Paint.Cap.ROUND);
         paint.setStrokeJoin(Paint.Join.ROUND);
         paint.setStyle(Paint.Style.STROKE);
+        drawGlyph(canvas);
+        canvas.restore();
+    }
 
+    private void drawGlyph(Canvas canvas) {
+        paint.setStyle(Paint.Style.STROKE);
         if ("apps".equals(glyph)) drawApps(canvas);
         else if ("settings".equals(glyph)) drawSettings(canvas);
         else if ("wifi".equals(glyph)) drawWifi(canvas);
@@ -72,8 +101,6 @@ public final class QinsGlyphView extends View {
         else if ("palette".equals(glyph)) drawPalette(canvas);
         else if ("folder".equals(glyph)) drawFolder(canvas);
         else if ("scale".equals(glyph)) drawScale(canvas);
-
-        canvas.restore();
     }
 
     private void drawSettings(Canvas c) {
