@@ -206,8 +206,8 @@ public final class ThemeManager {
         for (Appearance appearance : APPEARANCES) {
             if (appearance.id.equals(selected)) { chosen = appearance; break; }
         }
-        Appearance custom = withCustomColors(context, chosen);
-        return isDarkMode(context) ? darkAppearance(custom) : lightAppearance(custom);
+        Appearance modeBase = isDarkMode(context) ? darkAppearance(chosen) : lightAppearance(chosen);
+        return withCustomColors(context, modeBase);
     }
 
     public static boolean applyAppearance(Context context, String id) {
