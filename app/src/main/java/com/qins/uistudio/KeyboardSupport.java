@@ -109,7 +109,7 @@ public final class KeyboardSupport {
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(focused ? 2.2f : 1f);
             paint.setColor(focused ? focus : border);
-            if (focused) paint.setShadowLayer(shadowRadius, 0, 0, 0x554C78C2);
+            if (focused) paint.setShadowLayer(shadowRadius, 0, 0, (focus & 0x00FFFFFF) | 0x55000000);
             if (((border >>> 24) & 0xFF) > 0 || focused) {
                 canvas.drawRoundRect(r, corner, corner, paint);
             }
