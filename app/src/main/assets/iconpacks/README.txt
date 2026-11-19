@@ -1,9 +1,12 @@
-Theme icon assets are optional and are loaded at runtime on Android API 19.
+API-19 icon packs use one compact PNG atlas per visual theme plus appfilter.xml.
 
-Each pack directory may contain appfilter.xml and drawable-nodpi/<name>.png.
-appfilter.xml uses <resources><item component="ComponentInfo{package/class}" drawable="name" /></resources>.
-Only exact component mappings are accepted. Keep all image assets as PNG; VectorDrawable and AdaptiveIconDrawable are not supported by API 19.
+Atlas layout: 6 columns × 4 rows, 32 × 32 pixels per cell. The runtime resolver crops the matching cell and caches the resulting bitmap. No VectorDrawable, AdaptiveIconDrawable, AndroidX, or runtime dependency is required.
 
-The launcher currently keeps PackageManager icons as fallback. Nothing OS applies a monochrome treatment to those installed icons when no licensed override is present. No proprietary Nothing artwork or unlicensed icon artwork is bundled.
+Drawable IDs, in atlas order:
+phone, contacts, settings, wifi, bluetooth, camera,
+gallery, messages, calendar, music, browser, clock,
+files, email, store, video, maps, calculator,
+downloads, recorder, flashlight, hotspot, sound, notes.
 
-Pack IDs: nothing-os, one-ui, pixel. nothing-brand is reserved for a separately selected CC BY-SA pack and is not currently enabled as a runtime theme.
+Pack folders: one-ui, pixel, nothing-os.
+The PNGs are original artwork; see ASSET_LICENSES.txt. App mappings are package-level fallbacks and can be extended with exact component mappings.

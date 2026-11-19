@@ -4,9 +4,6 @@ import android.content.Context;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.util.Xml;
@@ -17,14 +14,17 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * API-19 icon-pack bridge. A theme may provide an appfilter.xml plus licensed PNGs.
- * Unmapped apps retain their installed icon; Nothing receives an original,
- * high-contrast monochrome treatment rather than a dependency on modern adaptive icons.
- */
+/** API-19 icon packs backed by compact, original PNG atlases and appfilter mappings. */
 public final class ThemedIconResolver {
+    private static final String[] ICON_NAMES = new String[] {
+            "phone", "contacts", "settings", "wifi", "bluetooth", "camera",
+            "gallery", "messages", "calendar", "music", "browser", "clock",
+            "files", "email", "store", "video", "maps", "calculator",
+            "downloads", "recorder", "flashlight", "hotspot", "sound", "notes"
+    };
     private static final Map<String, Map<String, String>> MAPPINGS =
             new HashMap<String, Map<String, String>>();
+    private static final Map<String, Bitmap> ATLAS = new HashMap<String, Bitmap>();
     private static final Map<String, Bitmap> ICONS = new HashMap<String, Bitmap>();
 
     private ThemedIconResolver() {}
@@ -33,6 +33,11 @@ public final class ThemedIconResolver {
         if (ThemeManager.APPEARANCE_GALAXY.equals(theme)) return "one-ui";
         if (ThemeManager.APPEARANCE_PIXEL.equals(theme)) return "pixel";
         return "nothing-os";
+    }
+
+    private static int iconIndex(String name) {
+        for (int i = 0; i < ICON_NAMES.length; i++) if (ICON_NAMES[i].equals(name)) return i;
+        return -1;
     }
 
     private static Map<String, String> loadMappings(Context context, String pack) {
@@ -52,21 +57,38 @@ public final class ThemedIconResolver {
                 String component = parser.getAttributeValue(null, "component");
                 String packageName = parser.getAttributeValue(null, "package");
                 String drawable = parser.getAttributeValue(null, "drawable");
-                if (drawable == null || !drawable.matches("[A-Za-z0-9_]+")) continue;
+                if (iconIndex(drawable) < 0) continue;
                 if (component != null && component.length() > 0) loaded.put(component, drawable);
                 if (packageName != null && packageName.matches("[A-Za-z0-9_.]+")) {
                     loaded.put("package:" + packageName, drawable);
                 }
             }
         } catch (Exception ignored) {
-            // An absent or malformed pack is a normal fallback condition.
+            // Missing or malformed mappings fall back to PackageManager icons.
         } finally {
             if (input != null) try { input.close(); } catch (Exception ignored) { }
         }
-        synchronized (MAPPINGS) {
-            MAPPINGS.put(pack, loaded);
-        }
+        synchronized (MAPPINGS) { MAPPINGS.put(pack, loaded); }
         return loaded;
+    }
+
+    private static Bitmap loadAtlas(Context context, String pack) {
+        synchronized (ATLAS) {
+            Bitmap cached = ATLAS.get(pack);
+            if (cached != null && !cached.isRecycled()) return cached;
+        }
+        InputStream input = null;
+        try {
+            input = context.getAssets().open("iconpacks/" + pack + "/icons.png");
+            Bitmap bitmap = BitmapFactory.decodeStream(input);
+            if (bitmap == null) return null;
+            synchronized (ATLAS) { ATLAS.put(pack, bitmap); }
+            return bitmap;
+        } catch (Exception ignored) {
+            return null;
+        } finally {
+            if (input != null) try { input.close(); } catch (Exception ignored) { }
+        }
     }
 
     public static Drawable loadMappedIcon(Context context, ResolveInfo info, String theme) {
@@ -77,52 +99,20 @@ public final class ThemedIconResolver {
         Map<String, String> mappings = loadMappings(context, pack);
         String drawableName = mappings.get(component);
         if (drawableName == null) drawableName = mappings.get("package:" + packageName);
-        if (drawableName == null) return null;
+        int index = iconIndex(drawableName);
+        if (index < 0) return null;
 
         String cacheKey = pack + "/" + drawableName;
         Bitmap bitmap;
-        synchronized (ICONS) {
-            bitmap = ICONS.get(cacheKey);
-        }
+        synchronized (ICONS) { bitmap = ICONS.get(cacheKey); }
         if (bitmap == null || bitmap.isRecycled()) {
-            InputStream png = null;
+            Bitmap atlas = loadAtlas(context, pack);
+            if (atlas == null || atlas.getWidth() < 192 || atlas.getHeight() < 128) return null;
             try {
-                png = context.getAssets().open("iconpacks/" + pack +
-                        "/drawable-nodpi/" + drawableName + ".png");
-                bitmap = BitmapFactory.decodeStream(png);
-                if (bitmap == null) return null;
-                synchronized (ICONS) {
-                    ICONS.put(cacheKey, bitmap);
-                }
-            } catch (Exception ignored) {
-                return null;
-            } finally {
-                if (png != null) try { png.close(); } catch (Exception ignored) { }
-            }
+                bitmap = Bitmap.createBitmap(atlas, (index % 6) * 32, (index / 6) * 32, 32, 32);
+                synchronized (ICONS) { ICONS.put(cacheKey, bitmap); }
+            } catch (RuntimeException ignored) { return null; }
         }
         return new BitmapDrawable(context.getResources(), bitmap);
-    }
-
-    /** Keep Galaxy and Pixel app-brand colors; Nothing uses a restrained monochrome glyph treatment. */
-    public static Bitmap applyTheme(Bitmap source, String theme) {
-        if (source == null || source.isRecycled() ||
-                !ThemeManager.APPEARANCE_NOTHING.equals(theme)) return source;
-        Bitmap mono = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(mono);
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-        float contrast = 1.18f;
-        float offset = 128f * (1f - contrast) + 4f;
-        float red = 0.2126f * contrast;
-        float green = 0.7152f * contrast;
-        float blue = 0.0722f * contrast;
-        float[] matrix = new float[] {
-                red, green, blue, 0f, offset,
-                red, green, blue, 0f, offset,
-                red, green, blue, 0f, offset,
-                0f, 0f, 0f, 1f, 0f
-        };
-        paint.setColorFilter(new ColorMatrixColorFilter(new android.graphics.ColorMatrix(matrix)));
-        canvas.drawBitmap(source, 0f, 0f, paint);
-        return mono;
     }
 }

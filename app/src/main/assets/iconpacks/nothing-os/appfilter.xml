@@ -1,4 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Add only original or redistributable Nothing-style PNG artwork. -->
+    <item package="com.android.dialer" drawable="phone" />
+    <item package="com.android.phone" drawable="phone" />
+    <item package="com.android.contacts" drawable="contacts" />
+    <item package="com.android.settings" drawable="settings" />
+    <item package="com.android.systemui" drawable="settings" />
+    <item package="com.android.camera2" drawable="camera" />
+    <item package="com.android.camera" drawable="camera" />
+    <item package="com.android.gallery3d" drawable="gallery" />
+    <item package="com.android.mms" drawable="messages" />
+    <item package="com.android.messaging" drawable="messages" />
+    <item package="com.google.android.apps.messaging" drawable="messages" />
+    <item package="com.android.calendar" drawable="calendar" />
+    <item package="com.google.android.calendar" drawable="calendar" />
+    <item package="com.android.music" drawable="music" />
+    <item package="com.google.android.music" drawable="music" />
+    <item package="com.spotify.music" drawable="music" />
+    <item package="com.android.browser" drawable="browser" />
+    <item package="com.android.chrome" drawable="browser" />
+    <item package="com.android.deskclock" drawable="clock" />
+    <item package="com.google.android.deskclock" drawable="clock" />
+    <item package="com.android.documentsui" drawable="files" />
+    <item package="com.android.filemanager" drawable="files" />
+    <item package="com.google.android.apps.nbu.files" drawable="files" />
+    <item package="com.android.email" drawable="email" />
+    <item package="com.google.android.gm" drawable="email" />
+    <item package="com.android.vending" drawable="store" />
+    <item package="com.google.android.youtube" drawable="video" />
+    <item package="com.google.android.apps.maps" drawable="maps" />
+    <item package="com.android.calculator2" drawable="calculator" />
+    <item package="com.google.android.calculator" drawable="calculator" />
+    <item package="com.android.providers.downloads.ui" drawable="downloads" />
+    <item package="com.android.soundrecorder" drawable="recorder" />
+    <item package="com.android.bluetooth" drawable="bluetooth" />
 </resources>
