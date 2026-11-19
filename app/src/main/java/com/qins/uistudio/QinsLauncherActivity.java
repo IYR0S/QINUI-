@@ -4622,13 +4622,11 @@ public class QinsLauncherActivity extends Activity {
             // One UI and Nothing both keep media above connectivity, but use
             // different tile geometry and different slider systems.
             addQuickMediaCard(panel, a);
+            addQuickTileGrid(panel, a, expandedKeys, (galaxyTheme || nothingTheme) ? 6 : 4);
+            updateQuickStates();
             if (nothingTheme) {
-                addNothingQuickGridAndSliders(panel, a, expandedKeys);
+                addNothingVerticalSliders(panel, a);
             } else {
-                addQuickTileGrid(panel, a, expandedKeys, galaxyTheme ? 6 : 4);
-                updateQuickStates();
-            }
-            if (!nothingTheme) {
                 addBrightnessSleepRow(panel, a);
                 addVolumeDndRow(panel, a);
             }
@@ -4997,19 +4995,21 @@ public class QinsLauncherActivity extends Activity {
         layers.setId(0, android.R.id.background);
         layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
-            GradientDrawable thumb = new GradientDrawable();
+        GradientDrawable thumb = new GradientDrawable();
+        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) {
+            thumb.setShape(GradientDrawable.OVAL);
+            thumb.setSize(dp(16), dp(16));
+        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
             thumb.setShape(GradientDrawable.RECTANGLE);
-            thumb.setCornerRadius(dp(6));
-            thumb.setColor(a.accent);
+            thumb.setCornerRadius(dp(7));
             thumb.setSize(dp(20), dp(20));
-            seek.setThumb(thumb);
         } else {
-            GradientDrawable hiddenThumb = new GradientDrawable();
-            hiddenThumb.setColor(0x00000000);
-            hiddenThumb.setSize(dp(1), dp(1));
-            seek.setThumb(hiddenThumb);
+            thumb.setShape(GradientDrawable.RECTANGLE);
+            thumb.setCornerRadius(dp(2));
+            thumb.setSize(dp(13), dp(13));
         }
+        thumb.setColor(a.accent);
+        seek.setThumb(thumb);
         seek.setPadding(0, 0, 0, 0);
         seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
     }
@@ -5031,10 +5031,13 @@ public class QinsLauncherActivity extends Activity {
         layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
 
-        GradientDrawable hiddenThumb = new GradientDrawable();
-        hiddenThumb.setColor(0x00000000);
-        hiddenThumb.setSize(dp(1), dp(1));
-        seek.setThumb(hiddenThumb);
+        GradientDrawable thumb = new GradientDrawable();
+        thumb.setShape(GradientDrawable.RECTANGLE);
+        thumb.setCornerRadius(dp(4));
+        thumb.setColor(0xFFF4F4F1);
+        thumb.setStroke(dp(1), 0xFFFFFFFF);
+        thumb.setSize(dp(16), dp(16));
+        seek.setThumb(thumb);
         seek.setPadding(0, 0, 0, 0);
         seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         seek.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
@@ -5047,7 +5050,7 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER_HORIZONTAL);
-        card.setPadding(dp(2), dp(4), dp(2), dp(3));
+        card.setPadding(dp(5), dp(4), dp(5), dp(3));
         card.setBackgroundDrawable(new FocusSurfaceDrawable(
                 0x00000000, 0x00000000, a.accent, a.sliderCornerDp, false));
 
@@ -5060,15 +5063,23 @@ public class QinsLauncherActivity extends Activity {
         header.addView(glyph, new LinearLayout.LayoutParams(dp(15), dp(15)));
 
         TextView title = new TextView(this);
-        title.setText(brightness ? "BRIGHT" : "VOLUME");
+        title.setText(label.toUpperCase(Locale.US));
         title.setTextColor(0xFFA8ABAC);
-        title.setTextSize(7);
-        title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        title.setTextSize(8);
+        title.setTypeface(Typeface.MONOSPACE, Typeface.NORMAL);
         title.setSingleLine(true);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(0, -2, 1);
-        titleParams.leftMargin = dp(3);
+        titleParams.leftMargin = dp(4);
         header.addView(title, titleParams);
-        card.addView(header, new LinearLayout.LayoutParams(-1, dp(16)));
+
+        final TextView amount = new TextView(this);
+        int initialPercent = max <= 0 ? 0 : Math.round(100f * value / max);
+        amount.setText(initialPercent + "%");
+        amount.setTextColor(0xFFF1F1EE);
+        amount.setTextSize(9);
+        amount.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        header.addView(amount);
+        card.addView(header, new LinearLayout.LayoutParams(-1, dp(20)));
 
         final VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this);
         seek.setMax(Math.max(1, max));
@@ -5077,7 +5088,7 @@ public class QinsLauncherActivity extends Activity {
         styleNothingVerticalSeekBar(seek, brightness, a);
         // Consume all space left below the fixed label row. The track length
         // is now driven by the dock's measured height, not a short dp constant.
-        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(30), 0, 1f);
+        LinearLayout.LayoutParams seekParams = new LinearLayout.LayoutParams(dp(34), 0, 1f);
         seekParams.gravity = Gravity.CENTER_HORIZONTAL;
         seekParams.topMargin = dp(4);
         seekParams.bottomMargin = dp(3);
@@ -5105,30 +5116,15 @@ public class QinsLauncherActivity extends Activity {
         row.addView(card, new LinearLayout.LayoutParams(0, -1, 1f));
     }
 
-    private void addNothingQuickGridAndSliders(LinearLayout panel, ThemeManager.Appearance a,
-                                                String[] expandedKeys) {
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.HORIZONTAL);
-        content.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(-1, -2);
-        contentParams.topMargin = dp(6);
-        panel.addView(content, contentParams);
-        LinearLayout tiles = new LinearLayout(this);
-        tiles.setOrientation(LinearLayout.VERTICAL);
-        content.addView(tiles, new LinearLayout.LayoutParams(0, -2, 1f));
-        addQuickTileGrid(tiles, a, expandedKeys, 6);
-        addNothingVerticalSliders(content, a);
-        updateQuickStates();
-    }
-
-    private void addNothingVerticalSliders(LinearLayout parent, ThemeManager.Appearance a) {
+    private void addNothingVerticalSliders(LinearLayout panel, ThemeManager.Appearance a) {
         LinearLayout controls = new LinearLayout(this);
         controls.setOrientation(LinearLayout.HORIZONTAL);
         controls.setGravity(Gravity.CENTER_VERTICAL);
-        controls.setPadding(dp(4), dp(5), dp(4), dp(5));
+        controls.setPadding(dp(8), dp(7), dp(8), dp(7));
         controls.setMinimumHeight(dp(154));
         controls.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
         styleSurface(controls, 0xFF1B1D1F, 0xFF383C3E, a.accent, a.cardCornerDp);
+
         addNothingVerticalSliderCard(controls, getString(R.string.launcher_brightness),
                 readBrightness(), 255, new SeekBar.OnSeekBarChangeListener() {
                     @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
@@ -5137,15 +5133,19 @@ public class QinsLauncherActivity extends Activity {
                     @Override public void onStartTrackingTouch(SeekBar bar) { }
                     @Override public void onStopTrackingTouch(SeekBar bar) { }
                 }, a);
+
         View divider = new View(this);
         divider.setBackgroundColor(0xFF3C4042);
         LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(dp(1), -1);
-        dividerParams.topMargin = dp(10);
-        dividerParams.bottomMargin = dp(10);
+        dividerParams.topMargin = dp(12);
+        dividerParams.bottomMargin = dp(12);
         controls.addView(divider, dividerParams);
+
         AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        final int maxVolume = audio == null ? 15 : Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
-        final int currentVolume = audio == null ? 0 : audio.getStreamVolume(AudioManager.STREAM_MUSIC);
+        final int maxVolume = audio == null ? 15 :
+                Math.max(1, audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+        final int currentVolume = audio == null ? 0 :
+                audio.getStreamVolume(AudioManager.STREAM_MUSIC);
         addNothingVerticalSliderCard(controls, getString(R.string.launcher_volume),
                 currentVolume, maxVolume, new SeekBar.OnSeekBarChangeListener() {
                     @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
@@ -5157,9 +5157,38 @@ public class QinsLauncherActivity extends Activity {
                     @Override public void onStartTrackingTouch(SeekBar bar) { }
                     @Override public void onStopTrackingTouch(SeekBar bar) { }
                 }, a);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(104), dp(154));
-        params.leftMargin = dp(6);
-        parent.addView(controls, params);
+
+        // Start with a safe compact height, then expand into the actual
+        // remaining viewport after the media card, tiles and footer are laid
+        // out. This keeps the Nothing rails tall on both short and tall screens.
+        final ScrollView viewport = quickPanelScrollView;
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(154));
+        params.topMargin = dp(8);
+        panel.addView(controls, params);
+        controls.post(new Runnable() {
+            @Override public void run() {
+                if (viewport == null || quickPanelScrollView != viewport) return;
+                int fixedHeight = panel.getPaddingTop() + panel.getPaddingBottom();
+                for (int i = 0; i < panel.getChildCount(); i++) {
+                    View child = panel.getChildAt(i);
+                    if (child == controls) continue;
+                    fixedHeight += child.getMeasuredHeight();
+                    android.view.ViewGroup.LayoutParams raw = child.getLayoutParams();
+                    if (raw instanceof android.view.ViewGroup.MarginLayoutParams) {
+                        android.view.ViewGroup.MarginLayoutParams margins =
+                                (android.view.ViewGroup.MarginLayoutParams) raw;
+                        fixedHeight += margins.topMargin + margins.bottomMargin;
+                    }
+                }
+                int remaining = viewport.getHeight() - fixedHeight - dp(6);
+                int targetHeight = Math.max(dp(154), remaining);
+                android.view.ViewGroup.LayoutParams current = controls.getLayoutParams();
+                if (current.height != targetHeight) {
+                    current.height = targetHeight;
+                    controls.setLayoutParams(current);
+                }
+            }
+        });
     }
 
     private void addQuickMediaCard(LinearLayout panel, ThemeManager.Appearance a) {
@@ -5773,27 +5802,18 @@ public class QinsLauncherActivity extends Activity {
         float sliderRadius = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 1f : (ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 14f : 10f);
         GradientDrawable track = new GradientDrawable(); track.setColor(a.border); track.setCornerRadius(dp(sliderRadius));
         GradientDrawable progress = new GradientDrawable(); progress.setColor(a.accent); progress.setCornerRadius(dp(sliderRadius));
-        int sliderThickness = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 8 : 4;
+        int sliderThickness = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 12 : 4;
         track.setSize(dp(1), dp(sliderThickness)); progress.setSize(dp(1), dp(sliderThickness));
         LayerDrawable layers = new LayerDrawable(new Drawable[] {track, new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL)}); layers.setId(0, android.R.id.background); layers.setId(1, android.R.id.progress); seek.setProgressDrawable(layers);
-        if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
-            GradientDrawable thumb = new GradientDrawable();
-            thumb.setShape(GradientDrawable.RECTANGLE);
-            thumb.setCornerRadius(dp(6));
-            thumb.setColor(a.accent);
-            thumb.setSize(dp(20), dp(20));
-            seek.setThumb(thumb);
-        } else {
-            GradientDrawable hiddenThumb = new GradientDrawable();
-            hiddenThumb.setColor(0x00000000);
-            hiddenThumb.setSize(dp(1), dp(1));
-            seek.setThumb(hiddenThumb);
-        }
+        GradientDrawable thumb = new GradientDrawable();
+        if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) { thumb.setShape(GradientDrawable.RECTANGLE); thumb.setCornerRadius(dp(2)); }
+        else thumb.setShape(GradientDrawable.OVAL);
+        thumb.setColor(a.accent); int thumbSize = ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 20 : 16; thumb.setSize(dp(thumbSize), dp(thumbSize)); seek.setThumb(thumb);
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { @Override public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser){AudioManager m=(AudioManager)getSystemService(Context.AUDIO_SERVICE);if(m!=null)m.setStreamVolume(AudioManager.STREAM_MUSIC,value,0);}} @Override public void onStartTrackingTouch(SeekBar bar){} @Override public void onStopTrackingTouch(SeekBar bar){} });
-        volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(34))); row.addView(volume, new LinearLayout.LayoutParams(0, dp(66), 1));
+        volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 42 : 32))); row.addView(volume, new LinearLayout.LayoutParams(0, dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 78 : 66), 1));
         final TextView dnd = new TextView(this); boolean quiet = audio != null && audio.getRingerMode() == AudioManager.RINGER_MODE_SILENT;
         dnd.setText("⊖\\n" + getString(R.string.launcher_do_not_disturb) + (quiet ? "\\nON" : "\\nOFF")); dnd.setTextColor(a.text); dnd.setTextSize(10); dnd.setGravity(Gravity.CENTER); dnd.setFocusable(true); dnd.setFocusableInTouchMode(false); styleSurface(dnd, quickSurfaceColor(a, quiet ? a.tileActive : a.tile), a.border, a.focus, a.tileCornerDp);
-        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(dp(82), dp(66)); dndParams.leftMargin = dp(7); row.addView(dnd, dndParams);
+        LinearLayout.LayoutParams dndParams = new LinearLayout.LayoutParams(dp(82), dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 78 : 66)); dndParams.leftMargin = dp(7); row.addView(dnd, dndParams);
         dnd.setOnClickListener(new View.OnClickListener(){@Override public void onClick(View v){toggleDoNotDisturb();}});
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1,-2); rp.topMargin=dp(8); panel.addView(row,rp);
     }

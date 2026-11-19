@@ -72,29 +72,12 @@ public final class ThemedIconResolver {
         }
     }
 
-    /** Apply theme treatment to the normalized app logo without adding an outer icon frame. */
+    /**
+     * Keep the installed app artwork unchanged unless an exact licensed PNG
+     * mapping exists in the selected theme pack. Theme-wide recoloring made
+     * unrelated app logos lose their brand colors and is not an OEM icon pack.
+     */
     public static Bitmap applyTheme(Bitmap source, String theme) {
-        if (source == null || source.isRecycled() ||
-                !ThemeManager.APPEARANCE_NOTHING.equals(theme)) return source;
-
-        Bitmap result = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(result);
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-        ColorMatrix grayscale = new ColorMatrix();
-        grayscale.setSaturation(0f);
-        // Slightly increase contrast while retaining the original alpha channel.
-        float contrast = 1.12f;
-        float offset = 128f * (1f - contrast);
-        ColorMatrix contrastMatrix = new ColorMatrix(new float[] {
-                contrast, 0, 0, 0, offset,
-                0, contrast, 0, 0, offset,
-                0, 0, contrast, 0, offset,
-                0, 0, 0, 1, 0
-        });
-        grayscale.postConcat(contrastMatrix);
-        paint.setColorFilter(new ColorMatrixColorFilter(grayscale));
-        canvas.drawBitmap(source, 0, 0, paint);
-        paint.setColorFilter(null);
-        return result;
+        return source;
     }
 }
