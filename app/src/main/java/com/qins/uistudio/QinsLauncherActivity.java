@@ -143,6 +143,7 @@ public class QinsLauncherActivity extends Activity {
     private TextView flashlightState;
     private View flashlightTile;
     private View quickGridFirstTile;
+    private View quickGridLastTile;
     private QinsGlyphView homeBluetoothStatus, homeSoundStatus, panelBluetoothStatus, panelSoundStatus;
     private TextView panelBluetoothLabel, panelSoundLabel;
     private Camera flashlightCamera;
@@ -2191,6 +2192,13 @@ public class QinsLauncherActivity extends Activity {
         return button;
     }
 
+    private Drawable loadThemedAppIcon(ResolveInfo info) {
+        if (info == null) return null;
+        Drawable mapped = ThemedIconResolver.loadMappedIcon(this, info, appearance().id);
+        Drawable source = mapped != null ? mapped : info.loadIcon(getPackageManager());
+        return normalizeAppIcon(source);
+    }
+
     private Drawable normalizeAppIcon(Drawable source) {
         if (source == null) return null;
         final int sampleSize = 128;
@@ -2222,7 +2230,9 @@ public class QinsLauncherActivity extends Activity {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
         canvas.drawBitmap(sample, sourceRect, destRect, paint);
         sample.recycle();
-        return new BitmapDrawable(getResources(), normalized);
+        Bitmap themed = ThemedIconResolver.applyTheme(normalized, appearance().id);
+        if (themed != normalized && !normalized.isRecycled()) normalized.recycle();
+        return new BitmapDrawable(getResources(), themed);
     }
 
     private void populateHomeApps(ThemeManager.Appearance a) {
@@ -2285,7 +2295,7 @@ public class QinsLauncherActivity extends Activity {
                             continue;
                         }
                         ImageView smallIcon = new ImageView(this);
-                        smallIcon.setImageDrawable(normalizeAppIcon(folderApps.get(mini).loadIcon(getPackageManager())));
+                        smallIcon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(folderApps.get(mini))));
                         smallIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                         if (a.monochrome) {
                             ColorMatrix matrix = new ColorMatrix();
@@ -2301,7 +2311,7 @@ public class QinsLauncherActivity extends Activity {
                 iconFrame.addView(miniIcons, new FrameLayout.LayoutParams(-1, dp(28), Gravity.CENTER));
             } else {
                 final ImageView icon = new ImageView(this);
-                icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
+                icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(info)));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 if (a.monochrome) {
                     ColorMatrix matrix = new ColorMatrix();
@@ -2693,7 +2703,7 @@ public class QinsLauncherActivity extends Activity {
                 item.setFocusableInTouchMode(false);
                 item.setClickable(true);
                 final ImageView icon = new ImageView(this);
-                icon.setImageDrawable(normalizeAppIcon(child.loadIcon(getPackageManager())));
+                icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(child)));
                 icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                 item.addView(icon, new LinearLayout.LayoutParams(dp(32), dp(32)));
                 TextView label = new TextView(this);
@@ -2829,7 +2839,7 @@ public class QinsLauncherActivity extends Activity {
             item.setFocusableInTouchMode(false);
             item.setClickable(true);
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
+            icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(info)));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
                 android.graphics.ColorMatrix monochrome = new android.graphics.ColorMatrix();
@@ -3135,7 +3145,7 @@ public class QinsLauncherActivity extends Activity {
                     int childIndex = rowIndex * 2 + col;
                     if (childIndex >= count) { previewRow.addView(new View(this), new LinearLayout.LayoutParams(dp(mini), dp(mini))); continue; }
                     ImageView childIcon = new ImageView(this);
-                    childIcon.setImageDrawable(normalizeAppIcon(children.get(childIndex).loadIcon(getPackageManager())));
+                    childIcon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(children.get(childIndex))));
                     childIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); childIcon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
                     LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(dp(mini), dp(mini));
@@ -3148,7 +3158,7 @@ public class QinsLauncherActivity extends Activity {
             tile.addView(preview, new LinearLayout.LayoutParams(-1, dp(iconSize)));
         } else {
             final ImageView icon = new ImageView(this);
-            icon.setImageDrawable(normalizeAppIcon(info.loadIcon(getPackageManager())));
+            icon.setImageDrawable(normalizeAppIcon(loadThemedAppIcon(info)));
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             if (a.monochrome) { ColorMatrix matrix = new ColorMatrix(); matrix.setSaturation(0f); icon.setColorFilter(new ColorMatrixColorFilter(matrix)); }
             // Keep every app icon at the same full visual size; downloaded apps
@@ -4227,6 +4237,7 @@ public class QinsLauncherActivity extends Activity {
         button.setText(label); button.setTextColor(a.text); button.setTextSize(11);
         button.setGravity(Gravity.CENTER); button.setFocusable(true);
         button.setFocusableInTouchMode(false); button.setClickable(true);
+        KeyboardSupport.makeFocusable(button);
         styleSurface(button, a.surface, a.border, a.focus, a.tileCornerDp);
         button.setOnClickListener(listener);
         return button;
@@ -4412,6 +4423,12 @@ public class QinsLauncherActivity extends Activity {
         dialog.show();
         render[0].run();
         if (dialog.getWindow() != null) dialog.getWindow().setLayout(-1, -2);
+        // Put keypad focus on the first preview tile instead of an unfocused dialog surface.
+        if (preview.getChildCount() > 0 && preview.getChildAt(0) instanceof android.view.ViewGroup) {
+            android.view.ViewGroup firstRow = (android.view.ViewGroup) preview.getChildAt(0);
+            if (firstRow.getChildCount() > 0) firstRow.getChildAt(0).requestFocus();
+            else compactTab.requestFocus();
+        } else compactTab.requestFocus();
     }
 
     private void switchQuickPanelPage(int page) {
@@ -4913,12 +4930,13 @@ public class QinsLauncherActivity extends Activity {
             canvas.save(); canvas.rotate(-90); canvas.translate(-getHeight(), 0); super.onDraw(canvas); canvas.restore();
         }
         @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
+            // Up/Down move focus between the rail dock and tile grid; Left/Right adjust level.
             int step = getMax() > 100 ? Math.max(1, getMax() / 32) : 1;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP && getProgress() < getMax()) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && getProgress() < getMax()) {
                 setProgress(Math.min(getMax(), getProgress() + step));
                 return true;
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && getProgress() > 0) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && getProgress() > 0) {
                 setProgress(Math.max(0, getProgress() - step));
                 return true;
             }
@@ -5001,7 +5019,8 @@ public class QinsLauncherActivity extends Activity {
         track.setColor(0xFF414547);
         track.setCornerRadius(dp(9));
         GradientDrawable progress = new GradientDrawable();
-        progress.setColor(brightness ? 0xFFF3F3F0 : 0xFFD1D3D2);
+        // Keep brightness and media volume visually identical.
+        progress.setColor(0xFFF3F3F0);
         progress.setCornerRadius(dp(9));
         ClipDrawable clipped = new ClipDrawable(progress, Gravity.LEFT, ClipDrawable.HORIZONTAL);
         LayerDrawable layers = new LayerDrawable(new Drawable[] {track, clipped});
@@ -5013,7 +5032,7 @@ public class QinsLauncherActivity extends Activity {
         thumb.setShape(GradientDrawable.RECTANGLE);
         thumb.setCornerRadius(dp(4));
         thumb.setColor(0xFFF4F4F1);
-        thumb.setStroke(dp(1), brightness ? 0xFFFFFFFF : 0xFFB9BCBB);
+        thumb.setStroke(dp(1), 0xFFFFFFFF);
         thumb.setSize(dp(16), dp(16));
         seek.setThumb(thumb);
         seek.setPadding(0, 0, 0, 0);
@@ -5062,6 +5081,7 @@ public class QinsLauncherActivity extends Activity {
         final VerticalQuickSeekBar seek = new VerticalQuickSeekBar(this);
         seek.setMax(Math.max(1, max));
         seek.setProgress(Math.max(0, Math.min(max, value)));
+        if (quickGridLastTile != null) seek.setNextFocusUpId(quickGridLastTile.getId());
         styleNothingVerticalSeekBar(seek, brightness, a);
         // Consume all space left below the fixed label row. The track length
         // is now driven by the dock's measured height, not a short dp constant.
@@ -5532,6 +5552,7 @@ public class QinsLauncherActivity extends Activity {
 
     private void addQuickTileGrid(LinearLayout panel, ThemeManager.Appearance a, String[] keys, int count) {
         quickGridFirstTile = null;
+        quickGridLastTile = null;
         final boolean galaxy = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
         final boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
         final boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
@@ -5549,6 +5570,8 @@ public class QinsLauncherActivity extends Activity {
             wifiTile = wifi;
             bluetoothTile = bluetooth;
             quickGridFirstTile = wifi;
+            quickGridLastTile = bluetooth;
+            wifi.setId(View.generateViewId()); bluetooth.setId(View.generateViewId());
             connectivity.addView(wifi, new LinearLayout.LayoutParams(0, -1, 1));
             LinearLayout.LayoutParams bluetoothParams = new LinearLayout.LayoutParams(0, -1, 1);
             bluetoothParams.leftMargin = dp(7);
@@ -5581,6 +5604,8 @@ public class QinsLauncherActivity extends Activity {
             }
             View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
             if (quickGridFirstTile == null) quickGridFirstTile = tile;
+            quickGridLastTile = tile;
+            tile.setId(View.generateViewId());
             LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0, dp(baseHeight * sy), sx);
             if (used > 0) tileParams.leftMargin = dp(galaxy ? 1 : (nothing ? 5 : 7));
             row.addView(tile, tileParams);
@@ -5997,10 +6022,12 @@ public class QinsLauncherActivity extends Activity {
                 (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN || event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP)) {
             View focused = getCurrentFocus();
             int direction = event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN ? View.FOCUS_DOWN : View.FOCUS_UP;
-            // A short press on the vertical slider adjusts its value; holding the
-            // same key scrolls past the slider so the lower controls remain reachable.
-            if (focused instanceof VerticalQuickSeekBar && event.getRepeatCount() > 0) {
-                quickPanelScrollView.smoothScrollBy(0, direction == View.FOCUS_DOWN ? dp(88) : -dp(88));
+            // A vertical rail must not trap the D-pad: Up always returns to the last tile row.
+            if (focused instanceof VerticalQuickSeekBar && direction == View.FOCUS_UP && quickGridLastTile != null) {
+                quickGridLastTile.requestFocus();
+                android.graphics.Rect target = new android.graphics.Rect();
+                quickGridLastTile.getDrawingRect(target);
+                quickPanelScrollView.requestChildRectangleOnScreen(quickGridLastTile, target, true);
                 return true;
             }
             View nextFocus = focused == null ? null : focused.focusSearch(direction);
