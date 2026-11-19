@@ -4888,8 +4888,9 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void styleLevelSeekBar(SeekBar seek, ThemeManager.Appearance a) {
-        // The level card itself shows the current value. Keep the SeekBar track
-        // invisible and remove the thumb marker so no dots remain on the slider.
+        // The card itself carries the live fill. Keep the native track transparent,
+        // but retain an OEM-shaped handle: Samsung uses a round thumb, Pixel a
+        // larger Material handle, and Nothing a compact square marker.
         GradientDrawable emptyTrack = new GradientDrawable();
         emptyTrack.setColor(0x00000000);
         GradientDrawable emptyProgress = new GradientDrawable();
@@ -4899,7 +4900,21 @@ public class QinsLauncherActivity extends Activity {
         layers.setId(0, android.R.id.background);
         layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
-        seek.setThumb(null);
+        GradientDrawable thumb = new GradientDrawable();
+        if (ThemeManager.APPEARANCE_GALAXY.equals(a.id)) {
+            thumb.setShape(GradientDrawable.OVAL);
+            thumb.setSize(dp(16), dp(16));
+        } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            thumb.setShape(GradientDrawable.RECTANGLE);
+            thumb.setCornerRadius(dp(7));
+            thumb.setSize(dp(20), dp(20));
+        } else {
+            thumb.setShape(GradientDrawable.RECTANGLE);
+            thumb.setCornerRadius(dp(2));
+            thumb.setSize(dp(13), dp(13));
+        }
+        thumb.setColor(a.accent);
+        seek.setThumb(thumb);
         seek.setPadding(0, 0, 0, 0);
         seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
     }
