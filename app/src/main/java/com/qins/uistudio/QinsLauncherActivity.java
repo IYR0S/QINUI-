@@ -4489,7 +4489,8 @@ public class QinsLauncherActivity extends Activity {
         // API 19 cannot provide a live blurred backdrop. Use a theme-matched
         // translucent scrim so wallpaper remains visible without competing
         // with the foreground focus blocks.
-        int scrimAlpha = ThemeManager.APPEARANCE_NOTHING.equals(a.id) ? 0xEE : 0xD8;
+        int scrimAlpha = ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 0xC4 :
+                (ThemeManager.APPEARANCE_PIXEL.equals(a.id) ? 0xD0 : 0xE8);
         panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
                 (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
         scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
