@@ -8,15 +8,9 @@ This review is scoped to the QINS1+ launcher constraints: Android 4.4.4 / API 19
 
 Do not transplant a modern notification-shade application into QINS. The best open-source projects found are either modern Compose applications requiring Android 10+ / API 28+, or GPL/MPL projects whose code is not a clean fit for this Java/API-19 launcher. Instead, reuse their documented interaction and geometry patterns, and implement the QINS panel with small original API-19 Java views.
 
-The Nothing Quick Settings regression is not a single corner-radius bug. The earlier implementation combined:
-- a full-width square translucent panel background;
-- 16dp tile corners and 18dp card corners;
-- compact Nothing tiles with an 8dp radius;
-- two narrow cards containing rotated framework SeekBars;
-- track drawables whose intrinsic dimensions depend on the rotated SeekBar's measurement;
-- focus and live-state refresh paths that can replace the initial tile surface.
+The current Nothing issue is primarily a proportion and panel-surface problem, not just a slider-width problem. The earlier layout used a floating rounded outer card, exposed wallpaper gutters, and a fixed 112dp slider dock beside a weighted tile group. That prevented the slider pair from scaling with the display width.
 
-That structure made the theme look boxy and made the vertical slider geometry fragile. The replacement uses one rounded outer panel, consistent round-square tiles, and original vertically drawn pill sliders whose drawing, touch axis and D-pad axis all use the same coordinate system.
+The updated layout uses a full-width translucent scrim (API 19 cannot provide modern live blur), keeps only small internal content padding, and gives the tile group and paired slider group equal width weights. Each slider remains an original vertically drawn pill view whose drawing, touch axis and D-pad axis use the same coordinate system.
 
 ## Nothing OS 5 visual/functional reference (not source code)
 
@@ -117,16 +111,36 @@ Compatibility:
 Modern AOSP lifecycle reference:
 - https://github.com/aospapp/aosp/blob/main/frameworks/base/packages/SystemUI/docs/qs-tiles.md
 
+## OEM comparison and geometry decisions (2026-11-20)
+
+### Nothing OS 5
+Public hands-on coverage confirms a separate Quick Settings panel, a minimized media player near the top, vertical brightness and volume sliders, and resizable tiles. The QINS layout now gives the tile group and paired slider group equal horizontal weights (approximately 50/50), rather than a fixed 112dp dock. The paired sliders retain an explicit inter-slider gap.
+
+The outer shade surface now spans the full viewport width. Its background is a translucent full-bleed scrim over the wallpaper, not a rounded floating card that exposes narrow wallpaper gutters at the left and right. This is a deliberate API-19 approximation: modern live wallpaper blur is unavailable to this ordinary launcher view. Small internal content padding remains, so controls do not touch the display edge.
+
+### Pixel / Material 3 Expressive
+Android 16 QPR1 references show an updated rectangular brightness surface with a prominent upright grip. Inactive tiles remain pill-shaped; enabled tiles morph to rounded rectangles or squares. QINS keeps the horizontal rail and now draws the narrow upright grip symmetrically above and below it. Pixel-specific corner tokens were tightened to 22dp cards, 20dp tiles, 12dp icon wells and 16dp slider surfaces. These are QINS tuning values, not Google's published dp specifications.
+
+### Samsung One UI
+Samsung's One UI 8.5 documentation emphasizes customizable control layout and placing frequently used controls high in the panel. Its slider guidance specifies immediate feedback and distinct normal, focus and disabled states. QINS keeps Galaxy's own component sizing and shape tokens separate from Pixel/Nothing; the current pass does not apply Pixel's tighter radii or Nothing's half-width slider dock to Galaxy.
+
+References for the comparison:
+- Pixel Android 16 QPR1 redesign: https://9to5google.com/2025/05/20/android-16-qpr1-quick-settings/
+- Pixel slider refinements: https://9to5google.com/2025/06/11/android-16-qpr1-sliders/
+- Pixel final QPR1 rollout: https://9to5google.com/2025/09/03/android-16-qpr1-pixel/
+- Nothing OS 5 hands-on: https://www.91mobiles.com/reviews/nothing-os-5-hands-on/
+- Samsung One UI 8.5 Quick Panel customization: https://www.samsung.com/uk/support/mobile-devices/how-to-customise-the-quick-panel-on-the-samsung-galaxy-s26-series/
+- Samsung One UI slider design guidance: https://design.samsung.com/global/contents/one-ui/download/oneui_design_guide_eng.pdf
+
 ## What is being applied in QINS
 
-- One rounded Nothing panel surface with a consistent 28dp outer radius.
-- Shared Nothing shape tokens: 28dp panel/card, 24dp tiles, 14dp icon wells, 22dp slider treatment.
-- Compact Nothing Quick Settings also uses a 28dp outer surface and 24dp shortcut surfaces.
-- Expanded Nothing tiles and the media card use the same rounded visual language.
-- Brightness and volume are now original Java pill-slider views. They draw a vertical capsule and its fill directly; they do not rotate a horizontal SeekBar or depend on drawable intrinsic sizes.
-- Touch coordinates and D-pad Up/Down use the same vertical progress direction.
-- D-pad Left/Right moves between the tile grid and the two sliders; brightness and volume have explicit focus IDs.
-- The two sliders have an actual visual gap and circular icon affordances.
+- Nothing expanded shade uses a full-viewport translucent scrim, with no outer rounded-card gutters.
+- Nothing tile group and the paired brightness/volume slider group share the available width equally; the pair therefore occupies approximately half of the panel width.
+- The two Nothing sliders retain a real visible gap and individual icon affordances.
+- Nothing's custom vertical pill sliders remain original Java views; drawing, touch mapping and D-pad Up/Down share one coordinate system.
+- Pixel's horizontal rail has a slim upright grip protruding symmetrically above and below the track.
+- Pixel-only geometry is tighter: 22dp cards, 20dp tiles, 12dp icon wells and 16dp slider surfaces. These are implementation choices, not claimed OEM measurements.
+- Galaxy shape and sizing tokens remain isolated from Pixel and Nothing.
 - No AndroidX, Compose, Shizuku, root, proprietary Nothing assets, or new runtime dependencies are introduced.
 
 ## API-19 and device validation checklist
