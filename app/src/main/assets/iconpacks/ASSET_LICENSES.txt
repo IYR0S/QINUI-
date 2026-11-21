@@ -1,0 +1,12 @@
+QINS UI Studio – Original icon artwork
+
+The three PNG atlases in this directory contain original geometric icon artwork drawn specifically for QINS UI Studio. They are not extracted from Samsung, Google, Nothing, or third-party icon packs and do not reproduce proprietary logos.
+
+License: CC0 1.0 Universal for the original PNG artwork. You may copy, modify, and redistribute it.
+
+The packs are inspired only by broad visual language:
+- one-ui: rounded color tiles and clear white glyphs
+- pixel: soft tonal surfaces and dark glyphs
+- nothing-os: monochrome dark tiles with restrained red accents
+
+No brand endorsement is implied. The appfilter files map common Android package IDs to generic functional symbols; unmapped apps retain their installed icons.

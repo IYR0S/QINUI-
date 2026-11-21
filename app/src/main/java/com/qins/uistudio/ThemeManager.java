@@ -2,6 +2,8 @@ package com.qins.uistudio;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 
 /** Shared color palette and launcher appearance presets; API 19 compatible. */
 public final class ThemeManager {
@@ -9,6 +11,8 @@ public final class ThemeManager {
     private static final String KEY = "selected_theme";
     private static final String APPEARANCE_PREFS = "qins_interface";
     private static final String APPEARANCE_KEY = "appearance";
+    private static final String DARK_MODE_KEY = "dark_mode";
+    private static final String SMART_PROFILE_KEY = "smart_profile";
     public static final String APPEARANCE_GALAXY = "galaxy";
     public static final String APPEARANCE_PIXEL = "pixel";
     public static final String APPEARANCE_NOTHING = "nothing";
@@ -46,7 +50,13 @@ public final class ThemeManager {
         public final int muted;
         public final int border;
         public final int focus;
+        /** Legacy/base radius retained for compatibility with existing editor views. */
         public final float cornerDp;
+        /** Component-specific shape tokens, in dp. These are QINS tuning values, not OEM specs. */
+        public final float cardCornerDp;
+        public final float tileCornerDp;
+        public final float iconWellCornerDp;
+        public final float sliderCornerDp;
         public final boolean monochrome;
         public final boolean useMonoType;
 
@@ -58,6 +68,17 @@ public final class ThemeManager {
             this.surface=surface; this.surfaceAlt=surfaceAlt; this.tile=tile; this.tileActive=tileActive;
             this.accent=accent; this.text=text; this.muted=muted; this.border=border; this.focus=focus;
             this.cornerDp=cornerDp; this.monochrome=monochrome; this.useMonoType=useMonoType;
+            if (APPEARANCE_GALAXY.equals(id)) {
+                cardCornerDp=28f; tileCornerDp=24f; iconWellCornerDp=14f; sliderCornerDp=26f;
+            } else if (APPEARANCE_PIXEL.equals(id)) {
+                // Pixel Material 3 Expressive: tighter, more geometric surfaces
+                // while retaining enough rounding for the active/inactive morph.
+                cardCornerDp=22f; tileCornerDp=20f; iconWellCornerDp=12f; sliderCornerDp=16f;
+            } else {
+                // Nothing-inspired QS uses soft capsule and rounded-square geometry,
+                // not the tight 10–16dp corners used by the earlier prototype.
+                cardCornerDp=28f; tileCornerDp=24f; iconWellCornerDp=14f; sliderCornerDp=22f;
+            }
         }
     }
 
@@ -72,17 +93,17 @@ public final class ThemeManager {
         new Appearance(APPEARANCE_GALAXY, "Galaxy / One UI",
             0xFFF1F3F8, 0xFFE8ECF4, 0xFFFCFCFE, 0xFFE9EDF5,
             0xFFE6EAF2, 0xFFDCE7FB, 0xFF356FE5, 0xFF171A22, 0xFF697386,
-            0xFFD7DDE8, 0xFF9DBAF4, 24f, false, false),
-        // Pixel-inspired Material 3 Expressive: tonal lavender surfaces and a vivid violet accent.
+            0xFFD7DDE8, 0xFF9DBAF4, 26f, false, false),
+        // Pixel-inspired Material 3 Expressive: soft sage/green tonal surfaces and a restrained green accent.
         new Appearance(APPEARANCE_PIXEL, "Pixel / Material",
             0xFFEEF3EC, 0xFFDCE7DD, 0xFFF8FBF6, 0xFFE5EEE4,
-            0xFFE0EAE0, 0xFFCFE0D0, 0xFF3C8060, 0xFF17231D, 0xFF617267,
+            0xFFE0EAE0, 0xFFDDE8DE, 0xFF3C8060, 0xFF17231D, 0xFF617267,
             0xFFD3DED4, 0xFF9BC8A8, 28f, false, false),
         // Nothing-inspired: monochrome, high contrast and tight geometry with restrained red detail.
         new Appearance(APPEARANCE_NOTHING, "Nothing",
             0xFF101112, 0xFF191B1D, 0xFF202224, 0xFF292C2E,
-            0xFF242729, 0xFF383B3D, 0xFFE3343A, 0xFFF4F4F2, 0xFFA4A7A8,
-            0xFF3C4042, 0xFF777B7D, 12f, true, true)
+            0xFF242729, 0xFF383B3D, 0xFFD71921, 0xFFF4F4F2, 0xFFA4A7A8,
+            0xFF3C4042, 0xFF777B7D, 22f, true, false)
     };
 
     public static Palette[] getPalettes() { return PALETTES.clone(); }
@@ -109,6 +130,13 @@ public final class ThemeManager {
     public static Appearance getAppearanceById(String id) {
         for (Appearance appearance : APPEARANCES) if (appearance.id.equals(id)) return appearance;
         return APPEARANCES[0];
+    }
+
+    public static int smartAccent(Bitmap bitmap, int fallback) {
+        if(bitmap==null||bitmap.isRecycled())return fallback;
+        int best=fallback;float bestScore=0f;float[] hsv=new float[3];int sx=Math.max(1,bitmap.getWidth()/32),sy=Math.max(1,bitmap.getHeight()/32);
+        for(int y=0;y<bitmap.getHeight();y+=sy)for(int x=0;x<bitmap.getWidth();x+=sx){Color.colorToHSV(bitmap.getPixel(x,y),hsv);if(hsv[1]<0.28f||hsv[2]<0.24f||hsv[2]>0.92f)continue;float score=hsv[1]*(1f-Math.abs(hsv[2]-0.58f));if(score>bestScore){bestScore=score;best=Color.HSVToColor(new float[]{hsv[0],Math.min(0.82f,hsv[1]),0.78f});}}
+        return best;
     }
 
     public static boolean setCustomColor(Context context, String appearanceId, String role, int color) {
@@ -143,13 +171,47 @@ public final class ThemeManager {
                 a.cornerDp, a.monochrome, a.useMonoType);
     }
 
+    public static boolean isDarkMode(Context context) {
+        return context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
+                .getBoolean(DARK_MODE_KEY, false);
+    }
+
+    public static boolean toggleDarkMode(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE);
+        boolean next = !prefs.getBoolean(DARK_MODE_KEY, false);
+        return prefs.edit().putBoolean(SMART_PROFILE_KEY, false)
+                .putBoolean(DARK_MODE_KEY, next).commit();
+    }
+
+    private static Appearance lightAppearance(Appearance a) {
+        if (!APPEARANCE_NOTHING.equals(a.id)) return a;
+        return new Appearance(a.id, a.title, 0xFFF4F4F2, 0xFFE8E8E6, 0xFFFFFFFF, 0xFFE8E8E6,
+                0xFFE2E2E0, 0xFFD2D2D0, a.accent, 0xFF171819, 0xFF666A6B,
+                0xFFD2D4D4, 0xFF8C9091, 18f, true, false);
+    }
+
+    private static Appearance darkAppearance(Appearance a) {
+        if (APPEARANCE_NOTHING.equals(a.id)) return new Appearance(a.id, a.title, a.background, a.backgroundAlt, a.surface, a.surfaceAlt,
+                a.tile, a.tileActive, a.accent, a.text, a.muted, a.border, a.focus, 18f, true, false);
+        if (APPEARANCE_PIXEL.equals(a.id)) {
+            return new Appearance(a.id, a.title, 0xFF101714, 0xFF18221C, 0xFF1D2922, 0xFF26342B,
+                    0xFF26342B, 0xFF344B3D, a.accent, 0xFFF1F6F0, 0xFFAAB9AC,
+                    0xFF34443A, 0xFF8CC9A0, a.cornerDp, false, a.useMonoType);
+        }
+        return new Appearance(a.id, a.title, 0xFF11151C, 0xFF191F29, 0xFF202733, 0xFF283140,
+                0xFF283140, 0xFF30415A, a.accent, 0xFFF3F5FA, 0xFFADB7C7,
+                0xFF364252, 0xFF8DB3FF, a.cornerDp, false, a.useMonoType);
+    }
+
     public static Appearance getAppearance(Context context) {
         String selected = context.getSharedPreferences(APPEARANCE_PREFS, Context.MODE_PRIVATE)
                 .getString(APPEARANCE_KEY, APPEARANCE_GALAXY);
+        Appearance chosen = APPEARANCES[0];
         for (Appearance appearance : APPEARANCES) {
-            if (appearance.id.equals(selected)) return withCustomColors(context, appearance);
+            if (appearance.id.equals(selected)) { chosen = appearance; break; }
         }
-        return APPEARANCES[0];
+        Appearance modeBase = isDarkMode(context) ? darkAppearance(chosen) : lightAppearance(chosen);
+        return withCustomColors(context, modeBase);
     }
 
     public static boolean applyAppearance(Context context, String id) {
