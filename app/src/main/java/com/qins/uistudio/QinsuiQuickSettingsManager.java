@@ -64,7 +64,8 @@ public final class QinsuiQuickSettingsManager {
     public View build(ThemeType theme) {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(8), dp(7), dp(8), dp(8));
+        // Edge-to-edge panel: no decorative side gutters/borders when QS is expanded.
+        root.setPadding(0, dp(7), 0, dp(8));
         root.setClipChildren(false);
         root.setClipToPadding(false);
         visualStyle = theme == ThemeType.NOTHING_OS_5 ? "nothing" :
@@ -314,8 +315,7 @@ public final class QinsuiQuickSettingsManager {
                     @Override public void onClick(View v) { if (listener != null) listener.onOpenNotifications(); }
                 });
             } else {
-                View empty = circle("+", NOTHING_CARD, Color.rgb(110, 110, 114), 25, 12);
-                slot.addView(empty, new FrameLayout.LayoutParams(dp(25), dp(25), Gravity.CENTER));
+                // Keep unused notification slots empty; do not draw fake add/plus icons.
             }
         }
         card.addView(icons, new LinearLayout.LayoutParams(-1, dp(31)));
