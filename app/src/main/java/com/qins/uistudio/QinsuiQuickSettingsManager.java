@@ -193,7 +193,7 @@ public final class QinsuiQuickSettingsManager {
         media.setPadding(dp(5), dp(5), dp(5), dp(4));
         media.setBackground(round(NOTHING_CARD, 16, 0));
         TextView note = new TextView(context);
-        note.setText("●\\n♫");
+        note.setText("●\n♫");
         note.setTextColor(RED);
         note.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
         note.setTextSize(22);
