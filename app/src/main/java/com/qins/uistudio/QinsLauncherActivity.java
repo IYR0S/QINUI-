@@ -4671,8 +4671,9 @@ public class QinsLauncherActivity extends Activity {
         panel.setClipChildren(false);
         panel.setClipToPadding(false);
         boolean nothingPanel = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
-        panel.setPadding(dp(nothingPanel ? 8 : 8), dp(nothingPanel ? 8 : 0),
-                dp(nothingPanel ? 8 : 8), dp(nothingPanel ? 12 : 10));
+        // Expanded Quick Settings is full-bleed: keep no outer left/right gutters.
+        // Internal tile spacing is handled by each OEM-specific layout.
+        panel.setPadding(0, dp(nothingPanel ? 8 : 0), 0, dp(nothingPanel ? 12 : 10));
         // API 19 has no platform live-blur API. Nothing's shade is therefore
         // represented as a full-width translucent scrim over the wallpaper,
         // not as a floating rounded card with exposed wallpaper gutters.
