@@ -2047,6 +2047,12 @@ public class QinsLauncherActivity extends Activity {
         overlayParams.leftMargin = dp(6);
         overlayParams.rightMargin = dp(6);
         pageContainer.addView(compact, overlayParams);
+        // Explicitly raise the compact shade above the home content. This also
+        // avoids a stale hidden home child covering the first collapsed panel.
+        compact.setVisibility(View.VISIBLE);
+        compact.bringToFront();
+        pageContainer.requestLayout();
+        pageContainer.invalidate();
         compact.startAnimation(new android.view.animation.TranslateAnimation(0, 0, -dp(68), 0) {{
             setDuration(180);
             setFillAfter(false);
@@ -2286,90 +2292,31 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private Drawable loadThemedAppIcon(ResolveInfo info) {
-        if (info == null) return getPackageManager().getDefaultActivityIcon();
+        PackageManager pm = getPackageManager();
+        if (info == null) return pm.getDefaultActivityIcon();
 
-        // Use the bundled PNG atlas first. It is deliberately raster-based so the
-        // QINS Android 4.4 renderer never has to inflate VectorDrawable/adaptive
-        // icon resources supplied by newer Android applications.
+        // Preserve the installed application's original launcher artwork in every
+        // surface. Do not apply third-party icon packs, masks, monochrome filters,
+        // synthetic backgrounds or container shapes.
         try {
-            Drawable mapped = ThemedIconResolver.loadMappedIcon(this, info, appearance().id);
-            if (mapped != null) return mapped;
+            Drawable original = info.loadIcon(pm);
+            if (original != null) return original;
         } catch (RuntimeException ignored) { }
 
-        Drawable source = null;
-        PackageManager pm = getPackageManager();
-        try { source = info.loadIcon(pm); } catch (RuntimeException ignored) { }
-        if (source == null && info.activityInfo != null) {
-            try {
-                ApplicationInfo appInfo = info.activityInfo.applicationInfo;
-                if (appInfo != null) source = appInfo.loadIcon(pm);
-            } catch (RuntimeException ignored) { }
-        }
-        if (source == null && info.activityInfo != null) {
-            try { source = pm.getApplicationIcon(info.activityInfo.packageName); }
-            catch (PackageManager.NameNotFoundException ignored) { }
-            catch (RuntimeException ignored) { }
-        }
-
-        Drawable normalized = normalizeAppIcon(source);
-        if (normalized != null) return normalized;
         try {
-            Drawable fallback = normalizeAppIcon(pm.getDefaultActivityIcon());
-            if (fallback != null) return fallback;
+            if (info.activityInfo != null && info.activityInfo.applicationInfo != null) {
+                Drawable original = info.activityInfo.applicationInfo.loadIcon(pm);
+                if (original != null) return original;
+            }
+        } catch (RuntimeException ignored) { }
+
+        try {
+            if (info.activityInfo != null) {
+                return pm.getApplicationIcon(info.activityInfo.packageName);
+            }
+        } catch (PackageManager.NameNotFoundException ignored) {
         } catch (RuntimeException ignored) { }
         return pm.getDefaultActivityIcon();
-    }
-
-    /**
-     * Rasterize app artwork into a plain BitmapDrawable. This is the safest common
-     * denominator for API 19: no vector XML, adaptive masks, themed drawable
-     * wrappers, or newer framework drawable classes are handed to ImageView.
-     */
-    private Drawable normalizeAppIcon(Drawable source) {
-        if (source == null) return null;
-        Bitmap sample = null;
-        try {
-            final int sampleSize = 128;
-            Drawable rasterSource = source;
-            Drawable.ConstantState state = source.getConstantState();
-            if (state != null) rasterSource = state.newDrawable(getResources()).mutate();
-            else rasterSource = source.mutate();
-
-            sample = Bitmap.createBitmap(sampleSize, sampleSize, Bitmap.Config.ARGB_8888);
-            Canvas sampleCanvas = new Canvas(sample);
-            rasterSource.setBounds(0, 0, sampleSize, sampleSize);
-            rasterSource.draw(sampleCanvas);
-
-            int minX = sampleSize, minY = sampleSize, maxX = -1, maxY = -1;
-            int[] row = new int[sampleSize];
-            for (int y = 0; y < sampleSize; y++) {
-                sample.getPixels(row, 0, sampleSize, 0, y, sampleSize, 1);
-                for (int x = 0; x < sampleSize; x++) if (((row[x] >>> 24) & 0xFF) > 20) {
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                }
-            }
-            if (maxX < minX || maxY < minY) return null;
-
-            int cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
-            Bitmap normalized = Bitmap.createBitmap(sampleSize, sampleSize, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(normalized);
-            Rect sourceRect = new Rect(minX, minY, maxX + 1, maxY + 1);
-            float scale = Math.min(112f / cropWidth, 112f / cropHeight);
-            int outWidth = Math.max(1, Math.round(cropWidth * scale));
-            int outHeight = Math.max(1, Math.round(cropHeight * scale));
-            int left = (sampleSize - outWidth) / 2, top = (sampleSize - outHeight) / 2;
-            Rect destRect = new Rect(left, top, left + outWidth, top + outHeight);
-            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-            canvas.drawBitmap(sample, sourceRect, destRect, paint);
-            return new BitmapDrawable(getResources(), normalized);
-        } catch (RuntimeException ignored) {
-            return null;
-        } finally {
-            if (sample != null && !sample.isRecycled()) sample.recycle();
-        }
     }
 
     private void populateHomeApps(ThemeManager.Appearance a) {
@@ -4739,7 +4686,9 @@ public class QinsLauncherActivity extends Activity {
             panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
                     (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
         }
-        scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
+        // Fill the viewport so the Nothing slider column can use the real
+        // remaining height instead of being measured as a short wrap-content child.
+        scroll.addView(panel, new ScrollView.LayoutParams(-1, -1));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
 
         LinearLayout heading = new LinearLayout(this);
@@ -4872,7 +4821,11 @@ public class QinsLauncherActivity extends Activity {
             }
         });
         View themedQuickSettings = quickSettingsUi.build(quickTheme);
-        panel.addView(themedQuickSettings, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams quickSettingsParams =
+                ThemeManager.APPEARANCE_NOTHING.equals(a.id)
+                        ? new LinearLayout.LayoutParams(-1, 0, 1f)
+                        : new LinearLayout.LayoutParams(-1, -2);
+        panel.addView(themedQuickSettings, quickSettingsParams);
         if (focusFirst && themedQuickSettings instanceof android.view.ViewGroup) {
             android.view.ViewGroup themedGroup = (android.view.ViewGroup) themedQuickSettings;
             if (themedGroup.getChildCount() > 0) {

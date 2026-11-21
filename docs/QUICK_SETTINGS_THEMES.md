@@ -30,3 +30,10 @@ The launcher keeps its existing home-screen appearance setting and maps it to on
 - D-pad focusable controls; vertical Nothing sliders use Up/Down for adjustment and Left/Right for navigation.
 - Wi-Fi, Bluetooth, brightness, volume and media actions use the existing API-19 controller / notification bridge.
 - Protected actions that Android does not allow a normal app to toggle directly are routed to the relevant action or settings screen rather than showing a fake enabled state.
+
+
+## Reference alignment (2026-11-21)
+- Expanded Quick Settings content is edge-to-edge horizontally; the panel itself adds no decorative side gutters or borders.
+- The three OEM-specific tile structures remain distinct: Android/Pixel 4x2 shortcut grid, One UI 4x2 shortcut card, and Nothing's asymmetric media + dual vertical slider composition with notification dock.
+- Empty notification-dock slots remain visually empty rather than showing placeholder plus glyphs.
+- App drawer icons currently use the device's original PackageManager icons. The repository does not yet contain complete, verified app artwork matching the supplied Pixel / One UI / Nothing icon reference, so partial custom packs and monochrome approximations are disabled.
