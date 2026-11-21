@@ -86,9 +86,9 @@ public final class QinsuiQuickSettingsManager {
 
         LinearLayout pills = row();
         add(pills, dualPill("Internet", controller.isWifiEnabled(), "Connected", "Off", MINT, FOREST_TILE,
-                new Runnable() { @Override public void run() { controller.toggleWifi(); } }), 0, 42, 0, 0, 3, 0, 3);
+                new Runnable() { @Override public void run() { toggleWifi(); } }), 0, 42, 0, 0, 3, 0, 3);
         add(pills, dualPill("Bluetooth", controller.isBluetoothEnabled(), "On", "Off", MINT, FOREST_TILE,
-                new Runnable() { @Override public void run() { controller.toggleBluetooth(); } }), 0, 42, 1, 0, 3, 0, 3);
+                new Runnable() { @Override public void run() { toggleBluetooth(); } }), 0, 42, 1, 0, 3, 0, 3);
         add(root, pills, -1, 42, 0, 0, 8, 0, 0);
 
         String[][] glyphs = new String[][] {
@@ -124,9 +124,9 @@ public final class QinsuiQuickSettingsManager {
     private void buildOneUI8(LinearLayout root) {
         LinearLayout top = row();
         add(top, topPill("Wi-Fi", controller.isWifiEnabled(), true,
-                new Runnable() { @Override public void run() { controller.toggleWifi(); } }), 0, 38, 1, 0, 3, 0, 3);
+                new Runnable() { @Override public void run() { toggleWifi(); } }), 0, 38, 1, 0, 3, 0, 3);
         add(top, topPill("Bluetooth", controller.isBluetoothEnabled(), false,
-                new Runnable() { @Override public void run() { controller.toggleBluetooth(); } }), 0, 38, 1, 0, 3, 0, 3);
+                new Runnable() { @Override public void run() { toggleBluetooth(); } }), 0, 38, 1, 0, 3, 0, 3);
         add(root, top, -1, 38, 0, 0, 8, 0, 0);
 
         LinearLayout card = new LinearLayout(context);
@@ -455,10 +455,22 @@ public final class QinsuiQuickSettingsManager {
         return shape;
     }
 
+    private void toggleWifi() {
+        controller.toggleWifi();
+        if (listener != null) listener.onAction("refresh");
+    }
+
+    private void toggleBluetooth() {
+        controller.toggleBluetooth();
+        if (listener != null) listener.onAction("refresh");
+    }
+
     private void dispatch(String action) {
-        if ("wifi".equals(action)) controller.toggleWifi();
-        else if ("bluetooth".equals(action)) controller.toggleBluetooth();
-        else if (listener != null) listener.onAction(action);
+        if ("wifi".equals(action)) toggleWifi();
+        else if ("bluetooth".equals(action)) toggleBluetooth();
+        else if ("notifications".equals(action)) {
+            if (listener != null) listener.onOpenNotifications();
+        } else if (listener != null) listener.onAction(action);
     }
 
     private int dp(float value) {
@@ -500,10 +512,10 @@ public final class QinsuiQuickSettingsManager {
         void setListener(Listener listener) { this.listener = listener; }
 
         @Override public boolean onKeyDown(int keyCode, KeyEvent event) {
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
                 setValue(value + 5); return true;
             }
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN || keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
                 setValue(value - 5); return true;
             }
             return super.onKeyDown(keyCode, event);
