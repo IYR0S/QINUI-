@@ -5008,8 +5008,11 @@ public class QinsLauncherActivity extends Activity {
 
         String[] expandedKeys = getExpandedQuickTileKeys();
         if (ThemeManager.APPEARANCE_NOTHING.equals(a.id)) {
-            addQuickMediaCard(panel, a);
+            // Nothing reference: compact monochrome controls first, followed by
+            // the media card and a five-slot notification icon dock.
             addNothingQuickGridAndSliders(panel, a, expandedKeys);
+            addQuickMediaCard(panel, a);
+            addNothingNotificationDock(panel, a);
         } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
             // Pixel reference: brightness first, then the two wide connectivity
             // pills, then compact utility icons and the media controls.
@@ -5633,6 +5636,53 @@ public class QinsLauncherActivity extends Activity {
         row.addView(column, columnParams);
         slider.setId(View.generateViewId());
         return slider;
+    }
+
+    private void addNothingNotificationDock(LinearLayout panel, ThemeManager.Appearance a) {
+        List<NotificationBridgeService.NotificationItem> items = NotificationBridgeService.snapshot();
+        LinearLayout dock = new LinearLayout(this);
+        dock.setOrientation(LinearLayout.VERTICAL);
+        dock.setPadding(dp(8), dp(5), dp(8), dp(5));
+        styleSurface(dock, 0xE61B1D1E, 0xC834383A, a.focus, 18f);
+
+        TextView heading = new TextView(this);
+        heading.setText("NOTIFICATIONS");
+        heading.setTextColor(0xFFF2F2EF);
+        heading.setTextSize(9);
+        heading.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        dock.addView(heading, new LinearLayout.LayoutParams(-1, dp(15)));
+
+        LinearLayout icons = new LinearLayout(this);
+        icons.setOrientation(LinearLayout.HORIZONTAL);
+        icons.setGravity(Gravity.CENTER_VERTICAL);
+        int count = Math.min(5, items == null ? 0 : items.size());
+        for (int i = 0; i < 5; i++) {
+            FrameLayout slot = new FrameLayout(this);
+            LinearLayout.LayoutParams slotParams = new LinearLayout.LayoutParams(0, dp(30), 1f);
+            slotParams.setMargins(dp(2), 0, dp(2), 0);
+            icons.addView(slot, slotParams);
+            if (i >= count) continue;
+
+            final NotificationBridgeService.NotificationItem item = items.get(i);
+            ImageView appIcon = new ImageView(this);
+            try {
+                appIcon.setImageDrawable(getPackageManager().getApplicationIcon(item.packageName));
+            } catch (Exception ignored) {
+                appIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+            }
+            appIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            slot.addView(appIcon, new FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER));
+            slot.setContentDescription(item.title == null ? "Notification" : item.title);
+            slot.setFocusable(true);
+            slot.setFocusableInTouchMode(false);
+            slot.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View view) { switchQuickPanelPage(1); }
+            });
+        }
+        dock.addView(icons, new LinearLayout.LayoutParams(-1, dp(30)));
+        LinearLayout.LayoutParams dockParams = new LinearLayout.LayoutParams(-1, -2);
+        dockParams.topMargin = dp(6);
+        panel.addView(dock, dockParams);
     }
 
     private void addNothingQuickGridAndSliders(LinearLayout panel, ThemeManager.Appearance a,
