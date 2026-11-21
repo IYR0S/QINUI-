@@ -4792,27 +4792,26 @@ public class QinsLauncherActivity extends Activity {
         boolean nothingTheme = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
 
         if (pixelTheme) {
-            // Pixel's Quick Settings starts with the long Material brightness
-            // control, then the tonal tile grid, with media content below it.
+            // Android 17: wide connectivity pills, then a compact four-column
+            // icon grid. Keep the brightness rail above the tiles and media last.
             addPixelVerticalSliderRow(panel, a, true);
-            addQuickTileGrid(panel, a, expandedKeys, 6);
+            addAndroid17HybridGrid(panel, a, expandedKeys);
             updateQuickStates();
             addQuickMediaCard(panel, a);
-            addPixelVerticalSliderRow(panel, a, false);
-        } else {
-            // One UI and Nothing both keep media above connectivity, but use
-            // different tile geometry and different slider systems.
+        } else if (galaxyTheme) {
+            // One UI: dedicated Wi-Fi/Bluetooth pills, an 8-shortcut circular
+            // grid, followed by paired horizontal sliders and quick actions.
+            addSamsungQuickLayout(panel, a, expandedKeys);
+            updateQuickStates();
+            addBrightnessSleepRow(panel, a);
+            addVolumeDndRow(panel, a);
+        } else if (nothingTheme) {
+            // Nothing: monochrome pill controls, asymmetric media/vertical
+            // slider dashboard, and a compact notification summary.
+            addNothingQuickGridAndSliders(panel, a, expandedKeys);
             addQuickMediaCard(panel, a);
-            if (nothingTheme) {
-                addNothingQuickGridAndSliders(panel, a, expandedKeys);
-            } else {
-                addQuickTileGrid(panel, a, expandedKeys, galaxyTheme ? 6 : 4);
-                updateQuickStates();
-            }
-            if (!nothingTheme) {
-                addBrightnessSleepRow(panel, a);
-                addVolumeDndRow(panel, a);
-            }
+            addNothingNotificationSummary(panel, a);
+            updateQuickStates();
         }
 
         LinearLayout tools = new LinearLayout(this);
@@ -6009,6 +6008,139 @@ public class QinsLauncherActivity extends Activity {
             BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
             updateStatusIndicators(bt != null && bt.isEnabled(), mode);
         } catch (RuntimeException ignored) { setQuickState("sound", soundState, soundTile, "", false); }
+    }
+
+    /** Android 17 hybrid layout: two wide connectivity pills plus 4-column icon-only tiles. */
+    private void addAndroid17HybridGrid(LinearLayout panel, ThemeManager.Appearance a, String[] keys) {
+        LinearLayout connectivity = new LinearLayout(this);
+        connectivity.setOrientation(LinearLayout.HORIZONTAL);
+        connectivity.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-1, dp(38));
+        cp.bottomMargin = dp(5);
+        panel.addView(connectivity, cp);
+        String[] primary = new String[] {"wifi", "bluetooth"};
+        for (int i = 0; i < primary.length; i++) {
+            final String key = primary[i];
+            View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
+            tile.setId(View.generateViewId());
+            if (tile instanceof LinearLayout) ((LinearLayout) tile).setOrientation(LinearLayout.HORIZONTAL);
+            styleSurface(tile, a.tile, a.border, a.focus, 22f);
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, 1f);
+            if (i > 0) p.leftMargin = dp(4);
+            connectivity.addView(tile, p);
+            tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { performQuickAction(key); } });
+        }
+        LinearLayout grid = new LinearLayout(this);
+        grid.setOrientation(LinearLayout.VERTICAL);
+        panel.addView(grid, new LinearLayout.LayoutParams(-1, -2));
+        int count = Math.min(8, keys.length);
+        for (int start = 0; start < count; start += 4) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER);
+            LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, dp(48));
+            if (start > 0) rp.topMargin = dp(3);
+            grid.addView(row, rp);
+            for (int i = start; i < Math.min(start + 4, count); i++) {
+                final String key = keys[i];
+                View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
+                tile.setId(View.generateViewId());
+                if (tile instanceof LinearLayout) {
+                    ((LinearLayout) tile).setOrientation(LinearLayout.VERTICAL);
+                    ((LinearLayout) tile).setGravity(Gravity.CENTER);
+                    for (int j = 1; j < ((LinearLayout) tile).getChildCount(); j++)
+                        ((LinearLayout) tile).getChildAt(j).setVisibility(View.GONE);
+                }
+                styleSurface(tile, a.tile, a.border, a.focus, 24f);
+                LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(44), 1f);
+                if (i > start) p.leftMargin = dp(4);
+                row.addView(tile, p);
+                tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { performQuickAction(key); } });
+                if (quickGridFirstTile == null) quickGridFirstTile = tile;
+                quickGridLastTile = tile;
+            }
+        }
+    }
+
+    /** Samsung One UI layout with two wide connection pills and a circular 4x2 shortcut card. */
+    private void addSamsungQuickLayout(LinearLayout panel, ThemeManager.Appearance a, String[] keys) {
+        LinearLayout primary = new LinearLayout(this);
+        primary.setOrientation(LinearLayout.HORIZONTAL);
+        primary.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-1, dp(42));
+        pp.bottomMargin = dp(7);
+        panel.addView(primary, pp);
+        String[] mainKeys = new String[] {"wifi", "bluetooth"};
+        for (int i = 0; i < mainKeys.length; i++) {
+            final String key = mainKeys[i];
+            View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
+            tile.setId(View.generateViewId());
+            if (tile instanceof LinearLayout) ((LinearLayout) tile).setOrientation(LinearLayout.HORIZONTAL);
+            styleSurface(tile, 0xFFF5F5F7, a.border, a.focus, 24f);
+            LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, -1, 1f);
+            if (i > 0) p.leftMargin = dp(5);
+            primary.addView(tile, p);
+            tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { performQuickAction(key); } });
+        }
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(5), dp(5), dp(5), dp(5));
+        styleSurface(card, 0xE6222327, 0x553E4148, a.focus, 20f);
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(-1, -2);
+        cardParams.bottomMargin = dp(6);
+        panel.addView(card, cardParams);
+        for (int start = 0; start < 8; start += 4) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER);
+            card.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
+            for (int i = start; i < start + 4; i++) {
+                final String key = keys[i % keys.length];
+                View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
+                tile.setId(View.generateViewId());
+                if (tile instanceof LinearLayout) {
+                    ((LinearLayout) tile).setOrientation(LinearLayout.VERTICAL);
+                    ((LinearLayout) tile).setGravity(Gravity.CENTER);
+                    for (int j = 1; j < ((LinearLayout) tile).getChildCount(); j++)
+                        ((LinearLayout) tile).getChildAt(j).setVisibility(View.GONE);
+                }
+                styleSurface(tile, 0x00000000, 0x00000000, 0xFF3E82F7, 40f);
+                LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, dp(44), 1f);
+                if (i % 4 > 0) p.leftMargin = dp(2);
+                row.addView(tile, p);
+                tile.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { performQuickAction(key); } });
+                if (quickGridFirstTile == null) quickGridFirstTile = tile;
+                quickGridLastTile = tile;
+            }
+        }
+        addQuickMediaCard(panel, a);
+    }
+
+    /** Compact Nothing-style notification block; full notification list remains on its own tab. */
+    private void addNothingNotificationSummary(LinearLayout panel, ThemeManager.Appearance a) {
+        int count = NotificationBridgeService.snapshot().size();
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(8), dp(5), dp(8), dp(5));
+        styleSurface(card, 0xE6141416, 0xFF2C2C2E, a.accent, 14f);
+        TextView title = new TextView(this);
+        title.setText("NOTIFICATIONS  " + (count > 0 ? "• " + count : ""));
+        title.setTextColor(0xFFFFFFFF);
+        title.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        title.setTextSize(10);
+        title.setGravity(Gravity.CENTER);
+        card.addView(title, new LinearLayout.LayoutParams(-1, dp(20)));
+        TextView hint = new TextView(this);
+        hint.setText(count == 0 ? getString(R.string.launcher_no_active_notifications) : getString(R.string.launcher_notifications_tab));
+        hint.setTextColor(a.muted);
+        hint.setTextSize(9);
+        hint.setGravity(Gravity.CENTER);
+        card.addView(hint, new LinearLayout.LayoutParams(-1, dp(20)));
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
+        p.topMargin = dp(6);
+        panel.addView(card, p);
+        card.setFocusable(true);
+        card.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { switchQuickPanelPage(1); } });
     }
 
     private void addQuickTileGrid(LinearLayout panel, ThemeManager.Appearance a, String[] keys, int count) {
