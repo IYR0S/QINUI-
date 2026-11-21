@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" data-theme="android17">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <meta name="theme-color" content="#151b18">
+  <title>QIN S1 Quick Settings</title>
+  <link rel="stylesheet" href="src/themes/base.css">
+  <link rel="stylesheet" href="src/themes/android17.css">
+  <link rel="stylesheet" href="src/themes/oneui8.css">
+  <link rel="stylesheet" href="src/themes/nothingos5.css">
+</head>
+<body class="single-view">
+  <main class="device" aria-label="QIN S1 Quick Settings prototype">
+    <section class="screen" id="screen" aria-label="Quick Settings" tabindex="-1">
+      <header class="status-row"><span>23:21</span><span class="status-icons">▮ ▮ ◉</span></header>
+      <div id="qs-root" class="qs-root"></div>
+      <footer class="softkey-hints"><span>Options</span><span>Next</span></footer>
+    </section>
+    <section class="keypad" aria-label="QIN S1 keypad">
+      <div class="soft-row"><span class="soft-key">—</span><span class="nav-ring"><i></i></span><span class="soft-key">—</span></div>
+      <div class="call-row"><span>⌕</span><span>◉</span></div>
+      <div class="number-grid" aria-hidden="true">
+        <span>1<small></small></span><span>2<small>ABC</small></span><span>3<small>DEF</small></span>
+        <span>4<small>GHI</small></span><span>5<small>JKL</small></span><span>6<small>MNO</small></span>
+        <span>7<small>PQRS</small></span><span>8<small>TUV</small></span><span>9<small>WXYZ</small></span>
+        <span>*<small></small></span><span>0<small>+</small></span><span>#<small></small></span>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
