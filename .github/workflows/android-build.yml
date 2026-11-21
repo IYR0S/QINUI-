@@ -2,7 +2,10 @@ name: Android debug build
 
 on:
   push:
-    branches: [ main, 'fix/**' ]
+    branches:
+      - main
+      - 'fix/**'
+      - 'feature/quick-settings-three-designs-2026-11-21'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
