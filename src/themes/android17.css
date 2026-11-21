@@ -1,0 +1,7 @@
+html[data-theme="android17"]{--bg:#171d19;--text:#eef5ef;--muted:#a8b8ae;--tile:#303a34;--tile-active:#b8e6d8;--active-text:#14231c;--icon-bg:#222c26;--icon:#c6ded2;--active-icon-bg:#8fcfba;--active-icon:#13231c;--focus:#b8e6d8;--slider-track:linear-gradient(90deg,#b8e6d8 0 72%,#38443c 72%);--slider-thumb:#d2f5e8;--slider-thumb-border:#709f8b;--media-bg:#29352e;--card-radius:17px;--tile-radius:24px;--art-radius:12px;--art-bg:#41594d;--art-color:#d3f5e6}
+html[data-theme="android17"] .slider-wrap:not(.is-vertical) input{height:24px;border-radius:99px}
+html[data-theme="android17"] .slider-wrap:not(.is-vertical) .slider-label{width:38px;flex-basis:38px}
+html[data-theme="android17"] .tile-grid .tile{border-radius:50px;justify-content:center;flex-direction:column;gap:2px;padding:2px}
+html[data-theme="android17"] .tile-grid .tile-icon{width:21px;height:21px}
+html[data-theme="android17"] .tile-grid .tile-copy b{font-size:7px}
+html[data-theme="android17"] .media-card{box-shadow:inset 0 1px #ffffff0c}
