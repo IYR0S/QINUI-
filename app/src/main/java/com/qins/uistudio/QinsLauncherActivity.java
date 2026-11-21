@@ -216,6 +216,7 @@ public class QinsLauncherActivity extends Activity {
         // QINS exposes its own signal indicator and navigation controls in this row.
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        ThemedIconResolver.preloadMappingsAsync(getApplicationContext());
         loadApps();
         buildShell();
         if (getIntent().getBooleanExtra("open_quick_panel", false)) showQuickPanel(false);
