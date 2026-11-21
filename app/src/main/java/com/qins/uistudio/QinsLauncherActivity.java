@@ -2416,8 +2416,15 @@ public class QinsLauncherActivity extends Activity {
 
             int cropWidth = maxX - minX + 1;
             int cropHeight = maxY - minY + 1;
-            float scale = Math.min(76f / Math.max(1, cropWidth),
-                    76f / Math.max(1, cropHeight));
+            // Legacy launcher icons are often fully opaque square canvases.
+            // Fill the OEM plate's inner bounds in that case, then clip the square
+            // to the actual circle/rounded-rectangle mask so no black corners remain.
+            boolean opaqueSquare = minX <= 2 && minY <= 2 &&
+                    maxX >= 125 && maxY >= 125 &&
+                    Math.abs(cropWidth - cropHeight) <= 4;
+            float iconTarget = opaqueSquare ? 116f : 76f;
+            float scale = Math.min(iconTarget / Math.max(1, cropWidth),
+                    iconTarget / Math.max(1, cropHeight));
             int drawWidth = Math.max(1, Math.round(cropWidth * scale));
             int drawHeight = Math.max(1, Math.round(cropHeight * scale));
             int left = (size - drawWidth) / 2;
@@ -3071,6 +3078,8 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(dp(1), dp(24));
         dividerParams.leftMargin = dp(4);
         dividerParams.rightMargin = dp(4);
+        dividerParams.topMargin = dp(4);
+        dividerParams.bottomMargin = dp(4);
         header.addView(divider, dividerParams);
 
         QinsGlyphView quickPanelShortcut = new QinsGlyphView(this, "apps", a.accent);
