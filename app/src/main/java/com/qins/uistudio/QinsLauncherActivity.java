@@ -4786,32 +4786,56 @@ public class QinsLauncherActivity extends Activity {
             return;
         }
 
-        String[] expandedKeys = getExpandedQuickTileKeys();
-        boolean galaxyTheme = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
-        boolean pixelTheme = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
-        boolean nothingTheme = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
-
-        if (pixelTheme) {
-            // Pixel's Quick Settings starts with the long Material brightness
-            // control, then the tonal tile grid, with media content below it.
-            addPixelVerticalSliderRow(panel, a, true);
-            addQuickTileGrid(panel, a, expandedKeys, 6);
-            updateQuickStates();
-            addQuickMediaCard(panel, a);
-            addPixelVerticalSliderRow(panel, a, false);
-        } else {
-            // One UI and Nothing both keep media above connectivity, but use
-            // different tile geometry and different slider systems.
-            addQuickMediaCard(panel, a);
-            if (nothingTheme) {
-                addNothingQuickGridAndSliders(panel, a, expandedKeys);
-            } else {
-                addQuickTileGrid(panel, a, expandedKeys, galaxyTheme ? 6 : 4);
-                updateQuickStates();
+        // Quick Settings has its own three-layout design system. The launcher
+        // appearance selects the matching OEM layout without changing the home theme.
+        QinsuiQuickSettingsManager.ThemeType quickTheme =
+                ThemeManager.APPEARANCE_NOTHING.equals(a.id)
+                        ? QinsuiQuickSettingsManager.ThemeType.NOTHING_OS_5
+                        : (ThemeManager.APPEARANCE_GALAXY.equals(a.id)
+                        ? QinsuiQuickSettingsManager.ThemeType.ONE_UI_8
+                        : QinsuiQuickSettingsManager.ThemeType.ANDROID_17);
+        QinsuiQuickSettingsManager quickSettingsUi = new QinsuiQuickSettingsManager(
+                this, quickSettingsController(), new QinsuiQuickSettingsManager.Listener() {
+            @Override public void onAction(String action) {
+                if ("refresh".equals(action)) {
+                    showQuickPanel(false);
+                } else if ("media".equals(action)) {
+                    NotificationBridgeService.sendMediaKey(QinsLauncherActivity.this,
+                            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                } else if ("sleep".equals(action)) {
+                    toggleSleepMode();
+                    showQuickPanel(false);
+                } else if ("location".equals(action)) {
+                    try { startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)); }
+                    catch (RuntimeException ignored) { openSystemSettings(); }
+                } else if ("clock".equals(action)) {
+                    try { startActivity(new Intent(Settings.ACTION_DATE_SETTINGS)); }
+                    catch (RuntimeException ignored) { openSystemSettings(); }
+                } else if ("airplane".equals(action)) {
+                    openSystemSettings();
+                } else if ("home".equals(action)) {
+                    showHome(false);
+                } else if ("apps".equals(action)) {
+                    showDrawer(false);
+                } else {
+                    performQuickAction(action);
+                }
             }
-            if (!nothingTheme) {
-                addBrightnessSleepRow(panel, a);
-                addVolumeDndRow(panel, a);
+            @Override public void onOpenNotifications() {
+                switchQuickPanelPage(1);
+            }
+        });
+        View themedQuickSettings = quickSettingsUi.build(quickTheme);
+        panel.addView(themedQuickSettings, new LinearLayout.LayoutParams(-1, -2));
+        if (focusFirst && themedQuickSettings instanceof android.view.ViewGroup) {
+            android.view.ViewGroup themedGroup = (android.view.ViewGroup) themedQuickSettings;
+            if (themedGroup.getChildCount() > 0) {
+                View first = themedGroup.getChildAt(0);
+                if (first instanceof android.view.ViewGroup && ((android.view.ViewGroup) first).getChildCount() > 0) {
+                    ((android.view.ViewGroup) first).getChildAt(0).requestFocus();
+                } else {
+                    first.requestFocus();
+                }
             }
         }
 
