@@ -439,6 +439,7 @@ public class QinsLauncherActivity extends Activity {
 
          themeButton = new TextView(this);
         themeButton.setText("◉");
+        themeButton.setTextColor(a.text);
         themeButton.setTextSize(18);
         themeButton.setGravity(Gravity.CENTER);
         themeButton.setFocusable(true);
