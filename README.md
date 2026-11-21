@@ -31,3 +31,29 @@ The CI workflow builds a debug APK using Gradle 8.2 and JDK 17. Download the art
 ## Device validation
 
 A successful CI build proves compilation and APK packaging only. Physical-key mapping, focus order, Hebrew rendering, app discovery, HOME selection, boot behavior, installation and performance must still be validated on the actual QINS1+ running Android 4.4.4.
+
+---
+
+## Standalone Quick Settings web prototype
+
+A separate, dependency-free visual and interaction prototype for the QIN S1 240×320 screen. It does not change Android radios, volume or system settings; it is a browser-based keypad interaction harness.
+
+- Open `index.html`; if ES modules are blocked by `file://`, serve this repository folder with any static HTTP server.
+- Open `preview.html` to view all three phone frames and their keypad.
+- Arrow keys move focus; Enter activates; left/right adjust a focused slider; Backspace returns; Q/E switch pages; 1/2/3 switch themes.
+- The Nothing theme bundles a dot-matrix WOFF2 font as a local data asset; no font or other resource is fetched from the network.
+- Theme markup and JavaScript are shared. Only `src/themes/*.css` changes their visual treatment.
+
+### 240×320 theme captures
+
+| Android 17 | One UI 8 | Nothing OS 5 |
+| --- | --- | --- |
+| ![Android 17](screenshots/android17.svg) | ![One UI 8](screenshots/oneui8.svg) | ![Nothing OS 5](screenshots/nothingos5.svg) |
+
+Nothing OS page 2 demonstrates the dotted vertical volume/brightness sliders and notification icon row:
+
+![Nothing OS 5 page 2](screenshots/nothingos5-page2.svg)
+
+### Source alignment
+
+The visual model follows the latest `main` Quick Settings sources, including `QinsuiQuickSettingsManager.java`, `QinsGlyphView.java`, and `ThemedIconResolver.java`. This web prototype is intentionally separate from the Android implementation.
