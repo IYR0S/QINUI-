@@ -40,7 +40,7 @@ A separate, dependency-free visual and interaction prototype for the QIN S1 240Ã
 
 - Open `index.html`; if ES modules are blocked by `file://`, serve this repository folder with any static HTTP server.
 - Open `preview.html` to view all three phone frames and their keypad.
-- Arrow keys move focus; Enter activates; left/right adjust a focused slider; Backspace returns; Q/E switch pages; 1/2/3 switch themes.
+- Arrow keys move focus; Enter activates; left/right adjust a focused slider or switch tracks while the media card is focused; Backspace returns; Q/E switch pages; 1/2/3 switch themes.
 - The Nothing theme bundles a dot-matrix WOFF2 font as a local data asset; no font or other resource is fetched from the network.
 - Theme markup and JavaScript are shared. Only `src/themes/*.css` changes their visual treatment.
 
