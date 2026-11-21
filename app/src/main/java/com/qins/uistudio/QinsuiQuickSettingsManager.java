@@ -82,7 +82,14 @@ public final class QinsuiQuickSettingsManager {
     private void buildAndroid17(LinearLayout root) {
         SeekBar brightness = horizontalSlider(MINT, FOREST_TILE, controller.getBrightnessPercent());
         brightness.setContentDescription("Brightness");
-        add(root, brightness, 32, 0, 8, 0, 0);
+        brightness.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                if (fromUser) controller.setBrightnessPercent(progress);
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { }
+            @Override public void onStopTrackingTouch(SeekBar bar) { }
+        });
+        add(root, brightness, -1, 32, 0, 0, 0, 0, 8);
 
         LinearLayout pills = row();
         add(pills, dualPill("Internet", controller.isWifiEnabled(), "Connected", "Off", MINT, FOREST_TILE,
