@@ -2047,6 +2047,12 @@ public class QinsLauncherActivity extends Activity {
         overlayParams.leftMargin = dp(6);
         overlayParams.rightMargin = dp(6);
         pageContainer.addView(compact, overlayParams);
+        // Explicitly raise the compact shade above the home content. This also
+        // avoids a stale hidden home child covering the first collapsed panel.
+        compact.setVisibility(View.VISIBLE);
+        compact.bringToFront();
+        pageContainer.requestLayout();
+        pageContainer.invalidate();
         compact.startAnimation(new android.view.animation.TranslateAnimation(0, 0, -dp(68), 0) {{
             setDuration(180);
             setFillAfter(false);
@@ -4739,7 +4745,9 @@ public class QinsLauncherActivity extends Activity {
             panel.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(
                     (a.background & 0x00FFFFFF) | (scrimAlpha << 24)));
         }
-        scroll.addView(panel, new ScrollView.LayoutParams(-1, -2));
+        // Fill the viewport so the Nothing slider column can use the real
+        // remaining height instead of being measured as a short wrap-content child.
+        scroll.addView(panel, new ScrollView.LayoutParams(-1, -1));
         pageContent.addView(scroll, new LinearLayout.LayoutParams(-1, -1));
 
         LinearLayout heading = new LinearLayout(this);
@@ -4872,7 +4880,11 @@ public class QinsLauncherActivity extends Activity {
             }
         });
         View themedQuickSettings = quickSettingsUi.build(quickTheme);
-        panel.addView(themedQuickSettings, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams quickSettingsParams =
+                ThemeManager.APPEARANCE_NOTHING.equals(a.id)
+                        ? new LinearLayout.LayoutParams(-1, 0, 1f)
+                        : new LinearLayout.LayoutParams(-1, -2);
+        panel.addView(themedQuickSettings, quickSettingsParams);
         if (focusFirst && themedQuickSettings instanceof android.view.ViewGroup) {
             android.view.ViewGroup themedGroup = (android.view.ViewGroup) themedQuickSettings;
             if (themedGroup.getChildCount() > 0) {
