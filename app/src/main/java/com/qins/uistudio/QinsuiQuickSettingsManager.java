@@ -92,8 +92,8 @@ public final class QinsuiQuickSettingsManager {
         add(root, brightness, -1, 32, 0, 0, 0, 0, 8);
 
         LinearLayout pills = row();
-        add(pills, dualPill("Internet", controller.isWifiEnabled(), "Connected", "Off", MINT, FOREST_TILE,
-                new Runnable() { @Override public void run() { toggleWifi(); } }), 0, 42, 0, 0, 3, 0, 3);
+        add(pills, dualPill("Internet", controller.isWifiEnabled(), "מחובר", "כבוי", MINT, FOREST_TILE,
+                new Runnable() { @Override public void run() { toggleWifi(); } }), 0, 42, 1f, 0, 3, 0, 3);
         add(pills, dualPill("Bluetooth", controller.isBluetoothEnabled(), "On", "Off", MINT, FOREST_TILE,
                 new Runnable() { @Override public void run() { toggleBluetooth(); } }), 0, 42, 1, 0, 3, 0, 3);
         add(root, pills, -1, 42, 0, 0, 8, 0, 0);
@@ -161,7 +161,7 @@ public final class QinsuiQuickSettingsManager {
             }
             card.addView(grid, new LinearLayout.LayoutParams(-1, dp(36)));
         }
-        add(root, card, -1, 78, 0, 0, 9, 0, 0);
+        add(root, card, -1, 82, 0, 0, 9, 0, 0);
 
         addSplitSlider(root, true, "☾", "Brightness");
         addSplitSlider(root, false, "◖", "Volume");
@@ -302,7 +302,7 @@ public final class QinsuiQuickSettingsManager {
         card.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { if (listener != null) listener.onOpenNotifications(); }
         });
-        add(root, card, -1, 52, 0, 0, 0, 0, 0);
+        add(root, card, -1, 56, 0, 0, 0, 0, 0);
     }
 
     private void addMediaBar(LinearLayout root, int background, int accent, int height, boolean mono) {
@@ -432,6 +432,11 @@ public final class QinsuiQuickSettingsManager {
         view.setFocusable(true);
         view.setFocusableInTouchMode(false);
         view.setBackground(round(background, size / 2, 0));
+        view.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override public void onFocusChange(View v, boolean focused) {
+                v.setBackground(round(background, size / 2, focused ? BLUE : 0));
+            }
+        });
         view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         return view;
     }
