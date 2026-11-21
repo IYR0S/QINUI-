@@ -2290,29 +2290,27 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private Drawable loadThemedAppIcon(ResolveInfo info) {
-        PackageManager pm = getPackageManager();
+        PackageManager pm = null;
         Drawable raw = null;
         String themeId = ThemeManager.APPEARANCE_GALAXY;
         String packageName = "";
+        String cacheKey = "unknown|" + themeId + "|128";
         try {
+            pm = getPackageManager();
             ThemeManager.Appearance current = appearance();
             if (current != null && current.id != null) themeId = current.id;
-        } catch (Throwable ignored) { }
-        if (info != null && info.activityInfo != null && info.activityInfo.packageName != null) {
-            packageName = info.activityInfo.packageName;
-        }
-        String cacheKey = (packageName.length() == 0 ? String.valueOf(info) : packageName) +
-                "|" + themeId + "|128";
-        try {
+            if (info != null && info.activityInfo != null &&
+                    info.activityInfo.packageName != null) {
+                packageName = info.activityInfo.packageName;
+            }
+            cacheKey = (packageName.length() == 0 ? String.valueOf(info) : packageName) +
+                    "|" + themeId + "|128";
             Drawable cached = NORMALIZED_ICON_CACHE.get(cacheKey);
             if (cached != null) return cloneCachedIcon(cached);
 
-            // appfilter lookup is package-first; unmapped packages keep their
-            // installed icon and are normalized through the same OEM plate path.
             if (info != null) {
-                try {
-                    raw = ThemedIconResolver.loadMappedIcon(this, info, themeId);
-                } catch (Throwable ignored) { }
+                try { raw = ThemedIconResolver.loadMappedIcon(this, info, themeId); }
+                catch (Throwable ignored) { }
             }
             if (raw == null && packageName.length() > 0) {
                 try { raw = pm.getApplicationIcon(packageName); }
@@ -2334,14 +2332,14 @@ public class QinsLauncherActivity extends Activity {
                 return cloneCachedIcon(normalized);
             }
         } catch (Throwable ignored) {
-            // A broken vendor drawable must never crash the drawer or launcher.
+            // A malformed OEM/vendor drawable must never crash Home or the drawer.
         }
         if (raw != null) return raw;
         try {
+            if (pm == null) pm = getPackageManager();
             if (info != null) return info.loadIcon(pm);
-        } catch (Throwable ignored) { }
-        try { return pm.getDefaultActivityIcon(); }
-        catch (Throwable ignored) { return null; }
+            return pm.getDefaultActivityIcon();
+        } catch (Throwable ignored) { return null; }
     }
 
     private Drawable cloneCachedIcon(Drawable drawable) {
@@ -2360,23 +2358,25 @@ public class QinsLauncherActivity extends Activity {
      */
     private Drawable normalizeAppIcon(Drawable source) {
         if (source == null) return null;
-        if (source.getIntrinsicWidth() == 0 || source.getIntrinsicHeight() == 0) return source;
         Bitmap sample = null;
         Bitmap output = null;
-        Rect originalBounds = new Rect(source.getBounds());
+        Rect originalBounds = null;
         Drawable rasterSource = source;
-        boolean restoreBounds = true;
+        boolean restoreBounds = false;
         try {
+            if (source.getIntrinsicWidth() == 0 || source.getIntrinsicHeight() == 0) return source;
             Drawable.ConstantState state = source.getConstantState();
             if (state != null) {
                 rasterSource = state.newDrawable(getResources()).mutate();
-                restoreBounds = false;
+            } else {
+                originalBounds = new Rect(source.getBounds());
+                restoreBounds = true;
             }
+
             final int size = 128;
             sample = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-            Canvas sampleCanvas = new Canvas(sample);
             rasterSource.setBounds(0, 0, size, size);
-            rasterSource.draw(sampleCanvas);
+            rasterSource.draw(new Canvas(sample));
 
             int minX = size, minY = size, maxX = -1, maxY = -1;
             int[] row = new int[size];
@@ -2391,6 +2391,8 @@ public class QinsLauncherActivity extends Activity {
                     }
                 }
             }
+            // Empty vendor drawables are valid fallback sources; never return a
+            // transparent, unfilled BitmapDrawable.
             if (maxX < minX || maxY < minY) return source;
 
             output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -2426,6 +2428,7 @@ public class QinsLauncherActivity extends Activity {
                 matrix.setSaturation(0f);
                 iconPaint.setColorFilter(new ColorMatrixColorFilter(matrix));
             }
+
             int save = canvas.save();
             canvas.clipPath(plate);
             canvas.drawBitmap(sample, sourceRect, destRect, iconPaint);
@@ -2443,7 +2446,7 @@ public class QinsLauncherActivity extends Activity {
         } catch (Throwable ignored) {
             return source;
         } finally {
-            if (restoreBounds) {
+            if (restoreBounds && originalBounds != null) {
                 try { source.setBounds(originalBounds); } catch (Throwable ignored) { }
             }
             if (sample != null && !sample.isRecycled()) sample.recycle();
