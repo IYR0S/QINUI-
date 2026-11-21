@@ -5469,7 +5469,7 @@ public class QinsLauncherActivity extends Activity {
             @Override public void onProgressChanged(int progress, boolean fromUser) {
                 if (fromUser) {
                     AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    if (manager != null) manager.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0);
+                    if (manager != null) quickSettingsController().setVolumePercent(Math.round(progress * 100f / Math.max(1, maxVolume)));
                 }
             }
             @Override public void onStartTrackingTouch() { }
@@ -5675,7 +5675,7 @@ public class QinsLauncherActivity extends Activity {
                 if (brightnessMode) writeBrightness(Math.max(1, value));
                 else {
                     AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                    if (manager != null) manager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0);
+                    if (manager != null) quickSettingsController().setVolumePercent(Math.round(value * 100f / Math.max(1, max)));
                 }
             }
             @Override public void onStartTrackingTouch(SeekBar bar) { }
@@ -6245,7 +6245,7 @@ public class QinsLauncherActivity extends Activity {
                 @Override public void onProgressChanged(SeekBar bar, int value, boolean fromUser) {
                     if (fromUser) {
                         AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                        if (manager != null) manager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0);
+                        if (manager != null) quickSettingsController().setVolumePercent(Math.round(value * 100f / Math.max(1, max)));
                     }
                     updateBrightnessCard(volume, a, value, max);
                 }
@@ -6273,7 +6273,7 @@ public class QinsLauncherActivity extends Activity {
             hiddenThumb.setSize(dp(1), dp(1));
             seek.setThumb(hiddenThumb);
         }
-        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { @Override public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser){AudioManager m=(AudioManager)getSystemService(Context.AUDIO_SERVICE);if(m!=null)m.setStreamVolume(AudioManager.STREAM_MUSIC,value,0);}} @Override public void onStartTrackingTouch(SeekBar bar){} @Override public void onStopTrackingTouch(SeekBar bar){} });
+        seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() { @Override public void onProgressChanged(SeekBar bar,int value,boolean fromUser){if(fromUser){AudioManager m=(AudioManager)getSystemService(Context.AUDIO_SERVICE);if(m!=null)quickSettingsController().setVolumePercent(Math.round(value * 100f / Math.max(1, max)));}} @Override public void onStartTrackingTouch(SeekBar bar){} @Override public void onStopTrackingTouch(SeekBar bar){} });
         volume.addView(seek, new LinearLayout.LayoutParams(-1, dp(34)));
         }
         row.addView(volume, new LinearLayout.LayoutParams(0, dp(66), 1));
@@ -6289,43 +6289,29 @@ public class QinsLauncherActivity extends Activity {
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1,-2); rp.topMargin=dp(8); panel.addView(row,rp);
     }
 
+    private QuickSettingsController quickSettingsController() {
+        return new QuickSettingsController(this, new QuickSettingsController.Listener() {
+            @Override public void onSystemStateChanged() { updateQuickStates(); }
+            @Override public void onOperationFailed(String operation) {
+                android.widget.Toast.makeText(QinsLauncherActivity.this,
+                        operation + " unavailable", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void toggleWifi() {
-        try {
-            WifiManager manager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            if (manager != null) manager.setWifiEnabled(!manager.isWifiEnabled());
-            updateQuickStates();
-        } catch (RuntimeException error) {
-            android.widget.Toast.makeText(this, "Wi-Fi unavailable", android.widget.Toast.LENGTH_SHORT).show();
-        }
+        quickSettingsController().toggleWifi();
+        updateQuickStates();
     }
 
     private void toggleBluetooth() {
-        try {
-            BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-            if (adapter == null) return;
-            if (adapter.isEnabled()) adapter.disable();
-            else adapter.enable();
-            updateQuickStates();
-        } catch (RuntimeException error) {
-            android.widget.Toast.makeText(this, "Bluetooth unavailable", android.widget.Toast.LENGTH_SHORT).show();
-        }
+        quickSettingsController().toggleBluetooth();
+        updateQuickStates();
     }
 
     private void toggleSound() {
-        try {
-            AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-            if (audio == null) return;
-            int mode = audio.getRingerMode();
-            int next = mode == AudioManager.RINGER_MODE_NORMAL ? AudioManager.RINGER_MODE_VIBRATE :
-                    (mode == AudioManager.RINGER_MODE_VIBRATE ? AudioManager.RINGER_MODE_SILENT :
-                            AudioManager.RINGER_MODE_NORMAL);
-            // Keep all three Android ringer states in the same cycle:
-            // Sound -> Vibrate -> Silent -> Sound.
-            audio.setRingerMode(next);
-            updateQuickStates();
-        } catch (RuntimeException error) {
-            android.widget.Toast.makeText(this, "Sound unavailable", android.widget.Toast.LENGTH_SHORT).show();
-        }
+        quickSettingsController().cycleRingerMode();
+        updateQuickStates();
     }
 
     private int readBrightness() {
@@ -6336,12 +6322,8 @@ public class QinsLauncherActivity extends Activity {
     }
 
     private void writeBrightness(int value) {
-        try {
-            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS_MODE,
-                    Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
-            Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_BRIGHTNESS,
-                    Math.max(1, Math.min(255, value)));
-        } catch (RuntimeException ignored) { }
+        quickSettingsController().setBrightnessPercent(
+                Math.max(1, Math.min(255, value)) * 100 / 255);
     }
 
     private void openStudio() {
