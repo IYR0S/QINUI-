@@ -43,7 +43,7 @@ public final class QinsuiQuickSettingsManager {
 
     private static final int FOREST = Color.rgb(14, 20, 17);
     private static final int MINT = Color.rgb(184, 230, 216);
-    private static final int FOREST_TILE = Color.rgb(29, 38, 34);
+    private static final int FOREST_TILE = Color.rgb(225, 234, 228);
     private static final int NAVY = Color.rgb(11, 15, 23);
     private static final int NAVY_CARD = Color.rgb(24, 34, 50);
     private static final int BLUE = Color.rgb(96, 165, 250);
@@ -79,6 +79,13 @@ public final class QinsuiQuickSettingsManager {
         return root;
     }
 
+    private boolean isActionActive(String action) {
+        if ("wifi".equals(action)) return controller.isWifiEnabled();
+        if ("bluetooth".equals(action)) return controller.isBluetoothEnabled();
+        if ("sound".equals(action)) return controller.getRingerMode() == AudioManager.RINGER_MODE_NORMAL;
+        return false;
+    }
+
     private void buildAndroid17(LinearLayout root) {
         SeekBar brightness = horizontalSlider(MINT, FOREST_TILE, controller.getBrightnessPercent());
         brightness.setContentDescription("Brightness");
@@ -111,9 +118,9 @@ public final class QinsuiQuickSettingsManager {
             grid.setGravity(Gravity.CENTER);
             for (int c = 0; c < 4; c++) {
                 final String action = actions[r][c];
-                final boolean active = r == 1 && c == 3;
+                final boolean active = isActionActive(action);
                 TextView tile = circle(glyphs[r][c], active ? MINT : FOREST_TILE,
-                        active ? FOREST : MINT, 38, 17);
+                        FOREST, 38, 17);
                 tile.setContentDescription(action);
                 tile.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) { dispatch(action); }
@@ -148,9 +155,9 @@ public final class QinsuiQuickSettingsManager {
             grid.setGravity(Gravity.CENTER);
             for (int c = 0; c < 4; c++) {
                 final String action = actions[r][c];
-                boolean active = (r == 0 && (c == 0 || c == 3)) || (r == 1 && c == 2);
-                TextView icon = circle(glyphs[r][c], active ? WHITE : Color.rgb(51, 65, 85),
-                        active ? NAVY : WHITE, 32, 15);
+                boolean active = isActionActive(action);
+                TextView icon = circle(glyphs[r][c], active ? WHITE : Color.rgb(230, 236, 245),
+                        NAVY, 32, 15);
                 icon.setContentDescription(action);
                 icon.setOnClickListener(new View.OnClickListener() {
                     @Override public void onClick(View v) { dispatch(action); }
@@ -173,8 +180,10 @@ public final class QinsuiQuickSettingsManager {
         String[] actions = {"wifi", "bluetooth", "settings", "sound"};
         for (int i = 0; i < glyphs.length; i++) {
             final String action = actions[i];
-            final boolean red = i == 3;
-            TextView tile = circle(glyphs[i], red ? RED : NOTHING_CARD, WHITE, 38, 17);
+            final boolean active = isActionActive(action);
+            final boolean red = "sound".equals(action) && !active;
+            TextView tile = circle(glyphs[i], active ? 0xFFECEDEA : NOTHING_CARD,
+                    active ? 0xFF171819 : (red ? RED : WHITE), 38, 17);
             tile.setContentDescription(action);
             tile.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { dispatch(action); }
@@ -372,13 +381,13 @@ public final class QinsuiQuickSettingsManager {
         pill.setOrientation(LinearLayout.HORIZONTAL);
         pill.setGravity(Gravity.CENTER_VERTICAL);
         pill.setPadding(dp(4), dp(3), dp(6), dp(3));
-        pill.setBackground(round(Color.rgb(30, 41, 59), 20, 0));
-        TextView icon = circle(wifi ? "◉" : "ᛒ", active ? WHITE : Color.rgb(51, 65, 85),
-                active ? NAVY : WHITE, 28, 14);
+        pill.setBackground(round(Color.rgb(230, 236, 245), 20, Color.rgb(205, 215, 230)));
+        TextView icon = circle(wifi ? "◉" : "ᛒ", active ? NAVY : WHITE,
+                active ? WHITE : NAVY, 28, 14);
         pill.addView(icon, new LinearLayout.LayoutParams(dp(28), dp(28)));
         TextView text = new TextView(context);
         text.setText(label);
-        text.setTextColor(WHITE);
+        text.setTextColor(NAVY);
         text.setTextSize(9);
         text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         LinearLayout.LayoutParams t = new LinearLayout.LayoutParams(-2, -2);
