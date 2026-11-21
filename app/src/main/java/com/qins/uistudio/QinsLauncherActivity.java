@@ -21,6 +21,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -2455,57 +2456,7 @@ public class QinsLauncherActivity extends Activity {
         }
     }
 
-    /**
-     * Rasterize app artwork into a plain BitmapDrawable. This is the safest common
-     * denominator for API 19: no vector XML, adaptive masks, themed drawable
-     * wrappers, or newer framework drawable classes are handed to ImageView.
-     */
-    private Drawable normalizeAppIcon(Drawable source) {
-        if (source == null) return null;
-        Bitmap sample = null;
-        try {
-            final int sampleSize = 128;
-            Drawable rasterSource = source;
-            Drawable.ConstantState state = source.getConstantState();
-            if (state != null) rasterSource = state.newDrawable(getResources()).mutate();
-            else rasterSource = source.mutate();
 
-            sample = Bitmap.createBitmap(sampleSize, sampleSize, Bitmap.Config.ARGB_8888);
-            Canvas sampleCanvas = new Canvas(sample);
-            rasterSource.setBounds(0, 0, sampleSize, sampleSize);
-            rasterSource.draw(sampleCanvas);
-
-            int minX = sampleSize, minY = sampleSize, maxX = -1, maxY = -1;
-            int[] row = new int[sampleSize];
-            for (int y = 0; y < sampleSize; y++) {
-                sample.getPixels(row, 0, sampleSize, 0, y, sampleSize, 1);
-                for (int x = 0; x < sampleSize; x++) if (((row[x] >>> 24) & 0xFF) > 20) {
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                }
-            }
-            if (maxX < minX || maxY < minY) return null;
-
-            int cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
-            Bitmap normalized = Bitmap.createBitmap(sampleSize, sampleSize, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(normalized);
-            Rect sourceRect = new Rect(minX, minY, maxX + 1, maxY + 1);
-            float scale = Math.min(112f / cropWidth, 112f / cropHeight);
-            int outWidth = Math.max(1, Math.round(cropWidth * scale));
-            int outHeight = Math.max(1, Math.round(cropHeight * scale));
-            int left = (sampleSize - outWidth) / 2, top = (sampleSize - outHeight) / 2;
-            Rect destRect = new Rect(left, top, left + outWidth, top + outHeight);
-            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-            canvas.drawBitmap(sample, sourceRect, destRect, paint);
-            return new BitmapDrawable(getResources(), normalized);
-        } catch (RuntimeException ignored) {
-            return null;
-        } finally {
-            if (sample != null && !sample.isRecycled()) sample.recycle();
-        }
-    }
 
     private void populateHomeApps(ThemeManager.Appearance a) {
         appRow.removeAllViews();
