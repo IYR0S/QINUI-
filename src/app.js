@@ -5,7 +5,8 @@ import {pageDots} from './components/page-dots.js';
 
 const root=document.querySelector('#qs-root');
 const themes=['android17','oneui8','nothingos5'];
-const state={theme:new URLSearchParams(location.search).get('theme')||document.documentElement.dataset.theme,page:0,focus:0,brightness:72,volume:46,playing:false,wifi:true,bluetooth:true,dnd:false,flashlight:false,alarm:true,location:false,airplane:false};
+const tracks=[['Midnight City','M83 · Hurry Up, We’re Dreaming'],['Intro','The xx · xx'],['A Walk','Tycho · Dive']];
+const state={theme:new URLSearchParams(location.search).get('theme')||document.documentElement.dataset.theme,page:0,focus:0,brightness:72,volume:46,playing:false,trackIndex:0,wifi:true,bluetooth:true,dnd:false,flashlight:false,alarm:true,location:false,airplane:false};
 const tileDefs=[
   {id:'wifi',label:'Internet',wide:true,detail:'Connected'},
   {id:'bluetooth',label:'Bluetooth',wide:true,detail:'On'},
@@ -35,6 +36,7 @@ function render(){
     }
   }
   page.append(pageDots(state.page));root.append(page);
+  syncMediaTrack();
   root.querySelectorAll('[data-focus]').forEach((el,i)=>{el.dataset.focusIndex=String(i);});
   syncFocus();
 }
@@ -46,15 +48,25 @@ function syncFocus(){
   list[state.focus].focus({preventScroll:true});
 }
 function setPage(next){state.page=(next+2)%2;state.focus=0;render();}
+function syncMediaTrack(){
+  root.querySelectorAll('.media-card').forEach(card=>{
+    const track=tracks[state.trackIndex];
+    card.querySelector('.media-info b').textContent=track[0];
+    card.querySelector('.media-info small').textContent=track[1];
+  });
+}
+function changeTrack(delta){state.trackIndex=(state.trackIndex+delta+tracks.length)%tracks.length;syncMediaTrack();}
 function toggle(id){if(!(id in state)||typeof state[id]!=='boolean')return;state[id]=!state[id];render();}
 function adjust(id,delta){
   const key=id==='brightness'?'brightness':'volume';
   state[key]=Math.max(0,Math.min(100,state[key]+delta));
-  const input=root.querySelector('#'+key+'-range');if(input)input.value=String(state[key]);
+  const input=root.querySelector('#'+key+'-range');
+  if(input){input.value=String(state[key]);input.style.setProperty('--range-value',state[key]+'%');}
 }
 function move(dx,dy){
   const list=focusables(),current=list[state.focus];if(!current)return;
   if(current.matches('input[type=range]')&&dx){adjust(current.dataset.id,dx*5);return;}
+  if(current.dataset.focus==='media'&&dx){changeTrack(dx);return;}
   const a=current.getBoundingClientRect(),cx=a.left+a.width/2,cy=a.top+a.height/2;
   let best=-1,score=Infinity;
   list.forEach((el,i)=>{
@@ -89,10 +101,20 @@ function onKey(e){
   else if(e.key.toLowerCase()==='q')setPage(0);
   else if(e.key.toLowerCase()==='e')setPage(1);
 }
-root.addEventListener('input',e=>{if(e.target.matches('input[type=range]'))state[e.target.dataset.id]=Number(e.target.value);});
+root.addEventListener('input',e=>{
+  if(e.target.matches('input[type=range]')){
+    state[e.target.dataset.id]=Number(e.target.value);
+    e.target.style.setProperty('--range-value',e.target.value+'%');
+  }
+});
 root.addEventListener('click',e=>{
   const media=e.target.closest('[data-media]');if(!media)return;
-  state.playing=!state.playing;
-  const btn=media.closest('.media-card').querySelector('[data-media=play]');btn.textContent=state.playing?'Ⅱ':'▶';
+  if(media.dataset.media==='prev')changeTrack(-1);
+  else if(media.dataset.media==='next')changeTrack(1);
+  else{
+    state.playing=!state.playing;
+    const btn=media.closest('.media-card').querySelector('[data-media=play]');
+    btn.textContent=state.playing?'Ⅱ':'▶';
+  }
 });
 document.addEventListener('keydown',onKey);render();
