@@ -213,7 +213,10 @@ public final class QinsuiQuickSettingsManager {
         addMediaControl(controls, "▶", KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
         addMediaControl(controls, "›", KeyEvent.KEYCODE_MEDIA_NEXT);
         media.addView(controls, new LinearLayout.LayoutParams(-1, dp(24)));
-        LinearLayout.LayoutParams mediaParams = new LinearLayout.LayoutParams(0, dp(114), 1.15f);
+        // Let the media card and both sliders share the entire vertical space
+        // left between the top controls and notification dock. Fixed 114dp rails
+        // left unused space on taller screens and clipped the sliders on others.
+        LinearLayout.LayoutParams mediaParams = new LinearLayout.LayoutParams(0, -1, 1.15f);
         mediaParams.rightMargin = dp(5);
         middle.addView(media, mediaParams);
 
@@ -226,14 +229,14 @@ public final class QinsuiQuickSettingsManager {
         bright.setListener(new DotSlider.Listener() {
             @Override public void onValueChanged(int value) { controller.setBrightnessPercent(value); }
         });
-        LinearLayout.LayoutParams v = new LinearLayout.LayoutParams(0, dp(114), 1f);
-        v.rightMargin = dp(3);
+        LinearLayout.LayoutParams v = new LinearLayout.LayoutParams(0, -1, 1f);
+        v.rightMargin = dp(7);
         sliders.addView(volume, v);
-        LinearLayout.LayoutParams b = new LinearLayout.LayoutParams(0, dp(114), 1f);
-        b.leftMargin = dp(3);
+        LinearLayout.LayoutParams b = new LinearLayout.LayoutParams(0, -1, 1f);
+        b.leftMargin = dp(7);
         sliders.addView(bright, b);
-        middle.addView(sliders, new LinearLayout.LayoutParams(0, dp(114), 0.85f));
-        add(root, middle, -1, 114, 0, 0, 7, 0, 0);
+        middle.addView(sliders, new LinearLayout.LayoutParams(0, -1, 0.85f));
+        add(root, middle, -1, 0, 1f, 0, 0, 0, 0);
 
         addNotificationDock(root);
     }
@@ -422,12 +425,17 @@ public final class QinsuiQuickSettingsManager {
         layers.setId(0, android.R.id.background);
         layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
+        // OEM slider grip: a short vertical line on a horizontal rail.
+        // Keep identical grip and track metrics for Pixel and One UI.
         GradientDrawable thumb = new GradientDrawable();
-        thumb.setShape(GradientDrawable.OVAL);
+        thumb.setShape(GradientDrawable.RECTANGLE);
         thumb.setColor(fillColor);
-        thumb.setSize(dp(12), dp(12));
+        thumb.setCornerRadius(dp(3));
+        thumb.setSize(dp(4), dp(18));
         seek.setThumb(thumb);
-        seek.setThumbOffset(dp(6));
+        seek.setThumbOffset(dp(2));
+        seek.setMinimumHeight(dp(28));
+        seek.setMaxHeight(dp(28));
         return seek;
     }
 
