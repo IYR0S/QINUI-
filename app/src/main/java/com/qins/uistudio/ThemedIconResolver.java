@@ -44,32 +44,47 @@ public final class ThemedIconResolver {
         synchronized (ICON_PACK_CACHE) {
             Map<String, String> cached = ICON_PACK_CACHE.get(pack);
             if (cached != null) return cached;
-        }
-        Map<String, String> loaded = new HashMap<String, String>();
-        InputStream input = null;
-        try {
-            input = context.getAssets().open("iconpacks/" + pack + "/appfilter.xml");
-            XmlPullParser parser = Xml.newPullParser();
-            parser.setInput(input, "UTF-8");
-            int event;
-            while ((event = parser.next()) != XmlPullParser.END_DOCUMENT) {
-                if (event != XmlPullParser.START_TAG || !"item".equals(parser.getName())) continue;
-                String component = parser.getAttributeValue(null, "component");
-                String packageName = parser.getAttributeValue(null, "package");
-                String drawable = parser.getAttributeValue(null, "drawable");
-                if (iconIndex(drawable) < 0) continue;
-                if (component != null && component.length() > 0) loaded.put(component, drawable);
-                if (packageName != null && packageName.matches("[A-Za-z0-9_.]+")) {
-                    loaded.put("package:" + packageName, drawable);
+            Map<String, String> loaded = new HashMap<String, String>();
+            InputStream input = null;
+            try {
+                input = context.getAssets().open("iconpacks/" + pack + "/appfilter.xml");
+                XmlPullParser parser = Xml.newPullParser();
+                parser.setInput(input, "UTF-8");
+                int event;
+                while ((event = parser.next()) != XmlPullParser.END_DOCUMENT) {
+                    if (event != XmlPullParser.START_TAG || !"item".equals(parser.getName())) continue;
+                    String component = parser.getAttributeValue(null, "component");
+                    String packageName = parser.getAttributeValue(null, "package");
+                    String drawable = parser.getAttributeValue(null, "drawable");
+                    if (iconIndex(drawable) < 0) continue;
+                    if (packageName != null && packageName.matches("[A-Za-z0-9_.]+")) {
+                        loaded.put("package:" + packageName, drawable);
+                    }
+                    if (component != null && component.length() > 0) loaded.put(component, drawable);
                 }
+            } catch (Throwable ignored) {
+                // Missing/malformed mappings fall back to installed app icons.
+            } finally {
+                if (input != null) try { input.close(); } catch (Throwable ignored) { }
             }
-        } catch (Exception ignored) {
-            // Missing or malformed mappings fall back to PackageManager icons.
-        } finally {
-            if (input != null) try { input.close(); } catch (Exception ignored) { }
+            ICON_PACK_CACHE.put(pack, loaded);
+            return loaded;
         }
-        synchronized (ICON_PACK_CACHE) { ICON_PACK_CACHE.put(pack, loaded); }
-        return loaded;
+    }
+
+    /** Parse all three small appfilter files away from the UI thread on startup. */
+    public static void preloadMappingsAsync(Context context) {
+        if (context == null) return;
+        final Context appContext = context.getApplicationContext();
+        Thread worker = new Thread(new Runnable() {
+            @Override public void run() {
+                loadMappings(appContext, "nothing-os");
+                loadMappings(appContext, "one-ui");
+                loadMappings(appContext, "pixel");
+            }
+        }, "QINS-icon-pack-cache");
+        worker.setPriority(Thread.NORM_PRIORITY - 1);
+        worker.start();
     }
 
     private static Bitmap loadAtlas(Context context, String pack) {
