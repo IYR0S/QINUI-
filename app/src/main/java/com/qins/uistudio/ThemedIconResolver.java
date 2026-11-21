@@ -91,43 +91,17 @@ public final class ThemedIconResolver {
         }
     }
 
+    /**
+     * The supplied icon reference is a visual target, but the repository does not
+     * contain a complete, verified per-app icon set matching it. Return null so
+     * callers use PackageManager's original installed icon without partial packs.
+     */
     public static Drawable loadMappedIcon(Context context, ResolveInfo info, String theme) {
-        if (context == null || info == null || info.activityInfo == null) return null;
-        String pack = packForTheme(theme);
-        String packageName = info.activityInfo.packageName;
-        String component = "ComponentInfo{" + packageName + "/" + info.activityInfo.name + "}";
-        Map<String, String> mappings = loadMappings(context, pack);
-        String drawableName = mappings.get(component);
-        if (drawableName == null) drawableName = mappings.get("package:" + packageName);
-        int index = iconIndex(drawableName);
-        if (index < 0) return null;
-
-        String cacheKey = pack + "/" + drawableName;
-        Bitmap bitmap;
-        synchronized (ICONS) { bitmap = ICONS.get(cacheKey); }
-        if (bitmap == null || bitmap.isRecycled()) {
-            Bitmap atlas = loadAtlas(context, pack);
-            if (atlas == null || atlas.getWidth() < 192 || atlas.getHeight() < 128) return null;
-            try {
-                bitmap = Bitmap.createBitmap(atlas, (index % 6) * 32, (index / 6) * 32, 32, 32);
-                synchronized (ICONS) { ICONS.put(cacheKey, bitmap); }
-            } catch (RuntimeException ignored) { return null; }
-        }
-        return new BitmapDrawable(context.getResources(), bitmap);
+        return null;
     }
 
-    /** Monochrome fallback treatment for installed icons without a matching PNG. */
+    /** Preserve the device's original app icon until a complete licensed set exists. */
     public static Bitmap applyTheme(Bitmap source, String theme) {
-        if (source == null || source.isRecycled() ||
-                !ThemeManager.APPEARANCE_NOTHING.equals(theme)) return source;
-        Bitmap mono = Bitmap.createBitmap(source.getWidth(), source.getHeight(), Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(mono);
-        android.graphics.Paint paint = new android.graphics.Paint(
-                android.graphics.Paint.ANTI_ALIAS_FLAG | android.graphics.Paint.FILTER_BITMAP_FLAG);
-        android.graphics.ColorMatrix matrix = new android.graphics.ColorMatrix();
-        matrix.setSaturation(0f);
-        paint.setColorFilter(new android.graphics.ColorMatrixColorFilter(matrix));
-        canvas.drawBitmap(source, 0f, 0f, paint);
-        return mono;
+        return source;
     }
 }
