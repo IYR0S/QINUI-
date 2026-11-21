@@ -1,0 +1,10 @@
+html[data-theme="oneui8"]{--bg:#0b1424;--text:#f0f5ff;--muted:#9aacc7;--tile:#1a2b43;--tile-active:#b5dcff;--active-text:#0d233c;--icon-bg:#2d4868;--icon:#dceeff;--active-icon-bg:#8fc9ff;--active-icon:#0c2945;--focus:#80c5ff;--slider-fill:#a8d7ff;--slider-track:#2b405a;--slider-thumb:#d7efff;--slider-thumb-border:#79b9f0;--media-bg:#172840;--card-radius:20px;--tile-radius:15px;--art-radius:14px;--art-bg:#2a527a;--art-color:#d8edff}
+html[data-theme="oneui8"] .qs-page{padding:4px 3px 2px;background:#102039;border-radius:23px;gap:5px}
+html[data-theme="oneui8"] .wide-tiles .tile{border-radius:24px;background:#233b58}
+html[data-theme="oneui8"] .tile-icon{width:24px;height:24px;flex-basis:24px;border-radius:50%;background:#416587}
+html[data-theme="oneui8"] .tile.is-active .tile-icon{background:#d4ecff}
+html[data-theme="oneui8"] .tile-grid{grid-template-rows:repeat(2,34px);gap:5px}
+html[data-theme="oneui8"] .tile-grid .tile{justify-content:center;flex-direction:column;gap:1px;padding:2px}
+html[data-theme="oneui8"] .tile-grid .tile-icon{width:22px;height:22px;flex-basis:22px}
+html[data-theme="oneui8"] .slider-wrap{padding:0 5px}
+html[data-theme="oneui8"] .media-card{border-radius:18px}
