@@ -40,6 +40,7 @@ public final class QinsuiQuickSettingsManager {
     private final QuickSettingsController controller;
     private final Listener listener;
     private final AudioManager audio;
+    private String visualStyle = "galaxy";
 
     private static final int FOREST = Color.rgb(14, 20, 17);
     private static final int MINT = Color.rgb(184, 230, 216);
@@ -66,15 +67,24 @@ public final class QinsuiQuickSettingsManager {
         root.setPadding(dp(8), dp(7), dp(8), dp(8));
         root.setClipChildren(false);
         root.setClipToPadding(false);
-        if (theme == ThemeType.ANDROID_17) {
-            root.setBackgroundColor(FOREST);
-            buildAndroid17(root);
-        } else if (theme == ThemeType.ONE_UI_8) {
-            root.setBackgroundColor(NAVY);
-            buildOneUI8(root);
-        } else {
-            root.setBackgroundColor(NOTHING_BLACK);
-            buildNothing(root);
+        visualStyle = theme == ThemeType.NOTHING_OS_5 ? "nothing" :
+                (theme == ThemeType.ANDROID_17 ? "pixel" : "galaxy");
+        try {
+            if (theme == ThemeType.ANDROID_17) {
+                root.setBackgroundColor(FOREST);
+                buildAndroid17(root);
+            } else if (theme == ThemeType.ONE_UI_8) {
+                root.setBackgroundColor(NAVY);
+                buildOneUI8(root);
+            } else {
+                root.setBackgroundColor(NOTHING_BLACK);
+                buildNothing(root);
+            }
+        } catch (RuntimeException layoutFailure) {
+            // A vendor framework can reject a custom SeekBar drawable on API 19.
+            // Rebuild a lightweight, fully navigable tile panel rather than crash.
+            root.removeAllViews();
+            buildSafeFallback(root);
         }
         return root;
     }
@@ -119,7 +129,7 @@ public final class QinsuiQuickSettingsManager {
             for (int c = 0; c < 4; c++) {
                 final String action = actions[r][c];
                 final boolean active = isActionActive(action);
-                TextView tile = circle(glyphs[r][c], active ? MINT : FOREST_TILE,
+                View tile = circle(glyphs[r][c], active ? MINT : FOREST_TILE,
                         FOREST, 38, 17);
                 tile.setContentDescription(action);
                 tile.setOnClickListener(new View.OnClickListener() {
@@ -156,7 +166,7 @@ public final class QinsuiQuickSettingsManager {
             for (int c = 0; c < 4; c++) {
                 final String action = actions[r][c];
                 boolean active = isActionActive(action);
-                TextView icon = circle(glyphs[r][c], active ? WHITE : Color.rgb(230, 236, 245),
+                View icon = circle(glyphs[r][c], active ? WHITE : Color.rgb(230, 236, 245),
                         NAVY, 32, 15);
                 icon.setContentDescription(action);
                 icon.setOnClickListener(new View.OnClickListener() {
@@ -182,7 +192,7 @@ public final class QinsuiQuickSettingsManager {
             final String action = actions[i];
             final boolean active = isActionActive(action);
             final boolean red = "sound".equals(action) && !active;
-            TextView tile = circle(glyphs[i], active ? 0xFFECEDEA : NOTHING_CARD,
+            View tile = circle(glyphs[i], active ? 0xFFECEDEA : NOTHING_CARD,
                     active ? 0xFF171819 : (red ? RED : WHITE), 38, 17);
             tile.setContentDescription(action);
             tile.setOnClickListener(new View.OnClickListener() {
@@ -213,7 +223,10 @@ public final class QinsuiQuickSettingsManager {
         addMediaControl(controls, "▶", KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
         addMediaControl(controls, "›", KeyEvent.KEYCODE_MEDIA_NEXT);
         media.addView(controls, new LinearLayout.LayoutParams(-1, dp(24)));
-        LinearLayout.LayoutParams mediaParams = new LinearLayout.LayoutParams(0, dp(114), 1.15f);
+        // Let the media card and both sliders share the entire vertical space
+        // left between the top controls and notification dock. Fixed 114dp rails
+        // left unused space on taller screens and clipped the sliders on others.
+        LinearLayout.LayoutParams mediaParams = new LinearLayout.LayoutParams(0, -1, 1.15f);
         mediaParams.rightMargin = dp(5);
         middle.addView(media, mediaParams);
 
@@ -226,14 +239,14 @@ public final class QinsuiQuickSettingsManager {
         bright.setListener(new DotSlider.Listener() {
             @Override public void onValueChanged(int value) { controller.setBrightnessPercent(value); }
         });
-        LinearLayout.LayoutParams v = new LinearLayout.LayoutParams(0, dp(114), 1f);
-        v.rightMargin = dp(3);
+        LinearLayout.LayoutParams v = new LinearLayout.LayoutParams(0, -1, 1f);
+        v.rightMargin = dp(7);
         sliders.addView(volume, v);
-        LinearLayout.LayoutParams b = new LinearLayout.LayoutParams(0, dp(114), 1f);
-        b.leftMargin = dp(3);
+        LinearLayout.LayoutParams b = new LinearLayout.LayoutParams(0, -1, 1f);
+        b.leftMargin = dp(7);
         sliders.addView(bright, b);
-        middle.addView(sliders, new LinearLayout.LayoutParams(0, dp(114), 0.85f));
-        add(root, middle, -1, 114, 0, 0, 7, 0, 0);
+        middle.addView(sliders, new LinearLayout.LayoutParams(0, -1, 0.85f));
+        add(root, middle, -1, 0, 1f, 0, 0, 0, 0);
 
         addNotificationDock(root);
     }
@@ -254,7 +267,7 @@ public final class QinsuiQuickSettingsManager {
             @Override public void onStopTrackingTouch(SeekBar bar) { }
         });
         add(row, seek, 0, 32, 1, 0, 0, 0, 6);
-        TextView side = circle(sideGlyph, Color.rgb(51, 65, 85), WHITE, 32, 15);
+        View side = circle(sideGlyph, Color.rgb(51, 65, 85), WHITE, 32, 15);
         side.setContentDescription(isBrightness ? "Sleep mode" : "Mute");
         side.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { dispatch(isBrightness ? "sleep" : "sound"); }
@@ -301,7 +314,7 @@ public final class QinsuiQuickSettingsManager {
                     @Override public void onClick(View v) { if (listener != null) listener.onOpenNotifications(); }
                 });
             } else {
-                TextView empty = circle("+", NOTHING_CARD, Color.rgb(110, 110, 114), 25, 12);
+                View empty = circle("+", NOTHING_CARD, Color.rgb(110, 110, 114), 25, 12);
                 slot.addView(empty, new FrameLayout.LayoutParams(dp(25), dp(25), Gravity.CENTER));
             }
         }
@@ -382,7 +395,7 @@ public final class QinsuiQuickSettingsManager {
         pill.setGravity(Gravity.CENTER_VERTICAL);
         pill.setPadding(dp(4), dp(3), dp(6), dp(3));
         pill.setBackground(round(Color.rgb(230, 236, 245), 20, Color.rgb(205, 215, 230)));
-        TextView icon = circle(wifi ? "◉" : "ᛒ", active ? NAVY : WHITE,
+        View icon = circle(wifi ? "◉" : "ᛒ", active ? NAVY : WHITE,
                 active ? WHITE : NAVY, 28, 14);
         pill.addView(icon, new LinearLayout.LayoutParams(dp(28), dp(28)));
         TextView text = new TextView(context);
@@ -404,7 +417,6 @@ public final class QinsuiQuickSettingsManager {
         SeekBar seek = new SeekBar(context);
         seek.setMax(100);
         seek.setProgress(Math.max(0, Math.min(100, value)));
-        seek.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         seek.setPadding(dp(7), 0, dp(7), 0);
         seek.setFocusable(true);
         seek.setFocusableInTouchMode(false);
@@ -422,31 +434,78 @@ public final class QinsuiQuickSettingsManager {
         layers.setId(0, android.R.id.background);
         layers.setId(1, android.R.id.progress);
         seek.setProgressDrawable(layers);
+        // OEM slider grip: a short vertical line on a horizontal rail.
+        // Keep identical grip and track metrics for Pixel and One UI.
         GradientDrawable thumb = new GradientDrawable();
-        thumb.setShape(GradientDrawable.OVAL);
+        thumb.setShape(GradientDrawable.RECTANGLE);
         thumb.setColor(fillColor);
-        thumb.setSize(dp(12), dp(12));
+        thumb.setCornerRadius(dp(3));
+        thumb.setSize(dp(4), dp(18));
         seek.setThumb(thumb);
-        seek.setThumbOffset(dp(6));
+        seek.setThumbOffset(dp(2));
+        seek.setMinimumHeight(dp(28));
+        seek.setMaxHeight(dp(28));
         return seek;
     }
 
-    private TextView circle(String glyph, int background, int foreground, int size, int textSize) {
-        TextView view = new TextView(context);
-        view.setText(glyph);
-        view.setTextColor(foreground);
-        view.setTextSize(textSize);
-        view.setGravity(Gravity.CENTER);
-        view.setFocusable(true);
-        view.setFocusableInTouchMode(false);
-        view.setBackground(round(background, size / 2, 0));
-        view.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+    private View circle(String glyph, final int background, int foreground, int size, int textSize) {
+        FrameLayout tile = new FrameLayout(context);
+        tile.setFocusable(true);
+        tile.setFocusableInTouchMode(false);
+        tile.setBackground(round(background, size / 2, 0));
+        tile.setContentDescription(glyph);
+        QinsGlyphView icon = new QinsGlyphView(context, glyphName(glyph), foreground);
+        icon.setVisualStyle(visualStyle);
+        FrameLayout.LayoutParams iconParams = new FrameLayout.LayoutParams(
+                dp(Math.max(16, Math.min(22, size - 10))),
+                dp(Math.max(16, Math.min(22, size - 10))), Gravity.CENTER);
+        tile.addView(icon, iconParams);
+        tile.setOnFocusChangeListener(new View.OnFocusChangeListener() {
             @Override public void onFocusChange(View v, boolean focused) {
                 v.setBackground(round(background, size / 2, focused ? BLUE : 0));
             }
         });
-        view.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        return view;
+        return tile;
+    }
+
+    private String glyphName(String glyph) {
+        if ("◉".equals(glyph)) return "wifi";
+        if ("ᛒ".equals(glyph)) return "bluetooth";
+        if ("◷".equals(glyph)) return "clock";
+        if ("⌖".equals(glyph)) return "location";
+        if ("✈".equals(glyph)) return "airplane";
+        if ("☼".equals(glyph) || "☾".equals(glyph)) return "brightness";
+        if ("⚙".equals(glyph)) return "settings";
+        if ("▶".equals(glyph)) return "media";
+        if ("✉".equals(glyph)) return "notifications";
+        if ("⌂".equals(glyph)) return "home";
+        if ("♧".equals(glyph) || "◖".equals(glyph)) return "sound";
+        if ("▦".equals(glyph) || "···".equals(glyph)) return "apps";
+        if ("+".equals(glyph)) return "add";
+        return "settings";
+    }
+
+    private void buildSafeFallback(LinearLayout root) {
+        root.setPadding(dp(8), dp(8), dp(8), dp(8));
+        String[] labels = {"Wi-Fi", "Bluetooth", "Sound", "Settings", "Brightness", "Apps"};
+        String[] glyphs = {"◉", "ᛒ", "◖", "⚙", "☼", "▦"};
+        String[] actions = {"wifi", "bluetooth", "sound", "settings", "brightness", "apps"};
+        for (int i = 0; i < labels.length; i++) {
+            final String action = actions[i];
+            LinearLayout item = row();
+            View icon = circle(glyphs[i], NOTHING_CARD, WHITE, 36, 16);
+            add(item, icon, 36, 36, 0, 0, 0, 8, 0);
+            TextView label = new TextView(context);
+            label.setText(labels[i]);
+            label.setTextColor(WHITE);
+            label.setTextSize(12);
+            add(item, label, 0, 36, 1, 0, 0, 0, 0);
+            item.setFocusable(true);
+            item.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View v) { dispatch(action); }
+            });
+            add(root, item, -1, 42, 0, 0, 2, 0, 2);
+        }
     }
 
     private LinearLayout row() {

@@ -101,6 +101,52 @@ public final class QinsGlyphView extends View {
         else if ("palette".equals(glyph)) drawPalette(canvas);
         else if ("folder".equals(glyph)) drawFolder(canvas);
         else if ("scale".equals(glyph)) drawScale(canvas);
+        else if ("clock".equals(glyph)) drawClock(canvas);
+        else if ("location".equals(glyph)) drawLocation(canvas);
+        else if ("airplane".equals(glyph)) drawAirplane(canvas);
+        else if ("notifications".equals(glyph)) drawNotifications(canvas);
+        else if ("media".equals(glyph)) drawMedia(canvas);
+    }
+
+    
+    private void drawClock(Canvas c) {
+        c.drawCircle(0, 0, 9, paint);
+        c.drawLine(0, 0, 0, -5, paint);
+        c.drawLine(0, 0, 5, 3, paint);
+    }
+
+    private void drawLocation(Canvas c) {
+        Path p = new Path();
+        p.moveTo(0, 11);
+        p.cubicTo(-2, 6, -9, 0, -9, -5);
+        p.cubicTo(-9, -16, 9, -16, 9, -5);
+        p.cubicTo(9, 0, 2, 6, 0, 11);
+        p.close();
+        c.drawPath(p, paint);
+        c.drawCircle(0, -6, 2.5f, paint);
+    }
+
+    private void drawAirplane(Canvas c) {
+        Path p = new Path();
+        p.moveTo(0, -11); p.lineTo(2, -2); p.lineTo(10, 4);
+        p.lineTo(10, 7); p.lineTo(2, 4); p.lineTo(1, 10);
+        p.lineTo(-1, 10); p.lineTo(-2, 4); p.lineTo(-10, 7);
+        p.lineTo(-10, 4); p.lineTo(-2, -2); p.close();
+        c.drawPath(p, paint);
+    }
+
+    private void drawNotifications(Canvas c) {
+        c.drawArc(new RectF(-8, -10, 8, 8), 180, 180, false, paint);
+        c.drawLine(-8, -1, -8, 5, paint);
+        c.drawLine(8, -1, 8, 5, paint);
+        c.drawLine(-8, 5, 8, 5, paint);
+        c.drawCircle(0, 8, 1.5f, paint);
+    }
+
+    private void drawMedia(Canvas c) {
+        Path p = new Path();
+        p.moveTo(-4, -8); p.lineTo(8, 0); p.lineTo(-4, 8); p.close();
+        c.drawPath(p, paint);
     }
 
     private void drawSettings(Canvas c) {
