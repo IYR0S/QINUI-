@@ -22,7 +22,7 @@ public final class ThemedIconResolver {
             "files", "email", "store", "video", "maps", "calculator",
             "downloads", "recorder", "flashlight", "hotspot", "sound", "notes"
     };
-    private static final Map<String, Map<String, String>> MAPPINGS =
+    private static final Map<String, Map<String, String>> ICON_PACK_CACHE =
             new HashMap<String, Map<String, String>>();
     private static final Map<String, Bitmap> ATLAS = new HashMap<String, Bitmap>();
     private static final Map<String, Bitmap> ICONS = new HashMap<String, Bitmap>();
@@ -41,8 +41,8 @@ public final class ThemedIconResolver {
     }
 
     private static Map<String, String> loadMappings(Context context, String pack) {
-        synchronized (MAPPINGS) {
-            Map<String, String> cached = MAPPINGS.get(pack);
+        synchronized (ICON_PACK_CACHE) {
+            Map<String, String> cached = ICON_PACK_CACHE.get(pack);
             if (cached != null) return cached;
         }
         Map<String, String> loaded = new HashMap<String, String>();
@@ -68,7 +68,7 @@ public final class ThemedIconResolver {
         } finally {
             if (input != null) try { input.close(); } catch (Exception ignored) { }
         }
-        synchronized (MAPPINGS) { MAPPINGS.put(pack, loaded); }
+        synchronized (ICON_PACK_CACHE) { ICON_PACK_CACHE.put(pack, loaded); }
         return loaded;
     }
 
@@ -97,8 +97,8 @@ public final class ThemedIconResolver {
         String packageName = info.activityInfo.packageName;
         String component = "ComponentInfo{" + packageName + "/" + info.activityInfo.name + "}";
         Map<String, String> mappings = loadMappings(context, pack);
-        String drawableName = mappings.get(component);
-        if (drawableName == null) drawableName = mappings.get("package:" + packageName);
+        String drawableName = mappings.get("package:" + packageName);
+        if (drawableName == null) drawableName = mappings.get(component);
         int index = iconIndex(drawableName);
         if (index < 0) return null;
 
