@@ -14,7 +14,9 @@ import android.widget.TextView;
  * it does not pretend to toggle protected system features directly.
  */
 public class QuickPanelActivity extends StudioActivity {
-    private int dp(float v) { return (int)(v * getResources().getDisplayMetrics().density + 0.5f); }
+    private int dp(float value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -22,28 +24,28 @@ public class QuickPanelActivity extends StudioActivity {
     }
 
     private void build() {
-        final ThemeManager.Palette p = ThemeManager.getPalette(this);
+        final ThemeManager.Appearance a = ThemeManager.getAppearance(this);
         ScrollView scroll = new ScrollView(this);
         scroll.setFocusable(false);
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(16), dp(18), dp(16), dp(18));
-        page.setBackgroundColor(p.background);
+        page.setBackgroundColor(a.background);
         scroll.addView(page);
 
         TextView title = new TextView(this);
         title.setText("Quick Panel");
         title.setTextSize(24);
-        title.setTextColor(p.text);
+        title.setTextColor(a.text);
         page.addView(title);
 
         TextView note = new TextView(this);
         note.setText("Shortcuts to Android settings. Protected system switches remain controlled by Android.");
         note.setTextSize(13);
-        note.setTextColor(p.muted);
-        LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(-1, -2);
-        np.bottomMargin = dp(12);
-        page.addView(note, np);
+        note.setTextColor(a.muted);
+        LinearLayout.LayoutParams noteParams = new LinearLayout.LayoutParams(-1, -2);
+        noteParams.bottomMargin = dp(12);
+        page.addView(note, noteParams);
 
         add(page, "Wi-Fi", Settings.ACTION_WIFI_SETTINGS);
         add(page, "Bluetooth", Settings.ACTION_BLUETOOTH_SETTINGS);
@@ -53,30 +55,38 @@ public class QuickPanelActivity extends StudioActivity {
         add(page, "Date & time", Settings.ACTION_DATE_SETTINGS);
         add(page, "Applications", Settings.ACTION_APPLICATION_SETTINGS);
         add(page, "Device information", Settings.ACTION_DEVICE_INFO_SETTINGS);
-        Button back = button("Back", p);
-        back.setOnClickListener(v -> finish());
+
+        Button back = button("Back", a);
+        back.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { finish(); }
+        });
         page.addView(back);
         setContentView(scroll);
         if (page.getChildCount() > 2) page.getChildAt(2).requestFocus();
     }
 
-    private Button button(String label, ThemeManager.Palette p) {
-        Button b = new Button(this);
-        b.setText(label);
-        KeyboardSupport.makeFocusable(b, p.surface, p.accent, p.text, dp(7));
-        return b;
+    private Button button(String label, ThemeManager.Appearance a) {
+        Button button = new Button(this);
+        button.setText(label);
+        button.setAllCaps(false);
+        KeyboardSupport.makeFocusable(button, a.surface, a.accent, a.text, dp(a.tileCornerDp));
+        return button;
     }
 
     private void add(LinearLayout page, String label, final String action) {
-        final ThemeManager.Palette p = ThemeManager.getPalette(this);
-        Button b = button(label, p);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
-        lp.bottomMargin = dp(6);
-        page.addView(b, lp);
-        b.setOnClickListener(v -> {
-            try { startActivity(new Intent(action)); }
-            catch (RuntimeException error) {
-                android.widget.Toast.makeText(this, "Settings screen unavailable", android.widget.Toast.LENGTH_SHORT).show();
+        final ThemeManager.Appearance a = ThemeManager.getAppearance(this);
+        Button button = button(label, a);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(44));
+        params.bottomMargin = dp(6);
+        page.addView(button, params);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                try {
+                    startActivity(new Intent(action));
+                } catch (RuntimeException error) {
+                    android.widget.Toast.makeText(QuickPanelActivity.this,
+                            "Settings screen unavailable", android.widget.Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

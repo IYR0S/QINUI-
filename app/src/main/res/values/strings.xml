@@ -49,6 +49,7 @@
     <string name="launcher_wifi">Wi-Fi</string>
     <string name="launcher_brightness">Brightness</string>
     <string name="launcher_volume">Volume</string>
+    <string name="launcher_do_not_disturb">Do not disturb</string>
     <string name="launcher_theme">Theme</string>
     <string name="launcher_customize_quick">Customize quick settings</string>
     <string name="launcher_theme_settings">Theme settings</string>
@@ -89,4 +90,35 @@
     <string name="launcher_softkey_detected">Key detected and saved</string>
     <string name="launcher_softkey_reset">Reset physical key mapping</string>
     <string name="launcher_softkey_reset_done">Physical key mapping reset.</string>
+
+    <string name="launcher_compact_shortcut">Compact shortcut %1$d</string>
+    <string name="launcher_expanded_tile">Expanded tile %1$d</string>
+    <string name="launcher_theme_colors">Theme colors</string>
+    <string name="launcher_clock_design">Clock design</string>
+    <string name="launcher_upper_right_key">Upper-right hardware key</string>
+    <string name="launcher_notification_access_explanation">Allow QINS UI Studio to read notifications once in Android Settings. Notification text stays on this device.</string>
+    <string name="launcher_enable_notification_access">Enable notification access</string>
+    <string name="launcher_no_active_notifications">No active notifications</string>
+    <string name="launcher_press_upper_right_key">Press the physical upper-right key once</string>
+    <string name="launcher_upper_right_key_saved">Upper-right key saved</string>
+    <string name="launcher_controls_tab">Controls</string>
+    <string name="launcher_notifications_tab">Notifications</string>
+    <string name="launcher_missed_call">MISSED CALL</string>
+    <string name="launcher_now_playing">NOW PLAYING</string>
+    <string name="launcher_smart_colors">Smart colors from wallpaper</string>
+    <string name="launcher_smart_colors_applied">Smart accent color applied</string>
+    <string name="launcher_clock_background">Clock background</string>
+    <string name="launcher_clock_background_transparent">Transparent (current)</string>
+    <string name="launcher_clock_background_solid">Solid color</string>
+    <string name="launcher_dark_mode">Dark / light mode</string>
+    <string name="launcher_light_mode">Light mode</string>
+    <string name="launcher_sleep_mode">Sleep mode</string>
+    <string name="launcher_clock_position">Clock position</string>
+    <string name="launcher_clock_top">Top</string>
+    <string name="launcher_clock_center">Center</string>
+    <string name="launcher_clock_bottom">Bottom</string>
+    <string name="launcher_edge_panel">Edge Panel</string>
+    <string name="launcher_edge_settings">Edge Panel settings</string>
+    <string name="launcher_edge_choose_apps">Choose apps for Edge Panel</string>
+    <string name="launcher_edge_disable">Turn off Edge Panel</string>
 </resources>

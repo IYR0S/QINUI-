@@ -40,20 +40,30 @@ public abstract class StudioActivity extends Activity {
     }
 
     private void applyTheme(View root) {
-        ThemeManager.Palette palette = ThemeManager.getPalette(this);
-        root.setBackgroundColor(palette.background);
-        styleButtons(root, palette);
+        // Theme Studio intentionally previews the separate palette selector.
+        // Every other studio screen follows the active Galaxy / Pixel / Nothing
+        // appearance so its controls do not look like a different application.
+        if (this instanceof ThemeStudioActivity) {
+            ThemeManager.Palette palette = ThemeManager.getPalette(this);
+            root.setBackgroundColor(palette.background);
+            styleButtons(root, palette.surface, palette.accent, palette.text, dp(8));
+        } else {
+            ThemeManager.Appearance appearance = ThemeManager.getAppearance(this);
+            root.setBackgroundColor(appearance.background);
+            styleButtons(root, appearance.surface, appearance.accent, appearance.text,
+                    dp(appearance.tileCornerDp));
+        }
     }
 
-    private void styleButtons(View view, ThemeManager.Palette palette) {
+    private void styleButtons(View view, int fill, int accent, int text, int radius) {
         if (view instanceof Button) {
-            KeyboardSupport.styleFocusable((Button) view, palette.surface,
-                palette.accent, palette.text, dp(8));
+            KeyboardSupport.styleFocusable((Button) view, fill, accent, text, radius);
+            ((Button) view).setAllCaps(false);
         }
         if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
             for (int i = 0; i < group.getChildCount(); i++) {
-                styleButtons(group.getChildAt(i), palette);
+                styleButtons(group.getChildAt(i), fill, accent, text, radius);
             }
         }
     }
