@@ -4836,7 +4836,33 @@ public class QinsLauncherActivity extends Activity {
         android.widget.Toast.makeText(this, R.string.launcher_press_upper_right_key, android.widget.Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Keep a malformed OEM panel or a firmware-specific widget failure from
+     * taking down the launcher. The normal Home screen remains the recovery path.
+     */
     private void showQuickPanel(boolean focusFirst) {
+        try {
+            buildQuickPanelInternal(focusFirst);
+        } catch (RuntimeException error) {
+            android.util.Log.e("QINS-QuickPanel", "Quick Settings could not be rendered", error);
+            quickPanelVisible = false;
+            quickPanelExpanded = false;
+            quickPanelPage = 0;
+            try {
+                removeCompactPanelOverlay();
+                showHome(false);
+                android.widget.Toast.makeText(this,
+                        "Quick Settings unavailable. Returned to Home.",
+                        android.widget.Toast.LENGTH_LONG).show();
+            } catch (RuntimeException recoveryError) {
+                android.util.Log.e("QINS-QuickPanel", "Home recovery failed", recoveryError);
+                android.widget.Toast.makeText(this, "Quick Settings error",
+                        android.widget.Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void buildQuickPanelInternal(boolean focusFirst) {
         getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN);
         removeCompactPanelOverlay();
         wifiState = null; bluetoothState = null; soundState = null;
@@ -4985,13 +5011,19 @@ public class QinsLauncherActivity extends Activity {
             addQuickMediaCard(panel, a);
             addNothingQuickGridAndSliders(panel, a, expandedKeys);
         } else if (ThemeManager.APPEARANCE_PIXEL.equals(a.id)) {
+            // Pixel reference: brightness first, then the two wide connectivity
+            // pills, then compact utility icons and the media controls.
             addBrightnessSleepRow(panel, a);
+            addQuickConnectivityRow(panel, a);
             addQuickTileGrid(panel, a, expandedKeys, 6);
             addQuickMediaCard(panel, a);
             addVolumeDndRow(panel, a);
         } else {
-            addQuickMediaCard(panel, a);
+            // One UI reference: dedicated Wi-Fi / Bluetooth pills above the
+            // blue shortcut card, with the media card before the two sliders.
+            addQuickConnectivityRow(panel, a);
             addQuickTileGrid(panel, a, expandedKeys, 6);
+            addQuickMediaCard(panel, a);
             addBrightnessSleepRow(panel, a);
             addVolumeDndRow(panel, a);
         }
@@ -6023,6 +6055,28 @@ public class QinsLauncherActivity extends Activity {
         });
     }
 
+    private void addQuickConnectivityRow(LinearLayout panel, ThemeManager.Appearance a) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        final String[] keys = new String[] {"wifi", "bluetooth"};
+        for (int i = 0; i < keys.length; i++) {
+            final String key = keys[i];
+            View tile = quickConnectivityTile(key, a);
+            tile.setContentDescription("wifi".equals(key) ? "Internet" : "Bluetooth");
+            tile.setOnClickListener(new View.OnClickListener() {
+                @Override public void onClick(View view) { performQuickAction(key); }
+            });
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0,
+                    dp(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 48 : 50), 1f);
+            if (i > 0) params.leftMargin = dp(6);
+            row.addView(tile, params);
+        }
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, -2);
+        rowParams.topMargin = dp(4);
+        panel.addView(row, rowParams);
+    }
+
     private View quickConnectivityTile(String key, ThemeManager.Appearance a) {
         LinearLayout tile = new LinearLayout(this);
         tile.setOrientation(LinearLayout.HORIZONTAL);
@@ -6037,14 +6091,16 @@ public class QinsLauncherActivity extends Activity {
         iconWrap.setTag("quick-icon-shape");
         QinsGlyphView icon = new QinsGlyphView(this, glyphForQuickKey(key), a.accent);
         icon.setVisualStyle(a.id);
+        icon.setTag("quick-glyph");
         iconWrap.addView(icon, new FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER));
         tile.addView(iconWrap, new LinearLayout.LayoutParams(dp(36), dp(36)));
         LinearLayout labels = new LinearLayout(this);
         labels.setOrientation(LinearLayout.VERTICAL);
         labels.setPadding(dp(8), 0, 0, 0);
         TextView name = new TextView(this);
-        name.setText(quickLabel(key));
-        name.setTextColor(a.text);
+        name.setText("wifi".equals(key) && ThemeManager.APPEARANCE_PIXEL.equals(a.id)
+                ? "Internet" : quickLabel(key));
+        name.setTextColor(ThemeManager.APPEARANCE_GALAXY.equals(a.id) ? 0xFFF3F6FC : a.text);
         name.setTextSize(11);
         labels.addView(name);
         TextView state = new TextView(this);
@@ -6250,13 +6306,22 @@ public class QinsLauncherActivity extends Activity {
         final boolean galaxy = ThemeManager.APPEARANCE_GALAXY.equals(a.id);
         final boolean pixel = ThemeManager.APPEARANCE_PIXEL.equals(a.id);
         final boolean nothing = ThemeManager.APPEARANCE_NOTHING.equals(a.id);
-        int firstGridIndex = 0;
-
-        // All Galaxy tiles are editable and use the same circular icon treatment.
-        firstGridIndex = 0;
-
-        final int columns = galaxy ? 3 : 2;
-        final int baseHeight = galaxy ? 66 : (pixel ? 72 : 70);
+        // Wi-Fi and Bluetooth are promoted into the dedicated wide top row
+        // for Pixel and One UI. Their remaining shortcuts stay editable.
+        final int firstGridIndex = (galaxy || pixel) ? 2 : 0;
+        final int columns = (galaxy || pixel) ? 4 : 3;
+        final int baseHeight = galaxy ? 54 : (pixel ? 52 : 70);
+        LinearLayout gridHost = panel;
+        if (galaxy) {
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(dp(5), dp(5), dp(5), dp(5));
+            styleSurface(card, 0xFF1B2A40, 0xFF314966, a.focus, 22f);
+            LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(-1, -2);
+            cardParams.topMargin = dp(7);
+            panel.addView(card, cardParams);
+            gridHost = card;
+        }
         LinearLayout row = null;
         int used = 0;
         for (int i = firstGridIndex; i < count; i++) {
@@ -6273,8 +6338,8 @@ public class QinsLauncherActivity extends Activity {
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER_VERTICAL);
                 LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(-1, dp(baseHeight));
-                if (panel.getChildCount() > 0) rowParams.topMargin = dp(galaxy ? 1 : (pixel ? 3 : 6));
-                panel.addView(row, rowParams);
+                if (gridHost.getChildCount() > 0) rowParams.topMargin = dp(galaxy ? 1 : (pixel ? 3 : 6));
+                gridHost.addView(row, rowParams);
             }
             View tile = quickTile(glyphForQuickKey(key), quickLabel(key), a);
             if (quickGridFirstTile == null) quickGridFirstTile = tile;
